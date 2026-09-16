@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] Pluggable source adapter `ingestion/sources/platzi_store.py` decouples API extraction from the pipeline core.
-- [ ] Simulator produces 90 days of synthetic historical orders with weekly cyclicality and realistic cancellation/refund ratios.
-- [ ] Output data conforms strictly to Canonical Schema (`raw_orders`, `raw_order_items`, `raw_customers`, `raw_products`).
-- [ ] `dlt` pipeline writes raw append-only tables into `platzi_bronze` preserving nested fields and load IDs.
-- [ ] Ingestion implements state cursor tracking on `updated_at` to support incremental daily runs.
-- [ ] Running `python ingestion/run_ingest.py` populates BigQuery Bronze tables successfully.
+- [x] Pluggable source adapter `ingestion/sources/platzi_store.py` decouples API extraction from the pipeline core.
+- [x] Simulator produces 90 days of synthetic historical orders with weekly cyclicality and realistic cancellation/refund ratios.
+- [x] Output data conforms strictly to Canonical Schema (`raw_orders`, `raw_order_items`, `raw_customers`, `raw_products`).
+- [x] `dlt` pipeline writes raw append-only tables into `platzi_bronze` preserving nested fields and load IDs.
+- [x] Ingestion implements state cursor tracking on `updated_at` to support incremental daily runs.
+- [x] Running `python ingestion/run_ingest.py` populates BigQuery Bronze tables successfully.
