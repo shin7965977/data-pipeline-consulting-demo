@@ -139,7 +139,208 @@ with st.spinner("Connecting to Google Cloud BigQuery..."):
         st.stop()
 
 # ==============================================================================
-# 3. Sidebar Navigation & Global Filters
+# 3. FastMCP AI Operations Copilot Component (Embedded in Sidebar)
+# ==============================================================================
+def render_fastmcp_copilot():
+    st.subheader("🤖 FastMCP 智慧營運顧問")
+    st.caption("AI Operations Lakehouse Copilot · ⚡ Live")
+    st.caption(f"🔒 鎖定 BigQuery `({PROJECT_ID}.platzi_gold)` 脫敏分析")
+
+    # Gemini AI API Key Setting
+    st.markdown("##### 🔑 Gemini AI 設定")
+    user_gemini_key = st.text_input(
+        "輸入 Gemini API Key (選填)",
+        type="password",
+        value=os.getenv("GEMINI_API_KEY", ""),
+        help="輸入後將啟用 Google Gemini 原生對話與 Function Calling，直接與 BigQuery 進行 AI 互動！",
+        key="sidebar_gemini_api_key",
+    )
+    st.caption("⚡ **全自動模型協議**：系統自動偵測並調用 Google API 最新旗艦模型（版本絕不寫死）。")
+
+    st.markdown("##### 💡 快速業務提問")
+    q_col1, q_col2 = st.columns(2)
+    with q_col1:
+        if st.button("📊 一週營收退款", key="btn_q1", use_container_width=True):
+            st.session_state.ai_query = "請問過去一週的整體 GMV、實質營收與退款率如何？"
+        if st.button("💎 Platinum 客戶", key="btn_q3", use_container_width=True):
+            st.session_state.ai_query = "請列出終身價值 (LTV) 最頂級的客戶群體特性。"
+    with q_col2:
+        if st.button("🏆 Top 3 熱銷品", key="btn_q2", use_container_width=True):
+            st.session_state.ai_query = "請列出目前總銷售額排名前三的商品名稱與金額。"
+
+    user_prompt = st.text_area(
+        "輸入業務問題：",
+        value=st.session_state.get("ai_query", "請問目前我們累積的實質淨營收與最暢銷商品是什麼？"),
+        height=85,
+        key="ai_user_prompt",
+        help="輸入與電商營運、銷售績效、商品或顧客相關的分析問題",
+    )
+
+    if st.button("送出提問 🚀", type="primary", use_container_width=True):
+        with st.spinner("AI 正在透過 FastMCP 查詢 BigQuery 金牌資料集..."):
+            from mcp_server.server import (
+                get_customer_metrics,
+                get_daily_sales_kpi,
+                get_top_products,
+            )
+
+            # Option A: Real Google Gemini API with Tool Calling (Function Calling)
+            if user_gemini_key:
+                try:
+                    from google import genai
+                    from google.genai import types
+
+                    client = genai.Client(api_key=user_gemini_key)
+                    import re
+
+                    # 1. Dynamically retrieve all active text-capable Flash models for this API key
+                    available = []
+                    try:
+                        for m in client.models.list():
+                            m_name = m.name.replace("models/", "")
+                            if "flash" in m_name.lower() and not any(
+                                bad in m_name.lower()
+                                for bad in ["omni", "embed", "imagen", "tts", "stt", "realtime"]
+                            ):
+                                available.append(m_name)
+
+                        def version_score(name: str) -> float:
+                            nums = re.findall(r"(\d+(?:\.\d+)?)", name)
+                            return float(nums[0]) if nums else 0.0
+
+                        available.sort(key=version_score, reverse=True)
+                    except Exception:  # noqa: BLE001
+                        available = []
+
+                    # 2. Build candidate cascade list dynamically (never hardcoding deprecated models)
+                    candidate_models = available if available else ["gemini-3.6-flash", "gemini-2.5-flash"]
+                    chosen_model = candidate_models[0]
+
+                    tools = [get_daily_sales_kpi, get_top_products, get_customer_metrics]
+                    system_prompt = (
+                        "你是一位精通現代數據架構的資深電商分析顧問。"
+                        "你可以調用工具查詢 BigQuery platzi_gold 金牌數據（每日銷售 KPI、商品銷量與顧客 LTV）。"
+                        "請以結構化、專業繁體中文並結合具體數據回答使用者的商業決策問題。\n\n"
+                        "【業務範疇約束限制】：\n"
+                        "本助手專屬於『Platzi 零售電商營運分析』。"
+                        "如果使用者的問題與本電商業務（銷售表現、訂單、營收、GMV、商品、顧客、退款、客單價等數據分析）無關"
+                        "（例如政治人物、歷史、演藝娛樂、哲學、生活閒聊或其他非業務領域），你必須直接委婉拒絕回答："
+                        "『抱歉，我是 Platzi 電商營運數據分析顧問，僅能回答與本電商營運指標、銷售狀況、熱銷商品或顧客分析相關之業務問題。對於無關範疇的提問無法提供回答，請提出與電商業務數據相關的問題。』"
+                        "在判定為無關問題時，絕對不要調用查詢工具，也不要輸出不相干的電商數據！"
+                    )
+
+                    resp = None
+                    last_err = None
+                    used_model = chosen_model
+
+                    for candidate in candidate_models:
+                        try:
+                            resp = client.models.generate_content(
+                                model=candidate,
+                                contents=user_prompt,
+                                config=types.GenerateContentConfig(
+                                    system_instruction=system_prompt,
+                                    tools=tools,
+                                    temperature=0.2,
+                                ),
+                            )
+                            used_model = candidate
+                            break
+                        except Exception as e:  # noqa: BLE001
+                            last_err = e
+                            err_msg = str(e)
+                            if any(k in err_msg for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND", "no longer available", "deprecated"]):
+                                continue
+                            raise e
+
+                    if resp is None:
+                        raise last_err or RuntimeError("No model response available")
+
+                    fallback_notice = (
+                        f"（原選 `{chosen_model}` 暫不可用，已自動轉移）"
+                        if used_model != chosen_model
+                        else ""
+                    )
+                    st.success(f"✨ 成功調用最新模型 **`{used_model}`** {fallback_notice}結合 BigQuery FastMCP 工具生成即時洞察！")
+                    st.markdown(resp.text)
+                except Exception as ex:  # noqa: BLE001
+                    st.warning(f"⚠️ 調用 Gemini 失敗（{ex}），自動切換為內建 FastMCP 分析引擎回答：")
+                    
+                    # Domain Relevance Guardrail
+                    BUSINESS_KEYWORDS = [
+                        "銷售", "營收", "gmv", "訂單", "商品", "客戶", "ltv", "業績", "退款",
+                        "會員", "暢銷", "買", "賣", "kpi", "vip", "排行", "利潤", "金額",
+                        "單價", "aov", "平台", "電商", "庫存", "品類", "tier", "platinum", "gold", "數據", "指標", "概況"
+                    ]
+                    if not any(kw in user_prompt.lower() for kw in BUSINESS_KEYWORDS):
+                        st.info("ℹ️ 業務邊界約束提醒：")
+                        st.markdown(
+                            f"抱歉，我是專屬的 **Platzi 電商數據分析顧問**。\n\n"
+                            f"您輸入的提問 *「{user_prompt}」* 與本電商營運、銷售績效、商品或顧客等業務數據無關，因此無法提供回答。\n\n"
+                            "💡 **建議您可以提問與業務數據相關之問題，例如：**\n"
+                            "- 📊 *「請問過去一週的整體 GMV 與退款率如何？」*\n"
+                            "- 🏆 *「目前總銷售額排名前三的商品名稱與金額是？」*\n"
+                            "- 💎 *「誰是終身價值最頂級的 Platinum VIP 客戶？」*"
+                        )
+                    else:
+                        kpis = get_daily_sales_kpi(limit=7)
+                        top_prods = get_top_products(limit=3)
+                        vip_custs = get_customer_metrics(tier="Platinum", limit=3)
+                        st.markdown(
+                            f"""
+                            ### 🎯 FastMCP 分析引擎洞察回覆：
+                            **針對提問：** *「{user_prompt}」*
+                            1. **近期財務概況**：GMV 達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質淨營收 **${sum(k['net_revenue'] for k in kpis):,.2f}**，均單價 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}**。
+                            2. **暢銷明星商品**：**{top_prods[0]['product_title']}** 居冠（${top_prods[0]['completed_sales_amount']:,.2f}）。
+                            3. **頂級 VIP 群體**：Platinum 客戶平均累積貢獻 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**（{vip_custs[0]['completed_orders']} 次購買）。
+                            """
+                        )
+            else:
+                # Domain Relevance Guardrail for non-Gemini mode
+                BUSINESS_KEYWORDS = [
+                    "銷售", "營收", "gmv", "訂單", "商品", "客戶", "ltv", "業績", "退款",
+                    "會員", "暢銷", "買", "賣", "kpi", "vip", "排行", "利潤", "金額",
+                    "單價", "aov", "平台", "電商", "庫存", "品類", "tier", "platinum", "gold", "數據", "指標", "概況"
+                ]
+                if not any(kw in user_prompt.lower() for kw in BUSINESS_KEYWORDS):
+                    st.info("ℹ️ 業務邊界約束提醒：")
+                    st.markdown(
+                        f"抱歉，我是專屬的 **Platzi 電商數據分析顧問**。\n\n"
+                        f"您輸入的提問 *「{user_prompt}」* 與本電商營運、銷售績效、商品或顧客等業務數據無關，因此無法提供回答。\n\n"
+                        "💡 **建議您可以提問與業務數據相關之問題，例如：**\n"
+                        "- 📊 *「請問過去一週的整體 GMV 與退款率如何？」*\n"
+                        "- 🏆 *「目前總銷售額排名前三的商品名稱與金額是？」*\n"
+                        "- 💎 *「誰是終身價值最頂級的 Platinum VIP 客戶？」*"
+                    )
+                else:
+                    kpis = get_daily_sales_kpi(limit=7)
+                    top_prods = get_top_products(limit=3)
+                    vip_custs = get_customer_metrics(tier="Platinum", limit=3)
+
+                    st.success("✅ FastMCP 成功擷取 BigQuery Gold 數據！(提示：於上方輸入 API Key 可啟動原生 Gemini 深度推理)")
+                    st.markdown(
+                        f"""
+                        ### 🎯 AI 商業顧問洞察回覆：
+                        
+                        **針對您的提問：** *「{user_prompt}」*
+                        
+                        依據 Google Cloud BigQuery 最新金牌分析層數據：
+                        1. **財務健康度**：
+                           - 近期 GMV 規模達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質扣除退款後淨營收為 **${sum(k['net_revenue'] for k in kpis):,.2f}**。
+                           - 平均客單價 (AOV) 落在 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}** 左右，平均退款率維持在 **{sum(k['refund_rate'] for k in kpis)/len(kpis)*100:.1f}%** 的健康標準範圍。
+                        
+                        2. **明星主力商品**：
+                           - 目前最熱銷冠軍為 **{top_prods[0]['product_title']}**，累積銷售額高達 **${top_prods[0]['completed_sales_amount']:,.2f}**（共售出 {top_prods[0]['units_sold']} 件）。
+                           - 緊隨其後的是 **{top_prods[1]['product_title']}**（${top_prods[1]['completed_sales_amount']:,.2f}）。
+                        
+                        3. **核心顧客群體**：
+                           - 頂級 **Platinum** 客戶平均貢獻達 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**，購買頻次高達 {vip_custs[0]['completed_orders']} 次。
+                           - 個資保護符合標準：客戶 Email 全數進行 SHA-256 不可逆雜湊，安全合規。
+                        """
+                    )
+
+# ==============================================================================
+# 4. Sidebar Navigation & Global Filters
 # ==============================================================================
 with st.sidebar:
     st.image("https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80", use_container_width=True)
@@ -221,19 +422,8 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown("### 🖥️ 介面排版設定")
-    show_ai_panel = st.toggle("🤖 固定右側 FastMCP 顧問", value=True, help="於網頁右側展開或收合獨立固定的 AI 營運顧問側邊欄（不隨儀表板捲動）")
-    if show_ai_panel:
-        ai_width = st.select_slider("右側顧問寬度", options=["精簡 (340px)", "標準 (400px)", "寬闊 (480px)"], value="標準 (400px)")
-        width_map = {
-            "精簡 (340px)": 340,
-            "標準 (400px)": 400,
-            "寬闊 (480px)": 480,
-        }
-        ai_width_px = width_map.get(ai_width, 400)
-    else:
-        ai_width = "0px"
-        ai_width_px = 0
+    # FastMCP Copilot embedded directly into the Sidebar
+    render_fastmcp_copilot()
 
     st.markdown("---")
     st.markdown("### 🏛️ 架構特性")
@@ -242,178 +432,97 @@ with st.sidebar:
     st.markdown("- 🤖 **FastMCP / Gemini Tool Calling**")
 
 # ==============================================================================
-# 4. Main Two-Column Layout (Left: Analytics Workspace, Right: True Fixed FastMCP Copilot)
+# 5. Main Workspace: E-Commerce Retail Analytics Dashboard
 # ==============================================================================
-if show_ai_panel:
+header_col1, header_col2 = st.columns([3, 1])
+with header_col1:
+    st.title("E-Commerce Retail Analytics Dashboard")
+    st.markdown("基於 **Platzi Store API + dlt + GCP BigQuery Medallion + dbt-core** 的現代數據湖倉視覺化總覽")
+with header_col2:
+    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(
-        f"""
-        <style>
-        /* Fixed Right Sidebar for FastMCP Copilot */
-        div[data-testid="column"]:has(#right-copilot-panel) {{
-            position: fixed !important;
-            top: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: {ai_width_px}px !important;
-            max-width: {ai_width_px}px !important;
-            min-width: {ai_width_px}px !important;
-            height: 100vh !important;
-            background-color: var(--secondary-background-color, #1e2530) !important;
-            border-left: 1px solid rgba(128, 128, 128, 0.22) !important;
-            padding: 3.5rem 1.4rem 2.5rem 1.4rem !important;
-            overflow-y: auto !important;
-            z-index: 999 !important;
-            box-shadow: -4px 0 25px rgba(0, 0, 0, 0.12) !important;
-        }}
-        
-        div[data-testid="column"]:has(#right-copilot-panel) > div {{
-            width: 100% !important;
-        }}
-
-        div[data-testid="column"]:has(#right-copilot-panel)::-webkit-scrollbar {{
-            width: 6px;
-        }}
-        div[data-testid="column"]:has(#right-copilot-panel)::-webkit-scrollbar-track {{
-            background: transparent;
-        }}
-        div[data-testid="column"]:has(#right-copilot-panel)::-webkit-scrollbar-thumb {{
-            background: rgba(128, 128, 128, 0.3);
-            border-radius: 4px;
-        }}
-        div[data-testid="column"]:has(#right-copilot-panel)::-webkit-scrollbar-thumb:hover {{
-            background: rgba(128, 128, 128, 0.5);
-        }}
-
-        /* Decouple main content scroll from right sidebar */
-        .main .block-container {{
-            max-width: 100% !important;
-            padding-right: calc({ai_width_px}px + 2.5rem) !important;
-            padding-left: 2rem !important;
-            padding-top: 3.5rem !important;
-        }}
-
-        /* Ensure main content column fills the remaining dashboard width */
-        div[data-testid="stHorizontalBlock"]:has(#right-copilot-panel) > div[data-testid="column"]:first-child {{
-            flex: 1 1 100% !important;
-            width: 100% !important;
-            max-width: 100% !important;
-        }}
-
-        /* Sidebar and Copilot Top Banners */
-        section[data-testid="stSidebar"] img,
-        div[data-testid="column"]:has(#right-copilot-panel) img {{
-            border-radius: 12px !important;
-            object-fit: cover !important;
-            max-height: 140px !important;
-            margin-bottom: 0.5rem !important;
-        }}
-        </style>
+        """
+        <div style="text-align: right;">
+            <div class="status-badge">
+                <div class="pulse-dot"></div>
+                Live BigQuery Connected
+            </div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
-    col_main, col_ai = st.columns([100, 1])
-else:
-    col_main = st.container()
-    col_ai = None
 
-with col_main:
-    header_col1, header_col2 = st.columns([3, 1])
-    with header_col1:
-        st.title("E-Commerce Retail Analytics Dashboard")
-        st.markdown("基於 **Platzi Store API + dlt + GCP BigQuery Medallion + dbt-core** 的現代數據湖倉視覺化總覽")
-    with header_col2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(
-            """
-            <div style="text-align: right;">
-                <div class="status-badge">
-                    <div class="pulse-dot"></div>
-                    Live BigQuery Connected
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+st.markdown("---")
 
-    st.markdown("---")
+# Aggregate High-Level Metrics
+total_gmv = filtered_kpi["gmv"].sum()
+total_net_rev = filtered_kpi["net_revenue"].sum()
+total_orders = filtered_kpi["total_orders"].sum()
+completed_orders = filtered_kpi["completed_orders"].sum()
+cancelled_orders = filtered_kpi["cancelled_orders"].sum()
+refunded_orders = filtered_kpi["refunded_orders"].sum()
+avg_aov = filtered_kpi["aov"].mean()
+cancel_rate = (cancelled_orders / total_orders * 100) if total_orders > 0 else 0
+refund_rate = (refunded_orders / total_orders * 100) if total_orders > 0 else 0
 
-    # Aggregate High-Level Metrics
-    total_gmv = filtered_kpi["gmv"].sum()
-    total_net_rev = filtered_kpi["net_revenue"].sum()
-    total_orders = filtered_kpi["total_orders"].sum()
-    completed_orders = filtered_kpi["completed_orders"].sum()
-    cancelled_orders = filtered_kpi["cancelled_orders"].sum()
-    refunded_orders = filtered_kpi["refunded_orders"].sum()
-    avg_aov = filtered_kpi["aov"].mean()
-    cancel_rate = (cancelled_orders / total_orders * 100) if total_orders > 0 else 0
-    refund_rate = (refunded_orders / total_orders * 100) if total_orders > 0 else 0
+# 4 Executive KPI Cards
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">總銷售額 (GMV)</div>
+            <div class="metric-value">${total_gmv:,.2f}</div>
+            <div class="metric-subtext">累積總銷售訂單金流</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    # 4 Executive KPI Cards
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">總銷售額 (GMV)</div>
-                <div class="metric-value">${total_gmv:,.2f}</div>
-                <div class="metric-subtext">累積總銷售訂單金流</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+with c2:
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">淨實質營收 (Net Revenue)</div>
+            <div class="metric-value">${total_net_rev:,.2f}</div>
+            <div class="metric-subtext">已扣除退款與折扣</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    with c2:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">淨實質營收 (Net Revenue)</div>
-                <div class="metric-value">${total_net_rev:,.2f}</div>
-                <div class="metric-subtext">已扣除退款與折扣</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+with c3:
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">平均客單價 (AOV)</div>
+            <div class="metric-value">${avg_aov:,.2f}</div>
+            <div class="metric-subtext">成交訂單均額</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    with c3:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">平均客單價 (AOV)</div>
-                <div class="metric-value">${avg_aov:,.2f}</div>
-                <div class="metric-subtext">成交訂單均額</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+with c4:
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">訂單退款率 / 取消率</div>
+            <div class="metric-value">{refund_rate:.1f}% <span style="font-size:1rem;color:#94a3b8;">/ {cancel_rate:.1f}%</span></div>
+            <div class="metric-subtext warning">退款 {refunded_orders} 單 / 取消 {cancelled_orders} 單</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    with c4:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">訂單退款率 / 取消率</div>
-                <div class="metric-value">{refund_rate:.1f}% <span style="font-size:1rem;color:#94a3b8;">/ {cancel_rate:.1f}%</span></div>
-                <div class="metric-subtext warning">退款 {refunded_orders} 單 / 取消 {cancelled_orders} 單</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+st.markdown("---")
 
-    st.markdown("---")
+tab1, tab2, tab3 = st.tabs([
+    "📈 營收走勢與轉換漏斗",
+    "👥 客戶終身價值 (LTV) 分群",
+    "🏆 熱銷商品與類別排行",
+])
 
-    if show_ai_panel:
-        tab1, tab2, tab3 = st.tabs([
-            "📈 營收走勢與轉換漏斗",
-            "👥 客戶終身價值 (LTV) 分群",
-            "🏆 熱銷商品與類別排行",
-        ])
-        tab4 = None
-    else:
-        tab1, tab2, tab3, tab4 = st.tabs([
-            "📈 營收走勢與轉換漏斗",
-            "👥 客戶終身價值 (LTV) 分群",
-            "🏆 熱銷商品與類別排行",
-            "🤖 FastMCP AI 數據對話",
-        ])
 
 # ------------------------------------------------------------------------------
 # TAB 1: 每日營收走勢與轉換漏斗
@@ -577,237 +686,3 @@ with tab3:
     st.subheader("📋 完整商品業績明細清單")
     st.dataframe(df_prod, use_container_width=True, hide_index=True)
 
-# ------------------------------------------------------------------------------
-# FastMCP AI Copilot Component (Right-Side Resizable Dock or Full Tab)
-# ------------------------------------------------------------------------------
-def render_fastmcp_copilot():
-    # Top banner image mirroring left sidebar
-    st.image("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80", use_container_width=True)
-
-    header_ai1, header_ai2 = st.columns([3, 1])
-    with header_ai1:
-        st.title("🤖 FastMCP 顧問")
-        st.caption("AI Operations Lakehouse Copilot")
-    with header_ai2:
-        st.markdown(
-            """
-            <div style="text-align: right; padding-top: 10px;">
-                <span class="status-badge" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;">
-                    <span class="pulse-dot"></span> Live
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("---")
-    st.markdown(f"**分析標的：**\nGoogle Cloud BigQuery\n`({PROJECT_ID}.platzi_gold)`")
-    st.caption("🔒 全自動 PII 脫敏，支援自然語言即時數據分析與業務安全護欄。")
-    st.markdown("---")
-
-    # Gemini AI API Key Setting (Moved to Right Sidebar)
-    st.subheader("🔑 Gemini AI 設定")
-    user_gemini_key = st.text_input(
-        "輸入 Gemini API Key (選填)",
-        type="password",
-        value=os.getenv("GEMINI_API_KEY", ""),
-        help="輸入後將啟用 Google Gemini 原生對話與 Function Calling，直接與 BigQuery 進行 AI 互動！",
-        key="right_gemini_api_key",
-    )
-    st.caption("⚡ **全自動模型協議**：系統自動偵測並調用 Google API 最新旗艦模型（如 3.6+），版本絕不寫死。")
-    target_model = "auto"
-    st.markdown("---")
-
-    st.subheader("💡 快速業務提問")
-    q_col1, q_col2, q_col3 = st.columns(3)
-    with q_col1:
-        if st.button("📊 一週營收與退款", key="btn_q1", use_container_width=True):
-            st.session_state.ai_query = "請問過去一週的整體 GMV、實質營收與退款率如何？"
-    with q_col2:
-        if st.button("🏆 Top 3 暢銷商品", key="btn_q2", use_container_width=True):
-            st.session_state.ai_query = "請列出目前總銷售額排名前三的商品名稱與金額。"
-    with q_col3:
-        if st.button("💎 Platinum 客戶群", key="btn_q3", use_container_width=True):
-            st.session_state.ai_query = "請列出終身價值 (LTV) 最頂級的客戶群體特性。"
-
-    user_prompt = st.text_area(
-        "輸入業務問題：",
-        value=st.session_state.get("ai_query", "請問目前我們累積的實質淨營收與最暢銷商品是什麼？"),
-        height=85,
-        key="ai_user_prompt",
-        help="輸入與電商營運、銷售績效、商品或顧客相關的分析問題",
-    )
-
-    if st.button("送出提問 🚀", type="primary", use_container_width=True):
-        with st.spinner("AI 正在透過 FastMCP 查詢 BigQuery 金牌資料集..."):
-            from mcp_server.server import (
-                get_customer_metrics,
-                get_daily_sales_kpi,
-                get_top_products,
-            )
-
-            # Option A: Real Google Gemini API with Tool Calling (Function Calling)
-            if user_gemini_key:
-                try:
-                    from google import genai
-                    from google.genai import types
-
-                    client = genai.Client(api_key=user_gemini_key)
-
-                    import re
-
-                    # 1. Dynamically retrieve all active text-capable Flash models for this API key
-                    available = []
-                    try:
-                        for m in client.models.list():
-                            m_name = m.name.replace("models/", "")
-                            if "flash" in m_name.lower() and not any(
-                                bad in m_name.lower()
-                                for bad in ["omni", "embed", "imagen", "tts", "stt", "realtime"]
-                            ):
-                                available.append(m_name)
-
-                        def version_score(name: str) -> float:
-                            nums = re.findall(r"(\d+(?:\.\d+)?)", name)
-                            return float(nums[0]) if nums else 0.0
-
-                        available.sort(key=version_score, reverse=True)
-                    except Exception:  # noqa: BLE001
-                        available = []
-
-                    # 2. Build candidate cascade list dynamically (never hardcoding deprecated models)
-                    candidate_models = available if available else ["gemini-3.6-flash", "gemini-2.5-flash"]
-                    chosen_model = candidate_models[0]
-
-                    tools = [get_daily_sales_kpi, get_top_products, get_customer_metrics]
-                    system_prompt = (
-                        "你是一位精通現代數據架構的資深電商分析顧問。"
-                        "你可以調用工具查詢 BigQuery platzi_gold 金牌數據（每日銷售 KPI、商品銷量與顧客 LTV）。"
-                        "請以結構化、專業繁體中文並結合具體數據回答使用者的商業決策問題。\n\n"
-                        "【業務範疇約束限制】：\n"
-                        "本助手專屬於『Platzi 零售電商營運分析』。"
-                        "如果使用者的問題與本電商業務（銷售表現、訂單、營收、GMV、商品、顧客、退款、客單價等數據分析）無關"
-                        "（例如政治人物、歷史、演藝娛樂、哲學、生活閒聊或其他非業務領域），你必須直接委婉拒絕回答："
-                        "『抱歉，我是 Platzi 電商營運數據分析顧問，僅能回答與本電商營運指標、銷售狀況、熱銷商品或顧客分析相關之業務問題。對於無關範疇的提問無法提供回答，請提出與電商業務數據相關的問題。』"
-                        "在判定為無關問題時，絕對不要調用查詢工具，也不要輸出不相干的電商數據！"
-                    )
-
-                    resp = None
-                    last_err = None
-                    used_model = chosen_model
-
-                    for candidate in candidate_models:
-                        try:
-                            resp = client.models.generate_content(
-                                model=candidate,
-                                contents=user_prompt,
-                                config=types.GenerateContentConfig(
-                                    system_instruction=system_prompt,
-                                    tools=tools,
-                                    temperature=0.2,
-                                ),
-                            )
-                            used_model = candidate
-                            break
-                        except Exception as e:  # noqa: BLE001
-                            last_err = e
-                            err_msg = str(e)
-                            # If transient load error (503), quota (429), or deprecated/not found (404), try next dynamic candidate
-                            if any(k in err_msg for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND", "no longer available", "deprecated"]):
-                                continue
-                            raise e
-
-                    if resp is None:
-                        raise last_err or RuntimeError("No model response available")
-
-                    fallback_notice = (
-                        f"（原選 `{chosen_model}` 暫不可用，已自動轉移）"
-                        if used_model != chosen_model
-                        else ""
-                    )
-                    st.success(f"✨ 成功調用最新模型 **`{used_model}`** {fallback_notice}結合 BigQuery FastMCP 工具生成即時洞察！")
-                    st.markdown(resp.text)
-                except Exception as ex:  # noqa: BLE001
-                    st.warning(f"⚠️ 調用 Gemini 失敗（{ex}），自動切換為內建 FastMCP 分析引擎回答：")
-                    
-                    # Domain Relevance Guardrail
-                    BUSINESS_KEYWORDS = [
-                        "銷售", "營收", "gmv", "訂單", "商品", "客戶", "ltv", "業績", "退款",
-                        "會員", "暢銷", "買", "賣", "kpi", "vip", "排行", "利潤", "金額",
-                        "單價", "aov", "平台", "電商", "庫存", "品類", "tier", "platinum", "gold", "數據", "指標", "概況"
-                    ]
-                    if not any(kw in user_prompt.lower() for kw in BUSINESS_KEYWORDS):
-                        st.info("ℹ️ 業務邊界約束提醒：")
-                        st.markdown(
-                            f"抱歉，我是專屬的 **Platzi 電商數據分析顧問**。\n\n"
-                            f"您輸入的提問 *「{user_prompt}」* 與本電商營運、銷售績效、商品或顧客等業務數據無關，因此無法提供回答。\n\n"
-                            "💡 **建議您可以提問與業務數據相關之問題，例如：**\n"
-                            "- 📊 *「請問過去一週的整體 GMV 與退款率如何？」*\n"
-                            "- 🏆 *「目前總銷售額排名前三的商品名稱與金額是？」*\n"
-                            "- 💎 *「誰是終身價值最頂級的 Platinum VIP 客戶？」*"
-                        )
-                    else:
-                        kpis = get_daily_sales_kpi(limit=7)
-                        top_prods = get_top_products(limit=3)
-                        vip_custs = get_customer_metrics(tier="Platinum", limit=3)
-                        st.markdown(
-                            f"""
-                            ### 🎯 FastMCP 分析引擎洞察回覆：
-                            **針對提問：** *「{user_prompt}」*
-                            1. **近期財務概況**：GMV 達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質淨營收 **${sum(k['net_revenue'] for k in kpis):,.2f}**，均單價 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}**。
-                            2. **暢銷明星商品**：**{top_prods[0]['product_title']}** 居冠（${top_prods[0]['completed_sales_amount']:,.2f}）。
-                            3. **頂級 VIP 群體**：Platinum 客戶平均累積貢獻 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**（{vip_custs[0]['completed_orders']} 次購買）。
-                            """
-                        )
-            else:
-                # Domain Relevance Guardrail for non-Gemini mode
-                BUSINESS_KEYWORDS = [
-                    "銷售", "營收", "gmv", "訂單", "商品", "客戶", "ltv", "業績", "退款",
-                    "會員", "暢銷", "買", "賣", "kpi", "vip", "排行", "利潤", "金額",
-                    "單價", "aov", "平台", "電商", "庫存", "品類", "tier", "platinum", "gold", "數據", "指標", "概況"
-                ]
-                if not any(kw in user_prompt.lower() for kw in BUSINESS_KEYWORDS):
-                    st.info("ℹ️ 業務邊界約束提醒：")
-                    st.markdown(
-                        f"抱歉，我是專屬的 **Platzi 電商數據分析顧問**。\n\n"
-                        f"您輸入的提問 *「{user_prompt}」* 與本電商營運、銷售績效、商品或顧客等業務數據無關，因此無法提供回答。\n\n"
-                        "💡 **建議您可以提問與業務數據相關之問題，例如：**\n"
-                        "- 📊 *「請問過去一週的整體 GMV 與退款率如何？」*\n"
-                        "- 🏆 *「目前總銷售額排名前三的商品名稱與金額是？」*\n"
-                        "- 💎 *「誰是終身價值最頂級的 Platinum VIP 客戶？」*"
-                    )
-                else:
-                    kpis = get_daily_sales_kpi(limit=7)
-                    top_prods = get_top_products(limit=3)
-                    vip_custs = get_customer_metrics(tier="Platinum", limit=3)
-
-                    st.success("✅ FastMCP 成功擷取 BigQuery Gold 數據！(提示：於上方「🔑 Gemini AI 設定」輸入 API Key 可啟動原生 Gemini 深度推理)")
-                    st.markdown(
-                        f"""
-                        ### 🎯 AI 商業顧問洞察回覆：
-                        
-                        **針對您的提問：** *「{user_prompt}」*
-                        
-                        依據 Google Cloud BigQuery 最新金牌分析層數據：
-                        1. **財務健康度**：
-                           - 近期 GMV 規模達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質扣除退款後淨營收為 **${sum(k['net_revenue'] for k in kpis):,.2f}**。
-                           - 平均客單價 (AOV) 落在 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}** 左右，平均退款率維持在 **{sum(k['refund_rate'] for k in kpis)/len(kpis)*100:.1f}%** 的健康標準範圍。
-                        
-                        2. **明星主力商品**：
-                           - 目前最熱銷冠軍為 **{top_prods[0]['product_title']}**，累積銷售額高達 **${top_prods[0]['completed_sales_amount']:,.2f}**（共售出 {top_prods[0]['units_sold']} 件）。
-                           - 緊隨其後的是 **{top_prods[1]['product_title']}**（${top_prods[1]['completed_sales_amount']:,.2f}）。
-                        
-                        3. **核心顧客群體**：
-                           - 頂級 **Platinum** 客戶平均貢獻達 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**，購買頻次高達 {vip_custs[0]['completed_orders']} 次。
-                           - 個資保護符合標準：客戶 Email 全數進行 SHA-256 不可逆雜湊，安全合規。
-                        """
-                    )
-
-# Render FastMCP Copilot in the designated location
-if col_ai is not None:
-    with col_ai:
-        st.markdown('<div id="right-copilot-panel"></div>', unsafe_allow_html=True)
-        render_fastmcp_copilot()
-elif tab4 is not None:
-    with tab4:
-        render_fastmcp_copilot()
