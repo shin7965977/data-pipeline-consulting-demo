@@ -240,17 +240,6 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown("### 🤖 Gemini AI 設定")
-    user_gemini_key = st.text_input(
-        "輸入 Gemini API Key (選填)",
-        type="password",
-        value=os.getenv("GEMINI_API_KEY", ""),
-        help="輸入後將啟用 Google Gemini 原生對話與 Function Calling，直接與 BigQuery 進行 AI 互動！",
-    )
-    st.caption("⚡ **全自動版本協議**：已鎖定永遠自動調用 Google API 最新旗艦模型（無需手動選取），永不過期。")
-    target_model = "auto"
-
-    st.markdown("---")
     st.markdown("### 🖥️ 介面排版設定")
     show_ai_panel = st.toggle("🤖 滿版右側 FastMCP 顧問", value=True, help="於網頁右側展開或收合完整滿版 AI 營運顧問面板")
     if show_ai_panel:
@@ -542,15 +531,18 @@ with tab3:
 # ------------------------------------------------------------------------------
 # FastMCP AI Copilot Component (Right-Side Resizable Dock or Full Tab)
 # ------------------------------------------------------------------------------
-def render_fastmcp_copilot(user_gemini_key: str):
+def render_fastmcp_copilot():
+    # Top banner image mirroring left sidebar
+    st.image("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80", use_container_width=True)
+
     header_ai1, header_ai2 = st.columns([3, 1])
     with header_ai1:
-        st.markdown("## 🤖 FastMCP 顧問")
+        st.title("🤖 FastMCP 顧問")
         st.caption("AI Operations Lakehouse Copilot")
     with header_ai2:
         st.markdown(
             """
-            <div style="text-align: right; padding-top: 8px;">
+            <div style="text-align: right; padding-top: 10px;">
                 <span class="status-badge" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;">
                     <span class="pulse-dot"></span> Live
                 </span>
@@ -560,11 +552,24 @@ def render_fastmcp_copilot(user_gemini_key: str):
         )
 
     st.markdown("---")
-    st.markdown(f"**分析標的：**\n`{PROJECT_ID}.platzi_gold`")
+    st.markdown(f"**分析標的：**\nGoogle Cloud BigQuery\n`({PROJECT_ID}.platzi_gold)`")
     st.caption("🔒 全自動 PII 脫敏，支援自然語言即時數據分析與業務安全護欄。")
     st.markdown("---")
 
-    st.markdown("**💡 快速業務提問：**")
+    # Gemini AI API Key Setting (Moved to Right Sidebar)
+    st.subheader("🔑 Gemini AI 設定")
+    user_gemini_key = st.text_input(
+        "輸入 Gemini API Key (選填)",
+        type="password",
+        value=os.getenv("GEMINI_API_KEY", ""),
+        help="輸入後將啟用 Google Gemini 原生對話與 Function Calling，直接與 BigQuery 進行 AI 互動！",
+        key="right_gemini_api_key",
+    )
+    st.caption("⚡ **全自動模型協議**：系統自動偵測並調用 Google API 最新旗艦模型（如 3.6+），版本絕不寫死。")
+    target_model = "auto"
+    st.markdown("---")
+
+    st.subheader("💡 快速業務提問")
     q_col1, q_col2, q_col3 = st.columns(3)
     with q_col1:
         if st.button("📊 一週營收與退款", key="btn_q1", use_container_width=True):
@@ -753,8 +758,8 @@ def render_fastmcp_copilot(user_gemini_key: str):
 if col_ai is not None:
     with col_ai:
         st.markdown('<div class="right-sidebar-rail">', unsafe_allow_html=True)
-        render_fastmcp_copilot(user_gemini_key)
+        render_fastmcp_copilot()
         st.markdown('</div>', unsafe_allow_html=True)
 elif tab4 is not None:
     with tab4:
-        render_fastmcp_copilot(user_gemini_key)
+        render_fastmcp_copilot()
