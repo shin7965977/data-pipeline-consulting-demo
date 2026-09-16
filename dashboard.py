@@ -162,15 +162,23 @@ with st.sidebar:
     st.markdown(f"**資料來源：**\n`{data_source}`")
 
     # Date Filter
+    import datetime
+
     min_date = df_kpi["order_date"].min().date()
     max_date = df_kpi["order_date"].max().date()
     
     st.subheader("📅 時間區間篩選")
+    calendar_min = min_date - datetime.timedelta(days=90)
+    calendar_max = datetime.date.today() + datetime.timedelta(days=1)
+    if calendar_max < max_date:
+        calendar_max = max_date
+
     selected_dates = st.date_input(
         "選擇日期範圍",
         value=(min_date, max_date),
-        min_value=min_date,
-        max_value=max_date,
+        min_value=calendar_min,
+        max_value=calendar_max,
+        help="目前 BigQuery 資料庫每日銷售記錄區間為 9/12 ~ 9/16（由模擬器最近批次產出之交易流水）。",
     )
 
     if isinstance(selected_dates, (list, tuple)) and len(selected_dates) == 2:
@@ -179,10 +187,41 @@ with st.sidebar:
         filtered_kpi = df_kpi.loc[mask]
     elif isinstance(selected_dates, (list, tuple)) and len(selected_dates) == 1:
         start_d = selected_dates[0]
+        end_d = start_d
         mask = df_kpi["order_date"].dt.date >= start_d
         filtered_kpi = df_kpi.loc[mask]
     else:
+        start_d, end_d = min_date, max_date
         filtered_kpi = df_kpi
+
+    # BigQuery Gold Data Export / Download Section
+    st.markdown("#### 📥 下載 BigQuery 金牌數據")
+    export_table = st.selectbox(
+        "選擇要下載的資料集",
+        options=["📅 每日銷售 KPI (依所選日期區間)", "💎 客戶終身價值 (LTV 全量)", "🏆 商品銷售排行 (全量)"],
+    )
+    if "每日銷售" in export_table:
+        export_df = filtered_kpi
+        file_suffix = f"_{start_d}_to_{end_d}" if "start_d" in locals() and "end_d" in locals() else ""
+        dl_filename = f"bigquery_gold_daily_kpi{file_suffix}.csv"
+        dl_label = f"下載每日 KPI ({len(export_df)} 筆)"
+    elif "客戶終身價值" in export_table:
+        export_df = df_ltv
+        dl_filename = "bigquery_gold_customer_ltv.csv"
+        dl_label = f"下載客戶 LTV ({len(export_df)} 筆)"
+    else:
+        export_df = df_prod
+        dl_filename = "bigquery_gold_product_performance.csv"
+        dl_label = f"下載商品排行 ({len(export_df)} 筆)"
+
+    st.download_button(
+        label=f"💾 {dl_label} (CSV)",
+        data=export_df.to_csv(index=False).encode("utf-8-sig"),
+        file_name=dl_filename,
+        mime="text/csv",
+        help=f"從 Google Cloud BigQuery ({PROJECT_ID}.platzi_gold) 下載真實數據 CSV 檔案",
+        use_container_width=True,
+    )
 
     st.markdown("---")
     st.markdown("### 🤖 Gemini AI 設定")
@@ -192,19 +231,8 @@ with st.sidebar:
         value=os.getenv("GEMINI_API_KEY", ""),
         help="輸入後將啟用 Google Gemini 原生對話與 Function Calling，直接與 BigQuery 進行 AI 互動！",
     )
-
-    model_choice = st.selectbox(
-        "選擇 Gemini 模型版本",
-        options=["⚡ Auto (動態偵測並調用帳號最新可用 Flash 模型)", "gemini-3.6-flash", "gemini-2.5-flash", "自訂模型名稱..."],
-        index=0,
-        help="選擇 Auto 時，系統會直接動態查詢 Google API 獲取您帳號下最新的 Flash 模型（如 3.6+），版本絕不寫死！",
-    )
-    if model_choice == "自訂模型名稱...":
-        target_model = st.text_input("輸入自訂模型名稱", value="gemini-3.6-flash")
-    elif "Auto" in model_choice:
-        target_model = "auto"
-    else:
-        target_model = model_choice
+    st.caption("⚡ **全自動版本協議**：已鎖定永遠自動調用 Google API 最新旗艦模型（無需手動選取），永不過期。")
+    target_model = "auto"
 
     st.markdown("---")
     st.markdown("### 🏛️ 架構特性")
@@ -298,14 +326,41 @@ with c4:
     )
 
 # ==============================================================================
-# 5. Core Analytical Tabs
+# 5. Core Analytical View & Side-by-Side FastMCP Copilot
 # ==============================================================================
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📈 營收走勢與轉換漏斗",
-    "👥 客戶終身價值 (LTV) 分群",
-    "🏆 熱銷商品與類別排行",
-    "🤖 FastMCP AI 數據對話",
-])
+# Layout Control Toolbar
+tbar1, tbar2, tbar3 = st.columns([2.2, 1.3, 1.5])
+with tbar2:
+    show_ai_panel = st.toggle("🤖 右側 FastMCP 顧問", value=True, help="可自由切換是否在右側顯示 AI 數據對話顧問")
+with tbar3:
+    if show_ai_panel:
+        ai_width = st.select_slider("顧問面板寬度", options=["小 (25%)", "標準 (35%)", "寬闊 (45%)"], value="標準 (35%)")
+    else:
+        ai_width = "0%"
+
+if show_ai_panel:
+    if ai_width == "小 (25%)":
+        col_main, col_ai = st.columns([75, 25], gap="medium")
+    elif ai_width == "寬闊 (45%)":
+        col_main, col_ai = st.columns([55, 45], gap="medium")
+    else:
+        col_main, col_ai = st.columns([65, 35], gap="medium")
+
+    tab1, tab2, tab3 = col_main.tabs([
+        "📈 營收走勢與轉換漏斗",
+        "👥 客戶終身價值 (LTV) 分群",
+        "🏆 熱銷商品與類別排行",
+    ])
+    tab4 = None
+else:
+    col_main = st.container()
+    col_ai = None
+    tab1, tab2, tab3, tab4 = col_main.tabs([
+        "📈 營收走勢與轉換漏斗",
+        "👥 客戶終身價值 (LTV) 分群",
+        "🏆 熱銷商品與類別排行",
+        "🤖 FastMCP AI 數據對話",
+    ])
 
 # ------------------------------------------------------------------------------
 # TAB 1: 每日營收走勢與轉換漏斗
@@ -470,29 +525,33 @@ with tab3:
     st.dataframe(df_prod, use_container_width=True, hide_index=True)
 
 # ------------------------------------------------------------------------------
-# TAB 4: FastMCP AI 數據對話助手
+# FastMCP AI Copilot Component (Right-Side Resizable Dock or Full Tab)
 # ------------------------------------------------------------------------------
-with tab4:
-    st.subheader("🤖 FastMCP 智慧營運顧問 (自然語言即時問答)")
-    st.markdown("直接透過自然語言向 BigQuery `platzi_gold` 層提問，由後端 FastMCP 工具提供安全無 PII 洩漏的即時數據洞察。")
+def render_fastmcp_copilot(user_gemini_key: str):
+    st.subheader("🤖 FastMCP 智慧營運顧問")
+    st.caption("透過自然語言對話直連 BigQuery `platzi_gold` 金牌層，支援動態 Tool Calling 與業務安全護欄。")
 
-    col_q1, col_q2, col_q3 = st.columns(3)
-    with col_q1:
-        if st.button("📊 過去一週的整體 GMV 與退款率？"):
+    st.markdown("**⚡ 快速業務提問快捷鍵：**")
+    q_col1, q_col2, q_col3 = st.columns(3)
+    with q_col1:
+        if st.button("📊 一週營收與退款", key="btn_q1", use_container_width=True):
             st.session_state.ai_query = "請問過去一週的整體 GMV、實質營收與退款率如何？"
-    with col_q2:
-        if st.button("🏆 銷售額最高的前 3 名商品是？"):
+    with q_col2:
+        if st.button("🏆 Top 3 暢銷商品", key="btn_q2", use_container_width=True):
             st.session_state.ai_query = "請列出目前總銷售額排名前三的商品名稱與金額。"
-    with col_q3:
-        if st.button("💎 誰是貢獻最高的 Platinum 客戶？"):
+    with q_col3:
+        if st.button("💎 Platinum 客戶群", key="btn_q3", use_container_width=True):
             st.session_state.ai_query = "請列出終身價值 (LTV) 最頂級的客戶群體特性。"
 
-    user_prompt = st.text_input(
-        "輸入您的業務問題：",
+    user_prompt = st.text_area(
+        "輸入業務問題：",
         value=st.session_state.get("ai_query", "請問目前我們累積的實質淨營收與最暢銷商品是什麼？"),
+        height=85,
+        key="ai_user_prompt",
+        help="輸入與電商營運、銷售績效、商品或顧客相關的分析問題",
     )
 
-    if st.button("送出提問 🚀", type="primary"):
+    if st.button("送出提問 🚀", type="primary", use_container_width=True):
         with st.spinner("AI 正在透過 FastMCP 查詢 BigQuery 金牌資料集..."):
             from mcp_server.server import (
                 get_customer_metrics,
@@ -530,11 +589,7 @@ with tab4:
                         available = []
 
                     # 2. Build candidate cascade list dynamically (never hardcoding deprecated models)
-                    if target_model != "auto" and target_model:
-                        candidate_models = [target_model] + [m for m in available if m != target_model]
-                    else:
-                        candidate_models = available if available else ["gemini-3.6-flash", "gemini-2.5-flash"]
-
+                    candidate_models = available if available else ["gemini-3.6-flash", "gemini-2.5-flash"]
                     chosen_model = candidate_models[0]
 
                     tools = [get_daily_sales_kpi, get_top_products, get_customer_metrics]
@@ -660,3 +715,12 @@ with tab4:
                            - 個資保護符合標準：客戶 Email 全數進行 SHA-256 不可逆雜湊，安全合規。
                         """
                     )
+
+# Render FastMCP Copilot in the designated location
+if col_ai is not None:
+    with col_ai:
+        with st.container(border=True):
+            render_fastmcp_copilot(user_gemini_key)
+elif tab4 is not None:
+    with tab4:
+        render_fastmcp_copilot(user_gemini_key)
