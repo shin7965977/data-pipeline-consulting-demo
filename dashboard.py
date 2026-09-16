@@ -195,12 +195,12 @@ with st.sidebar:
 
     model_choice = st.selectbox(
         "選擇 Gemini 模型版本",
-        options=["⚡ Auto (自動偵測最新 Flash 模型)", "gemini-3.8-flash", "gemini-2.5-flash", "自訂模型名稱..."],
+        options=["⚡ Auto (自動偵測最新可用 Flash 模型)", "gemini-2.5-flash", "gemini-2.0-flash", "自訂模型名稱..."],
         index=0,
-        help="選擇 Auto 時，系統會動態查詢 Google API 獲取您帳號下最新的 Flash 模型，版本絕不寫死！",
+        help="選擇 Auto 時，系統會動態查詢 Google API 獲取最新的通用 Flash 模型，並自動排除無免費額度的特殊模型（如 omni）！",
     )
     if model_choice == "自訂模型名稱...":
-        target_model = st.text_input("輸入自訂模型名稱", value="gemini-3.8-flash")
+        target_model = st.text_input("輸入自訂模型名稱", value="gemini-2.5-flash")
     elif "Auto" in model_choice:
         target_model = "auto"
     else:
@@ -508,22 +508,32 @@ with tab4:
 
                     client = genai.Client(api_key=user_gemini_key)
 
-                    # Dynamic Model Auto-Resolution: Always use the latest available model
+                    # Dynamic Model Auto-Resolution: Filter for general text models & sort semantically
                     chosen_model = target_model
                     if chosen_model == "auto":
                         try:
-                            available = [
-                                m.name.replace("models/", "")
-                                for m in client.models.list()
-                                if "flash" in m.name.lower()
-                            ]
+                            import re
+
+                            available = []
+                            for m in client.models.list():
+                                m_name = m.name.replace("models/", "")
+                                # Filter for flash models, exclude omni, vision/video-only, embed, tts
+                                if "flash" in m_name.lower() and not any(
+                                    bad in m_name.lower() for bad in ["omni", "embed", "imagen", "tts", "stt", "realtime"]
+                                ):
+                                    available.append(m_name)
+
+                            def version_score(name: str) -> float:
+                                nums = re.findall(r"(\d+(?:\.\d+)?)", name)
+                                return float(nums[0]) if nums else 0.0
+
                             if available:
-                                available.sort(reverse=True)
+                                available.sort(key=version_score, reverse=True)
                                 chosen_model = available[0]
                             else:
-                                chosen_model = "gemini-3.8-flash"
+                                chosen_model = "gemini-2.5-flash"
                         except Exception:  # noqa: BLE001
-                            chosen_model = "gemini-3.8-flash"
+                            chosen_model = "gemini-2.5-flash"
 
                     tools = [get_daily_sales_kpi, get_top_products, get_customer_metrics]
                     system_prompt = (
@@ -531,16 +541,47 @@ with tab4:
                         "你可以調用工具查詢 BigQuery platzi_gold 金牌數據（每日銷售 KPI、商品銷量與顧客 LTV）。"
                         "請以結構化、專業繁體中文並結合具體數據回答使用者的商業決策問題。"
                     )
-                    resp = client.models.generate_content(
-                        model=chosen_model,
-                        contents=user_prompt,
-                        config=types.GenerateContentConfig(
-                            system_instruction=system_prompt,
-                            tools=tools,
-                            temperature=0.2,
-                        ),
+
+                    # Resilience Cascade: If the latest model experiences 503 high demand, fallback gracefully
+                    candidate_models = [chosen_model]
+                    for fallback in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+                        if fallback not in candidate_models:
+                            candidate_models.append(fallback)
+
+                    resp = None
+                    last_err = None
+                    used_model = chosen_model
+
+                    for candidate in candidate_models:
+                        try:
+                            resp = client.models.generate_content(
+                                model=candidate,
+                                contents=user_prompt,
+                                config=types.GenerateContentConfig(
+                                    system_instruction=system_prompt,
+                                    tools=tools,
+                                    temperature=0.2,
+                                ),
+                            )
+                            used_model = candidate
+                            break
+                        except Exception as e:  # noqa: BLE001
+                            last_err = e
+                            err_msg = str(e)
+                            # If high demand (503) or rate limit (429), try next candidate model
+                            if any(k in err_msg for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand"]):
+                                continue
+                            raise e
+
+                    if resp is None:
+                        raise last_err or RuntimeError("No model response available")
+
+                    fallback_notice = (
+                        f"（原選 `{chosen_model}` 伺服器流量過載，已自動降級轉移）"
+                        if used_model != chosen_model
+                        else ""
                     )
-                    st.success(f"✨ 成功調用最新模型 **`{chosen_model}`** 結合 BigQuery FastMCP 工具生成即時洞察！")
+                    st.success(f"✨ 成功調用模型 **`{used_model}`** {fallback_notice}結合 BigQuery FastMCP 工具生成即時洞察！")
                     st.markdown(resp.text)
                 except Exception as ex:  # noqa: BLE001
                     st.warning(f"⚠️ 調用 Gemini 失敗（{ex}），自動切換為內建 FastMCP 分析引擎回答：")
