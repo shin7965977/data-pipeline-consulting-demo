@@ -190,8 +190,21 @@ with st.sidebar:
         "輸入 Gemini API Key (選填)",
         type="password",
         value=os.getenv("GEMINI_API_KEY", ""),
-        help="輸入後將啟用 Google Gemini 2.5 原生對話與 Function Calling，直接與 BigQuery 進行 AI 互動！",
+        help="輸入後將啟用 Google Gemini 原生對話與 Function Calling，直接與 BigQuery 進行 AI 互動！",
     )
+
+    model_choice = st.selectbox(
+        "選擇 Gemini 模型版本",
+        options=["⚡ Auto (自動偵測最新 Flash 模型)", "gemini-3.8-flash", "gemini-2.5-flash", "自訂模型名稱..."],
+        index=0,
+        help="選擇 Auto 時，系統會動態查詢 Google API 獲取您帳號下最新的 Flash 模型，版本絕不寫死！",
+    )
+    if model_choice == "自訂模型名稱...":
+        target_model = st.text_input("輸入自訂模型名稱", value="gemini-3.8-flash")
+    elif "Auto" in model_choice:
+        target_model = "auto"
+    else:
+        target_model = model_choice
 
     st.markdown("---")
     st.markdown("### 🏛️ 架構特性")
@@ -494,6 +507,24 @@ with tab4:
                     from google.genai import types
 
                     client = genai.Client(api_key=user_gemini_key)
+
+                    # Dynamic Model Auto-Resolution: Always use the latest available model
+                    chosen_model = target_model
+                    if chosen_model == "auto":
+                        try:
+                            available = [
+                                m.name.replace("models/", "")
+                                for m in client.models.list()
+                                if "flash" in m.name.lower()
+                            ]
+                            if available:
+                                available.sort(reverse=True)
+                                chosen_model = available[0]
+                            else:
+                                chosen_model = "gemini-3.8-flash"
+                        except Exception:  # noqa: BLE001
+                            chosen_model = "gemini-3.8-flash"
+
                     tools = [get_daily_sales_kpi, get_top_products, get_customer_metrics]
                     system_prompt = (
                         "你是一位精通現代數據架構的資深電商分析顧問。"
@@ -501,7 +532,7 @@ with tab4:
                         "請以結構化、專業繁體中文並結合具體數據回答使用者的商業決策問題。"
                     )
                     resp = client.models.generate_content(
-                        model="gemini-2.5-flash",
+                        model=chosen_model,
                         contents=user_prompt,
                         config=types.GenerateContentConfig(
                             system_instruction=system_prompt,
@@ -509,7 +540,7 @@ with tab4:
                             temperature=0.2,
                         ),
                     )
-                    st.success("✨ Google Gemini 2.5 成功調用 BigQuery FastMCP 工具生成即時洞察！")
+                    st.success(f"✨ 成功調用最新模型 **`{chosen_model}`** 結合 BigQuery FastMCP 工具生成即時洞察！")
                     st.markdown(resp.text)
                 except Exception as ex:  # noqa: BLE001
                     st.warning(f"⚠️ 調用 Gemini 失敗（{ex}），自動切換為內建 FastMCP 分析引擎回答：")
