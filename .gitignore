@@ -13,6 +13,11 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+# dlt & local tests
+.dlt/
+*.duckdb
+*.duckdb.wal
+
 # Python
 __pycache__/
 *.py[cod]
