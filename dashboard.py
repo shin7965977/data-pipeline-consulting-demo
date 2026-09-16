@@ -343,7 +343,6 @@ def render_fastmcp_copilot():
 # 4. Sidebar Navigation & Global Filters
 # ==============================================================================
 with st.sidebar:
-    st.image("https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80", use_container_width=True)
     st.title("🛍️ 營運智慧中心")
     st.caption("Serverless ELT Modern Lakehouse")
 
