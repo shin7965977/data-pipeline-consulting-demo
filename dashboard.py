@@ -195,12 +195,12 @@ with st.sidebar:
 
     model_choice = st.selectbox(
         "選擇 Gemini 模型版本",
-        options=["⚡ Auto (自動偵測最新可用 Flash 模型)", "gemini-2.5-flash", "gemini-2.0-flash", "自訂模型名稱..."],
+        options=["⚡ Auto (動態偵測並調用帳號最新可用 Flash 模型)", "gemini-3.6-flash", "gemini-2.5-flash", "自訂模型名稱..."],
         index=0,
-        help="選擇 Auto 時，系統會動態查詢 Google API 獲取最新的通用 Flash 模型，並自動排除無免費額度的特殊模型（如 omni）！",
+        help="選擇 Auto 時，系統會直接動態查詢 Google API 獲取您帳號下最新的 Flash 模型（如 3.6+），版本絕不寫死！",
     )
     if model_choice == "自訂模型名稱...":
-        target_model = st.text_input("輸入自訂模型名稱", value="gemini-2.5-flash")
+        target_model = st.text_input("輸入自訂模型名稱", value="gemini-3.6-flash")
     elif "Auto" in model_choice:
         target_model = "auto"
     else:
@@ -508,45 +508,47 @@ with tab4:
 
                     client = genai.Client(api_key=user_gemini_key)
 
-                    # Dynamic Model Auto-Resolution: Filter for general text models & sort semantically
-                    chosen_model = target_model
-                    if chosen_model == "auto":
-                        try:
-                            import re
+                    import re
 
-                            available = []
-                            for m in client.models.list():
-                                m_name = m.name.replace("models/", "")
-                                # Filter for flash models, exclude omni, vision/video-only, embed, tts
-                                if "flash" in m_name.lower() and not any(
-                                    bad in m_name.lower() for bad in ["omni", "embed", "imagen", "tts", "stt", "realtime"]
-                                ):
-                                    available.append(m_name)
+                    # 1. Dynamically retrieve all active text-capable Flash models for this API key
+                    available = []
+                    try:
+                        for m in client.models.list():
+                            m_name = m.name.replace("models/", "")
+                            if "flash" in m_name.lower() and not any(
+                                bad in m_name.lower()
+                                for bad in ["omni", "embed", "imagen", "tts", "stt", "realtime"]
+                            ):
+                                available.append(m_name)
 
-                            def version_score(name: str) -> float:
-                                nums = re.findall(r"(\d+(?:\.\d+)?)", name)
-                                return float(nums[0]) if nums else 0.0
+                        def version_score(name: str) -> float:
+                            nums = re.findall(r"(\d+(?:\.\d+)?)", name)
+                            return float(nums[0]) if nums else 0.0
 
-                            if available:
-                                available.sort(key=version_score, reverse=True)
-                                chosen_model = available[0]
-                            else:
-                                chosen_model = "gemini-2.5-flash"
-                        except Exception:  # noqa: BLE001
-                            chosen_model = "gemini-2.5-flash"
+                        available.sort(key=version_score, reverse=True)
+                    except Exception:  # noqa: BLE001
+                        available = []
+
+                    # 2. Build candidate cascade list dynamically (never hardcoding deprecated models)
+                    if target_model != "auto" and target_model:
+                        candidate_models = [target_model] + [m for m in available if m != target_model]
+                    else:
+                        candidate_models = available if available else ["gemini-3.6-flash", "gemini-2.5-flash"]
+
+                    chosen_model = candidate_models[0]
 
                     tools = [get_daily_sales_kpi, get_top_products, get_customer_metrics]
                     system_prompt = (
                         "你是一位精通現代數據架構的資深電商分析顧問。"
                         "你可以調用工具查詢 BigQuery platzi_gold 金牌數據（每日銷售 KPI、商品銷量與顧客 LTV）。"
-                        "請以結構化、專業繁體中文並結合具體數據回答使用者的商業決策問題。"
+                        "請以結構化、專業繁體中文並結合具體數據回答使用者的商業決策問題。\n\n"
+                        "【業務範疇約束限制】：\n"
+                        "本助手專屬於『Platzi 零售電商營運分析』。"
+                        "如果使用者的問題與本電商業務（銷售表現、訂單、營收、GMV、商品、顧客、退款、客單價等數據分析）無關"
+                        "（例如政治人物、歷史、演藝娛樂、哲學、生活閒聊或其他非業務領域），你必須直接委婉拒絕回答："
+                        "『抱歉，我是 Platzi 電商營運數據分析顧問，僅能回答與本電商營運指標、銷售狀況、熱銷商品或顧客分析相關之業務問題。對於無關範疇的提問無法提供回答，請提出與電商業務數據相關的問題。』"
+                        "在判定為無關問題時，絕對不要調用查詢工具，也不要輸出不相干的電商數據！"
                     )
-
-                    # Resilience Cascade: If the latest model experiences 503 high demand, fallback gracefully
-                    candidate_models = [chosen_model]
-                    for fallback in ["gemini-2.0-flash", "gemini-1.5-flash"]:
-                        if fallback not in candidate_models:
-                            candidate_models.append(fallback)
 
                     resp = None
                     last_err = None
@@ -568,8 +570,8 @@ with tab4:
                         except Exception as e:  # noqa: BLE001
                             last_err = e
                             err_msg = str(e)
-                            # If high demand (503) or rate limit (429), try next candidate model
-                            if any(k in err_msg for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand"]):
+                            # If transient load error (503), quota (429), or deprecated/not found (404), try next dynamic candidate
+                            if any(k in err_msg for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND", "no longer available", "deprecated"]):
                                 continue
                             raise e
 
@@ -577,49 +579,84 @@ with tab4:
                         raise last_err or RuntimeError("No model response available")
 
                     fallback_notice = (
-                        f"（原選 `{chosen_model}` 伺服器流量過載，已自動降級轉移）"
+                        f"（原選 `{chosen_model}` 暫不可用，已自動轉移）"
                         if used_model != chosen_model
                         else ""
                     )
-                    st.success(f"✨ 成功調用模型 **`{used_model}`** {fallback_notice}結合 BigQuery FastMCP 工具生成即時洞察！")
+                    st.success(f"✨ 成功調用最新模型 **`{used_model}`** {fallback_notice}結合 BigQuery FastMCP 工具生成即時洞察！")
                     st.markdown(resp.text)
                 except Exception as ex:  # noqa: BLE001
                     st.warning(f"⚠️ 調用 Gemini 失敗（{ex}），自動切換為內建 FastMCP 分析引擎回答：")
+                    
+                    # Domain Relevance Guardrail
+                    BUSINESS_KEYWORDS = [
+                        "銷售", "營收", "gmv", "訂單", "商品", "客戶", "ltv", "業績", "退款",
+                        "會員", "暢銷", "買", "賣", "kpi", "vip", "排行", "利潤", "金額",
+                        "單價", "aov", "平台", "電商", "庫存", "品類", "tier", "platinum", "gold", "數據", "指標", "概況"
+                    ]
+                    if not any(kw in user_prompt.lower() for kw in BUSINESS_KEYWORDS):
+                        st.info("ℹ️ 業務邊界約束提醒：")
+                        st.markdown(
+                            f"抱歉，我是專屬的 **Platzi 電商數據分析顧問**。\n\n"
+                            f"您輸入的提問 *「{user_prompt}」* 與本電商營運、銷售績效、商品或顧客等業務數據無關，因此無法提供回答。\n\n"
+                            "💡 **建議您可以提問與業務數據相關之問題，例如：**\n"
+                            "- 📊 *「請問過去一週的整體 GMV 與退款率如何？」*\n"
+                            "- 🏆 *「目前總銷售額排名前三的商品名稱與金額是？」*\n"
+                            "- 💎 *「誰是終身價值最頂級的 Platinum VIP 客戶？」*"
+                        )
+                    else:
+                        kpis = get_daily_sales_kpi(limit=7)
+                        top_prods = get_top_products(limit=3)
+                        vip_custs = get_customer_metrics(tier="Platinum", limit=3)
+                        st.markdown(
+                            f"""
+                            ### 🎯 FastMCP 分析引擎洞察回覆：
+                            **針對提問：** *「{user_prompt}」*
+                            1. **近期財務概況**：GMV 達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質淨營收 **${sum(k['net_revenue'] for k in kpis):,.2f}**，均單價 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}**。
+                            2. **暢銷明星商品**：**{top_prods[0]['product_title']}** 居冠（${top_prods[0]['completed_sales_amount']:,.2f}）。
+                            3. **頂級 VIP 群體**：Platinum 客戶平均累積貢獻 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**（{vip_custs[0]['completed_orders']} 次購買）。
+                            """
+                        )
+            else:
+                # Domain Relevance Guardrail for non-Gemini mode
+                BUSINESS_KEYWORDS = [
+                    "銷售", "營收", "gmv", "訂單", "商品", "客戶", "ltv", "業績", "退款",
+                    "會員", "暢銷", "買", "賣", "kpi", "vip", "排行", "利潤", "金額",
+                    "單價", "aov", "平台", "電商", "庫存", "品類", "tier", "platinum", "gold", "數據", "指標", "概況"
+                ]
+                if not any(kw in user_prompt.lower() for kw in BUSINESS_KEYWORDS):
+                    st.info("ℹ️ 業務邊界約束提醒：")
+                    st.markdown(
+                        f"抱歉，我是專屬的 **Platzi 電商數據分析顧問**。\n\n"
+                        f"您輸入的提問 *「{user_prompt}」* 與本電商營運、銷售績效、商品或顧客等業務數據無關，因此無法提供回答。\n\n"
+                        "💡 **建議您可以提問與業務數據相關之問題，例如：**\n"
+                        "- 📊 *「請問過去一週的整體 GMV 與退款率如何？」*\n"
+                        "- 🏆 *「目前總銷售額排名前三的商品名稱與金額是？」*\n"
+                        "- 💎 *「誰是終身價值最頂級的 Platinum VIP 客戶？」*"
+                    )
+                else:
                     kpis = get_daily_sales_kpi(limit=7)
                     top_prods = get_top_products(limit=3)
                     vip_custs = get_customer_metrics(tier="Platinum", limit=3)
+
+                    st.success("✅ FastMCP 成功擷取 BigQuery Gold 數據！(提示：於左側側邊欄輸入 Gemini API Key 可啟動原生 Gemini 深度推理)")
                     st.markdown(
                         f"""
-                        ### 🎯 FastMCP 分析引擎洞察回覆：
-                        **針對提問：** *「{user_prompt}」*
-                        1. **近期財務概況**：GMV 達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質淨營收 **${sum(k['net_revenue'] for k in kpis):,.2f}**，均單價 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}**。
-                        2. **暢銷明星商品**：**{top_prods[0]['product_title']}** 居冠（${top_prods[0]['completed_sales_amount']:,.2f}）。
-                        3. **頂級 VIP 群體**：Platinum 客戶平均累積貢獻 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**（{vip_custs[0]['completed_orders']} 次購買）。
+                        ### 🎯 AI 商業顧問洞察回覆：
+                        
+                        **針對您的提問：** *「{user_prompt}」*
+                        
+                        依據 Google Cloud BigQuery 最新金牌分析層數據：
+                        1. **財務健康度**：
+                           - 近期 GMV 規模達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質扣除退款後淨營收為 **${sum(k['net_revenue'] for k in kpis):,.2f}**。
+                           - 平均客單價 (AOV) 落在 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}** 左右，平均退款率維持在 **{sum(k['refund_rate'] for k in kpis)/len(kpis)*100:.1f}%** 的健康標準範圍。
+                        
+                        2. **明星主力商品**：
+                           - 目前最熱銷冠軍為 **{top_prods[0]['product_title']}**，累積銷售額高達 **${top_prods[0]['completed_sales_amount']:,.2f}**（共售出 {top_prods[0]['units_sold']} 件）。
+                           - 緊隨其後的是 **{top_prods[1]['product_title']}**（${top_prods[1]['completed_sales_amount']:,.2f}）。
+                        
+                        3. **核心顧客群體**：
+                           - 頂級 **Platinum** 客戶平均貢獻達 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**，購買頻次高達 {vip_custs[0]['completed_orders']} 次。
+                           - 個資保護符合標準：客戶 Email 全數進行 SHA-256 不可逆雜湊，安全合規。
                         """
                     )
-            else:
-                kpis = get_daily_sales_kpi(limit=7)
-                top_prods = get_top_products(limit=3)
-                vip_custs = get_customer_metrics(tier="Platinum", limit=3)
-
-                st.success("✅ FastMCP 成功擷取 BigQuery Gold 數據！(提示：於左側側邊欄輸入 Gemini API Key 可啟動原生 Gemini 2.5 深度推理)")
-                st.markdown(
-                    f"""
-                    ### 🎯 AI 商業顧問洞察回覆：
-                    
-                    **針對您的提問：** *「{user_prompt}」*
-                    
-                    依據 Google Cloud BigQuery 最新金牌分析層數據：
-                    1. **財務健康度**：
-                       - 近期 GMV 規模達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質扣除退款後淨營收為 **${sum(k['net_revenue'] for k in kpis):,.2f}**。
-                       - 平均客單價 (AOV) 落在 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}** 左右，平均退款率維持在 **{sum(k['refund_rate'] for k in kpis)/len(kpis)*100:.1f}%** 的健康標準範圍。
-                    
-                    2. **明星主力商品**：
-                       - 目前最熱銷冠軍為 **{top_prods[0]['product_title']}**，累積銷售額高達 **${top_prods[0]['completed_sales_amount']:,.2f}**（共售出 {top_prods[0]['units_sold']} 件）。
-                       - 緊隨其後的是 **{top_prods[1]['product_title']}**（${top_prods[1]['completed_sales_amount']:,.2f}）。
-                    
-                    3. **核心顧客群體**：
-                       - 頂級 **Platinum** 客戶平均貢獻達 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**，購買頻次高達 {vip_custs[0]['completed_orders']} 次。
-                       - 個資保護符合標準：客戶 Email 全數進行 SHA-256 不可逆雜湊，安全合規。
-                    """
-                )
