@@ -103,42 +103,29 @@ if os.path.exists(KEY_PATH):
 
 @st.cache_data(ttl=300)
 def load_gold_data():
-    """Load analytical Gold marts from BigQuery or fallback to local DuckDB."""
-    try:
-        from google.cloud import bigquery
+    """Load analytical Gold marts strictly and exclusively from Google Cloud BigQuery (platzi_gold)."""
+    from google.cloud import bigquery
 
-        client = bigquery.Client(project=PROJECT_ID)
+    client = bigquery.Client(project=PROJECT_ID)
 
-        df_kpi = client.query(
-            f"SELECT * FROM `{PROJECT_ID}.platzi_gold.gold_daily_sales_kpi` ORDER BY order_date"
-        ).to_dataframe()
-        df_ltv = client.query(
-            f"SELECT * FROM `{PROJECT_ID}.platzi_gold.gold_customer_ltv` ORDER BY lifetime_net_revenue DESC"
-        ).to_dataframe()
-        df_prod = client.query(
-            f"SELECT * FROM `{PROJECT_ID}.platzi_gold.gold_product_performance` ORDER BY completed_sales_amount DESC"
-        ).to_dataframe()
+    df_kpi = client.query(
+        f"SELECT * FROM `{PROJECT_ID}.platzi_gold.gold_daily_sales_kpi` ORDER BY order_date"
+    ).to_dataframe()
+    df_ltv = client.query(
+        f"SELECT * FROM `{PROJECT_ID}.platzi_gold.gold_customer_ltv` ORDER BY lifetime_net_revenue DESC"
+    ).to_dataframe()
+    df_prod = client.query(
+        f"SELECT * FROM `{PROJECT_ID}.platzi_gold.gold_product_performance` ORDER BY completed_sales_amount DESC"
+    ).to_dataframe()
 
-        # Convert Decimals to float if any
-        for df in [df_kpi, df_ltv, df_prod]:
-            for col in df.columns:
-                if df[col].dtype == object and len(df) > 0 and isinstance(df[col].iloc[0], Decimal):
-                    df[col] = df[col].astype(float)
+    # Convert Decimals to float if any
+    for df in [df_kpi, df_ltv, df_prod]:
+        for col in df.columns:
+            if df[col].dtype == object and len(df) > 0 and isinstance(df[col].iloc[0], Decimal):
+                df[col] = df[col].astype(float)
 
-        source_info = f"Google Cloud BigQuery ({PROJECT_ID}.platzi_gold)"
-        return df_kpi, df_ltv, df_prod, source_info
-    except Exception as e:
-        # Fallback to local DuckDB if BigQuery is offline
-        import duckdb
-
-        db_path = "test_pipeline.duckdb"
-        if os.path.exists(db_path):
-            con = duckdb.connect(db_path)
-            df_kpi = con.execute("SELECT * FROM gold_daily_sales_kpi ORDER BY order_date").df()
-            df_ltv = con.execute("SELECT * FROM gold_customer_ltv ORDER BY lifetime_net_revenue DESC").df()
-            df_prod = con.execute("SELECT * FROM gold_product_performance ORDER BY completed_sales_amount DESC").df()
-            return df_kpi, df_ltv, df_prod, f"Local DuckDB ({db_path})"
-        raise RuntimeError(f"Failed to load BigQuery data and local DuckDB not found: {e}") from e
+    source_info = f"Google Cloud BigQuery ({PROJECT_ID}.platzi_gold)"
+    return df_kpi, df_ltv, df_prod, source_info
 
 
 # Load datasets
@@ -195,31 +182,40 @@ with st.sidebar:
         filtered_kpi = df_kpi
 
     # BigQuery Gold Data Export / Download Section
-    st.markdown("#### 📥 下載 BigQuery 金牌數據")
+    st.markdown("#### 📥 下載 BigQuery 金牌完整數據")
     export_table = st.selectbox(
-        "選擇要下載的資料集",
-        options=["📅 每日銷售 KPI (依所選日期區間)", "💎 客戶終身價值 (LTV 全量)", "🏆 商品銷售排行 (全量)"],
+        "選擇要下載的 BigQuery 金牌資料表",
+        options=[
+            "📅 每日銷售 KPI (gold_daily_sales_kpi - 依所選區間)",
+            "📅 每日銷售 KPI (gold_daily_sales_kpi - 完整全量)",
+            "💎 客戶終身價值 (gold_customer_ltv - 完整全量)",
+            "🏆 商品銷售排行 (gold_product_performance - 完整全量)",
+        ],
     )
-    if "每日銷售" in export_table:
+    if "依所選區間" in export_table:
         export_df = filtered_kpi
         file_suffix = f"_{start_d}_to_{end_d}" if "start_d" in locals() and "end_d" in locals() else ""
         dl_filename = f"bigquery_gold_daily_kpi{file_suffix}.csv"
-        dl_label = f"下載每日 KPI ({len(export_df)} 筆)"
-    elif "客戶終身價值" in export_table:
+        dl_label = f"下載區間 KPI ({len(export_df)} 筆)"
+    elif "gold_daily_sales_kpi - 完整全量" in export_table:
+        export_df = df_kpi
+        dl_filename = "bigquery_gold_daily_sales_kpi_full.csv"
+        dl_label = f"下載完整每日 KPI ({len(export_df)} 筆)"
+    elif "gold_customer_ltv" in export_table:
         export_df = df_ltv
-        dl_filename = "bigquery_gold_customer_ltv.csv"
-        dl_label = f"下載客戶 LTV ({len(export_df)} 筆)"
+        dl_filename = "bigquery_gold_customer_ltv_full.csv"
+        dl_label = f"下載完整客戶 LTV ({len(export_df)} 筆)"
     else:
         export_df = df_prod
-        dl_filename = "bigquery_gold_product_performance.csv"
-        dl_label = f"下載商品排行 ({len(export_df)} 筆)"
+        dl_filename = "bigquery_gold_product_performance_full.csv"
+        dl_label = f"下載完整商品排行 ({len(export_df)} 筆)"
 
     st.download_button(
         label=f"💾 {dl_label} (CSV)",
         data=export_df.to_csv(index=False).encode("utf-8-sig"),
         file_name=dl_filename,
         mime="text/csv",
-        help=f"從 Google Cloud BigQuery ({PROJECT_ID}.platzi_gold) 下載真實數據 CSV 檔案",
+        help=f"完全直接從 Google Cloud BigQuery ({PROJECT_ID}.platzi_gold) 匯出之完整金牌數據",
         use_container_width=True,
     )
 
@@ -235,132 +231,131 @@ with st.sidebar:
     target_model = "auto"
 
     st.markdown("---")
+    st.markdown("### 🖥️ 介面排版設定")
+    show_ai_panel = st.toggle("🤖 滿版右側 FastMCP 顧問", value=True, help="於網頁右側展開或收合完整滿版 AI 營運顧問面板")
+    if show_ai_panel:
+        ai_width = st.select_slider("右側顧問寬度", options=["小 (25%)", "標準 (32%)", "寬闊 (40%)"], value="標準 (32%)")
+    else:
+        ai_width = "0%"
+
+    st.markdown("---")
     st.markdown("### 🏛️ 架構特性")
     st.markdown("- ⚡ **0 閒置成本** (Cloud Run Jobs)")
     st.markdown("- 🔒 **全自動 PII 雜湊** (SHA-256)")
     st.markdown("- 🤖 **FastMCP / Gemini Tool Calling**")
 
 # ==============================================================================
-# 4. Main Executive Header & Top KPI Cards
+# 4. Main Two-Column Layout (Left: Analytics Workspace, Right: Full-Height FastMCP Copilot)
 # ==============================================================================
-header_col1, header_col2 = st.columns([3, 1])
-with header_col1:
-    st.title("E-Commerce Retail Analytics Dashboard")
-    st.markdown("基於 **Platzi Store API + dlt + GCP BigQuery Medallion + dbt-core** 的現代數據湖倉視覺化總覽")
-
-with header_col2:
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div style="text-align: right;">
-            <div class="status-badge">
-                <div class="pulse-dot"></div>
-                Live BigQuery Connected
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-st.markdown("---")
-
-# Aggregate High-Level Metrics
-total_gmv = filtered_kpi["gmv"].sum()
-total_net_rev = filtered_kpi["net_revenue"].sum()
-total_orders = filtered_kpi["total_orders"].sum()
-completed_orders = filtered_kpi["completed_orders"].sum()
-cancelled_orders = filtered_kpi["cancelled_orders"].sum()
-refunded_orders = filtered_kpi["refunded_orders"].sum()
-avg_aov = filtered_kpi["aov"].mean()
-cancel_rate = (cancelled_orders / total_orders * 100) if total_orders > 0 else 0
-refund_rate = (refunded_orders / total_orders * 100) if total_orders > 0 else 0
-
-# 4 Executive KPI Cards
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">總銷售額 (GMV)</div>
-            <div class="metric-value">${total_gmv:,.2f}</div>
-            <div class="metric-subtext">累積總銷售訂單金流</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with c2:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">淨實質營收 (Net Revenue)</div>
-            <div class="metric-value">${total_net_rev:,.2f}</div>
-            <div class="metric-subtext">已扣除退款與折扣</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with c3:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">平均客單價 (AOV)</div>
-            <div class="metric-value">${avg_aov:,.2f}</div>
-            <div class="metric-subtext">成交訂單均額</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with c4:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">訂單退款率 / 取消率</div>
-            <div class="metric-value">{refund_rate:.1f}% <span style="font-size:1rem;color:#94a3b8;">/ {cancel_rate:.1f}%</span></div>
-            <div class="metric-subtext warning">退款 {refunded_orders} 單 / 取消 {cancelled_orders} 單</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-# ==============================================================================
-# 5. Core Analytical View & Side-by-Side FastMCP Copilot
-# ==============================================================================
-# Layout Control Toolbar
-tbar1, tbar2, tbar3 = st.columns([2.2, 1.3, 1.5])
-with tbar2:
-    show_ai_panel = st.toggle("🤖 右側 FastMCP 顧問", value=True, help="可自由切換是否在右側顯示 AI 數據對話顧問")
-with tbar3:
-    if show_ai_panel:
-        ai_width = st.select_slider("顧問面板寬度", options=["小 (25%)", "標準 (35%)", "寬闊 (45%)"], value="標準 (35%)")
-    else:
-        ai_width = "0%"
-
 if show_ai_panel:
     if ai_width == "小 (25%)":
-        col_main, col_ai = st.columns([75, 25], gap="medium")
-    elif ai_width == "寬闊 (45%)":
-        col_main, col_ai = st.columns([55, 45], gap="medium")
-    else:
-        col_main, col_ai = st.columns([65, 35], gap="medium")
-
-    tab1, tab2, tab3 = col_main.tabs([
-        "📈 營收走勢與轉換漏斗",
-        "👥 客戶終身價值 (LTV) 分群",
-        "🏆 熱銷商品與類別排行",
-    ])
-    tab4 = None
+        col_main, col_ai = st.columns([75, 25], gap="large")
+    elif ai_width == "寬闊 (40%)":
+        col_main, col_ai = st.columns([60, 40], gap="large")
+    else:  # 標準 (32%)
+        col_main, col_ai = st.columns([68, 32], gap="large")
 else:
     col_main = st.container()
     col_ai = None
-    tab1, tab2, tab3, tab4 = col_main.tabs([
-        "📈 營收走勢與轉換漏斗",
-        "👥 客戶終身價值 (LTV) 分群",
-        "🏆 熱銷商品與類別排行",
-        "🤖 FastMCP AI 數據對話",
-    ])
+
+with col_main:
+    header_col1, header_col2 = st.columns([3, 1])
+    with header_col1:
+        st.title("E-Commerce Retail Analytics Dashboard")
+        st.markdown("基於 **Platzi Store API + dlt + GCP BigQuery Medallion + dbt-core** 的現代數據湖倉視覺化總覽")
+    with header_col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div style="text-align: right;">
+                <div class="status-badge">
+                    <div class="pulse-dot"></div>
+                    Live BigQuery Connected
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("---")
+
+    # Aggregate High-Level Metrics
+    total_gmv = filtered_kpi["gmv"].sum()
+    total_net_rev = filtered_kpi["net_revenue"].sum()
+    total_orders = filtered_kpi["total_orders"].sum()
+    completed_orders = filtered_kpi["completed_orders"].sum()
+    cancelled_orders = filtered_kpi["cancelled_orders"].sum()
+    refunded_orders = filtered_kpi["refunded_orders"].sum()
+    avg_aov = filtered_kpi["aov"].mean()
+    cancel_rate = (cancelled_orders / total_orders * 100) if total_orders > 0 else 0
+    refund_rate = (refunded_orders / total_orders * 100) if total_orders > 0 else 0
+
+    # 4 Executive KPI Cards
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-label">總銷售額 (GMV)</div>
+                <div class="metric-value">${total_gmv:,.2f}</div>
+                <div class="metric-subtext">累積總銷售訂單金流</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with c2:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-label">淨實質營收 (Net Revenue)</div>
+                <div class="metric-value">${total_net_rev:,.2f}</div>
+                <div class="metric-subtext">已扣除退款與折扣</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with c3:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-label">平均客單價 (AOV)</div>
+                <div class="metric-value">${avg_aov:,.2f}</div>
+                <div class="metric-subtext">成交訂單均額</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with c4:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-label">訂單退款率 / 取消率</div>
+                <div class="metric-value">{refund_rate:.1f}% <span style="font-size:1rem;color:#94a3b8;">/ {cancel_rate:.1f}%</span></div>
+                <div class="metric-subtext warning">退款 {refunded_orders} 單 / 取消 {cancelled_orders} 單</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("---")
+
+    if show_ai_panel:
+        tab1, tab2, tab3 = st.tabs([
+            "📈 營收走勢與轉換漏斗",
+            "👥 客戶終身價值 (LTV) 分群",
+            "🏆 熱銷商品與類別排行",
+        ])
+        tab4 = None
+    else:
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "📈 營收走勢與轉換漏斗",
+            "👥 客戶終身價值 (LTV) 分群",
+            "🏆 熱銷商品與類別排行",
+            "🤖 FastMCP AI 數據對話",
+        ])
 
 # ------------------------------------------------------------------------------
 # TAB 1: 每日營收走勢與轉換漏斗
@@ -528,8 +523,22 @@ with tab3:
 # FastMCP AI Copilot Component (Right-Side Resizable Dock or Full Tab)
 # ------------------------------------------------------------------------------
 def render_fastmcp_copilot(user_gemini_key: str):
-    st.subheader("🤖 FastMCP 智慧營運顧問")
-    st.caption("透過自然語言對話直連 BigQuery `platzi_gold` 金牌層，支援動態 Tool Calling 與業務安全護欄。")
+    header_ai1, header_ai2 = st.columns([3, 1])
+    with header_ai1:
+        st.markdown("### 🤖 FastMCP 營運顧問")
+    with header_ai2:
+        st.markdown(
+            """
+            <div style="text-align: right; padding-top: 5px;">
+                <span class="status-badge" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;">
+                    <span class="pulse-dot"></span> Live
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    st.caption("🟢 直連 **Google Cloud BigQuery (de-consulting-508822.platzi_gold)**")
+    st.caption("🔒 全自動 PII 脫敏，支援自然語言即時數據分析與業務安全護欄。")
 
     st.markdown("**⚡ 快速業務提問快捷鍵：**")
     q_col1, q_col2, q_col3 = st.columns(3)
