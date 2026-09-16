@@ -26,42 +26,44 @@ st.markdown(
         font-family: 'Inter', sans-serif;
     }
     
-    /* Metric Cards */
+    /* Metric Cards - Adaptive to Light and Dark Mode */
     .metric-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
+        background: var(--secondary-background-color, #ffffff);
+        border: 1px solid rgba(128, 128, 128, 0.2);
+        border-radius: 14px;
         padding: 1.25rem 1.5rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
         margin-bottom: 1rem;
-        transition: transform 0.2s ease, border-color 0.2s ease;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .metric-card:hover {
         transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.18);
         border-color: rgba(99, 102, 241, 0.4);
     }
     .metric-label {
         font-size: 0.825rem;
-        font-weight: 500;
-        color: #94a3b8;
+        font-weight: 600;
+        color: var(--text-color, #475569);
+        opacity: 0.75;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.35rem;
     }
     .metric-value {
-        font-size: 1.85rem;
-        font-weight: 700;
-        color: #f8fafc;
+        font-size: 2.1rem;
+        font-weight: 800;
+        color: var(--text-color, #0f172a) !important;
         margin-bottom: 0.25rem;
+        letter-spacing: -0.02em;
     }
     .metric-subtext {
-        font-size: 0.775rem;
+        font-size: 0.785rem;
         color: #10b981;
-        font-weight: 500;
+        font-weight: 600;
     }
     .metric-subtext.warning {
-        color: #f59e0b;
+        color: #d97706;
     }
     
     /* Header Badge */
