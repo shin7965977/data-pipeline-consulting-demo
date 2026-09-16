@@ -1,0 +1,7 @@
+# Copy this file to terraform.tfvars and fill in your GCP project details:
+# cp terraform.tfvars.example terraform.tfvars
+
+project_id                 = "your-gcp-project-id"
+region                     = "asia-east1" # Options: asia-east1 (Taiwan), us-central1, etc.
+environment                = "prod"
+delete_contents_on_destroy = false # Set to true only in temporary dev/demo environments
