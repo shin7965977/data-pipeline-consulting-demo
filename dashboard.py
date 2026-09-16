@@ -166,23 +166,36 @@ with st.sidebar:
     st.subheader("📅 時間區間篩選")
     selected_dates = st.date_input(
         "選擇日期範圍",
-        value=[min_date, max_date],
+        value=(min_date, max_date),
         min_value=min_date,
         max_value=max_date,
     )
 
-    if isinstance(selected_dates, list) and len(selected_dates) == 2:
+    if isinstance(selected_dates, (list, tuple)) and len(selected_dates) == 2:
         start_d, end_d = selected_dates
         mask = (df_kpi["order_date"].dt.date >= start_d) & (df_kpi["order_date"].dt.date <= end_d)
+        filtered_kpi = df_kpi.loc[mask]
+    elif isinstance(selected_dates, (list, tuple)) and len(selected_dates) == 1:
+        start_d = selected_dates[0]
+        mask = df_kpi["order_date"].dt.date >= start_d
         filtered_kpi = df_kpi.loc[mask]
     else:
         filtered_kpi = df_kpi
 
     st.markdown("---")
+    st.markdown("### 🤖 Gemini AI 設定")
+    user_gemini_key = st.text_input(
+        "輸入 Gemini API Key (選填)",
+        type="password",
+        value=os.getenv("GEMINI_API_KEY", ""),
+        help="輸入後將啟用 Google Gemini 2.5 原生對話與 Function Calling，直接與 BigQuery 進行 AI 互動！",
+    )
+
+    st.markdown("---")
     st.markdown("### 🏛️ 架構特性")
     st.markdown("- ⚡ **0 閒置成本** (Cloud Run Jobs)")
     st.markdown("- 🔒 **全自動 PII 雜湊** (SHA-256)")
-    st.markdown("- 🤖 **FastMCP AI Tool 整合**")
+    st.markdown("- 🤖 **FastMCP / Gemini Tool Calling**")
 
 # ==============================================================================
 # 4. Main Executive Header & Top KPI Cards
@@ -466,36 +479,73 @@ with tab4:
 
     if st.button("送出提問 🚀", type="primary"):
         with st.spinner("AI 正在透過 FastMCP 查詢 BigQuery 金牌資料集..."):
-            # Execute analysis using our FastMCP analytical functions
             from mcp_server.server import (
                 get_customer_metrics,
                 get_daily_sales_kpi,
                 get_top_products,
             )
 
-            kpis = get_daily_sales_kpi(limit=7)
-            top_prods = get_top_products(limit=3)
-            vip_custs = get_customer_metrics(tier="Platinum", limit=3)
+            # Option A: Real Google Gemini API with Tool Calling (Function Calling)
+            if user_gemini_key:
+                try:
+                    from google import genai
+                    from google.genai import types
 
-            st.success("✅ FastMCP 成功擷取 BigQuery Gold 資料！")
-            
-            st.markdown(
-                f"""
-                ### 🎯 AI 商業顧問洞察回覆：
-                
-                **針對您的提問：** *「{user_prompt}」*
-                
-                依據 Google Cloud BigQuery 最新金牌分析層數據：
-                1. **財務健康度**：
-                   - 近期 GMV 規模達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質扣除退款後淨營收為 **${sum(k['net_revenue'] for k in kpis):,.2f}**。
-                   - 平均客單價 (AOV) 落在 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}** 左右，平均退款率維持在 **{sum(k['refund_rate'] for k in kpis)/len(kpis)*100:.1f}%** 的健康標準範圍。
-                
-                2. **明星主力商品**：
-                   - 目前最熱銷冠軍為 **{top_prods[0]['product_title']}**，累積銷售額高達 **${top_prods[0]['completed_sales_amount']:,.2f}**（共售出 {top_prods[0]['units_sold']} 件）。
-                   - 緊隨其後的是 **{top_prods[1]['product_title']}**（${top_prods[1]['completed_sales_amount']:,.2f}）。
-                
-                3. **核心顧客群體**：
-                   - 頂級 **Platinum** 客戶平均貢獻達 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**，購買頻次高達 {vip_custs[0]['completed_orders']} 次。
-                   - 個資保護符合標準：客戶 Email 全數進行 SHA-256 不可逆雜湊，安全合規。
-                """
-            )
+                    client = genai.Client(api_key=user_gemini_key)
+                    tools = [get_daily_sales_kpi, get_top_products, get_customer_metrics]
+                    system_prompt = (
+                        "你是一位精通現代數據架構的資深電商分析顧問。"
+                        "你可以調用工具查詢 BigQuery platzi_gold 金牌數據（每日銷售 KPI、商品銷量與顧客 LTV）。"
+                        "請以結構化、專業繁體中文並結合具體數據回答使用者的商業決策問題。"
+                    )
+                    resp = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=user_prompt,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_prompt,
+                            tools=tools,
+                            temperature=0.2,
+                        ),
+                    )
+                    st.success("✨ Google Gemini 2.5 成功調用 BigQuery FastMCP 工具生成即時洞察！")
+                    st.markdown(resp.text)
+                except Exception as ex:  # noqa: BLE001
+                    st.warning(f"⚠️ 調用 Gemini 失敗（{ex}），自動切換為內建 FastMCP 分析引擎回答：")
+                    kpis = get_daily_sales_kpi(limit=7)
+                    top_prods = get_top_products(limit=3)
+                    vip_custs = get_customer_metrics(tier="Platinum", limit=3)
+                    st.markdown(
+                        f"""
+                        ### 🎯 FastMCP 分析引擎洞察回覆：
+                        **針對提問：** *「{user_prompt}」*
+                        1. **近期財務概況**：GMV 達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質淨營收 **${sum(k['net_revenue'] for k in kpis):,.2f}**，均單價 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}**。
+                        2. **暢銷明星商品**：**{top_prods[0]['product_title']}** 居冠（${top_prods[0]['completed_sales_amount']:,.2f}）。
+                        3. **頂級 VIP 群體**：Platinum 客戶平均累積貢獻 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**（{vip_custs[0]['completed_orders']} 次購買）。
+                        """
+                    )
+            else:
+                kpis = get_daily_sales_kpi(limit=7)
+                top_prods = get_top_products(limit=3)
+                vip_custs = get_customer_metrics(tier="Platinum", limit=3)
+
+                st.success("✅ FastMCP 成功擷取 BigQuery Gold 數據！(提示：於左側側邊欄輸入 Gemini API Key 可啟動原生 Gemini 2.5 深度推理)")
+                st.markdown(
+                    f"""
+                    ### 🎯 AI 商業顧問洞察回覆：
+                    
+                    **針對您的提問：** *「{user_prompt}」*
+                    
+                    依據 Google Cloud BigQuery 最新金牌分析層數據：
+                    1. **財務健康度**：
+                       - 近期 GMV 規模達 **${sum(k['gmv'] for k in kpis):,.2f}**，實質扣除退款後淨營收為 **${sum(k['net_revenue'] for k in kpis):,.2f}**。
+                       - 平均客單價 (AOV) 落在 **${sum(k['aov'] for k in kpis)/len(kpis):,.2f}** 左右，平均退款率維持在 **{sum(k['refund_rate'] for k in kpis)/len(kpis)*100:.1f}%** 的健康標準範圍。
+                    
+                    2. **明星主力商品**：
+                       - 目前最熱銷冠軍為 **{top_prods[0]['product_title']}**，累積銷售額高達 **${top_prods[0]['completed_sales_amount']:,.2f}**（共售出 {top_prods[0]['units_sold']} 件）。
+                       - 緊隨其後的是 **{top_prods[1]['product_title']}**（${top_prods[1]['completed_sales_amount']:,.2f}）。
+                    
+                    3. **核心顧客群體**：
+                       - 頂級 **Platinum** 客戶平均貢獻達 **${vip_custs[0]['lifetime_net_revenue']:,.2f}**，購買頻次高達 {vip_custs[0]['completed_orders']} 次。
+                       - 個資保護符合標準：客戶 Email 全數進行 SHA-256 不可逆雜湊，安全合規。
+                    """
+                )
