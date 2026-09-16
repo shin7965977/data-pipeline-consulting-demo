@@ -87,25 +87,6 @@ st.markdown(
         box-shadow: 0 0 10px #10b981;
     }
     
-    /* Right Fixed Sidebar Rail (mirrors left sidebar) */
-    .right-sidebar-rail {
-        position: sticky;
-        top: 2.5rem;
-        max-height: calc(100vh - 4rem);
-        overflow-y: auto;
-        background: var(--secondary-background-color, #1e293b);
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        border-radius: 16px;
-        padding: 1.25rem 1.4rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    .right-sidebar-rail::-webkit-scrollbar {
-        width: 6px;
-    }
-    .right-sidebar-rail::-webkit-scrollbar-thumb {
-        background: rgba(128, 128, 128, 0.3);
-        border-radius: 4px;
-    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -241,11 +222,18 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 🖥️ 介面排版設定")
-    show_ai_panel = st.toggle("🤖 滿版右側 FastMCP 顧問", value=True, help="於網頁右側展開或收合完整滿版 AI 營運顧問面板")
+    show_ai_panel = st.toggle("🤖 固定右側 FastMCP 顧問", value=True, help="於網頁右側展開或收合獨立固定的 AI 營運顧問側邊欄（不隨儀表板捲動）")
     if show_ai_panel:
-        ai_width = st.select_slider("右側顧問寬度", options=["小 (25%)", "標準 (32%)", "寬闊 (40%)"], value="標準 (32%)")
+        ai_width = st.select_slider("右側顧問寬度", options=["精簡 (340px)", "標準 (400px)", "寬闊 (480px)"], value="標準 (400px)")
+        width_map = {
+            "精簡 (340px)": 340,
+            "標準 (400px)": 400,
+            "寬闊 (480px)": 480,
+        }
+        ai_width_px = width_map.get(ai_width, 400)
     else:
-        ai_width = "0%"
+        ai_width = "0px"
+        ai_width_px = 0
 
     st.markdown("---")
     st.markdown("### 🏛️ 架構特性")
@@ -254,15 +242,76 @@ with st.sidebar:
     st.markdown("- 🤖 **FastMCP / Gemini Tool Calling**")
 
 # ==============================================================================
-# 4. Main Two-Column Layout (Left: Analytics Workspace, Right: Full-Height FastMCP Copilot)
+# 4. Main Two-Column Layout (Left: Analytics Workspace, Right: True Fixed FastMCP Copilot)
 # ==============================================================================
 if show_ai_panel:
-    if ai_width == "小 (25%)":
-        col_main, col_ai = st.columns([75, 25], gap="large")
-    elif ai_width == "寬闊 (40%)":
-        col_main, col_ai = st.columns([60, 40], gap="large")
-    else:  # 標準 (32%)
-        col_main, col_ai = st.columns([68, 32], gap="large")
+    st.markdown(
+        f"""
+        <style>
+        /* Fixed Right Sidebar for FastMCP Copilot */
+        div[data-testid="column"]:has(#right-copilot-panel) {{
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: {ai_width_px}px !important;
+            max-width: {ai_width_px}px !important;
+            min-width: {ai_width_px}px !important;
+            height: 100vh !important;
+            background-color: var(--secondary-background-color, #1e2530) !important;
+            border-left: 1px solid rgba(128, 128, 128, 0.22) !important;
+            padding: 3.5rem 1.4rem 2.5rem 1.4rem !important;
+            overflow-y: auto !important;
+            z-index: 999 !important;
+            box-shadow: -4px 0 25px rgba(0, 0, 0, 0.12) !important;
+        }}
+        
+        div[data-testid="column"]:has(#right-copilot-panel) > div {{
+            width: 100% !important;
+        }}
+
+        div[data-testid="column"]:has(#right-copilot-panel)::-webkit-scrollbar {{
+            width: 6px;
+        }}
+        div[data-testid="column"]:has(#right-copilot-panel)::-webkit-scrollbar-track {{
+            background: transparent;
+        }}
+        div[data-testid="column"]:has(#right-copilot-panel)::-webkit-scrollbar-thumb {{
+            background: rgba(128, 128, 128, 0.3);
+            border-radius: 4px;
+        }}
+        div[data-testid="column"]:has(#right-copilot-panel)::-webkit-scrollbar-thumb:hover {{
+            background: rgba(128, 128, 128, 0.5);
+        }}
+
+        /* Decouple main content scroll from right sidebar */
+        .main .block-container {{
+            max-width: 100% !important;
+            padding-right: calc({ai_width_px}px + 2.5rem) !important;
+            padding-left: 2rem !important;
+            padding-top: 3.5rem !important;
+        }}
+
+        /* Ensure main content column fills the remaining dashboard width */
+        div[data-testid="stHorizontalBlock"]:has(#right-copilot-panel) > div[data-testid="column"]:first-child {{
+            flex: 1 1 100% !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }}
+
+        /* Sidebar and Copilot Top Banners */
+        section[data-testid="stSidebar"] img,
+        div[data-testid="column"]:has(#right-copilot-panel) img {{
+            border-radius: 12px !important;
+            object-fit: cover !important;
+            max-height: 140px !important;
+            margin-bottom: 0.5rem !important;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    col_main, col_ai = st.columns([100, 1])
 else:
     col_main = st.container()
     col_ai = None
@@ -732,7 +781,7 @@ def render_fastmcp_copilot():
                     top_prods = get_top_products(limit=3)
                     vip_custs = get_customer_metrics(tier="Platinum", limit=3)
 
-                    st.success("✅ FastMCP 成功擷取 BigQuery Gold 數據！(提示：於左側側邊欄輸入 Gemini API Key 可啟動原生 Gemini 深度推理)")
+                    st.success("✅ FastMCP 成功擷取 BigQuery Gold 數據！(提示：於上方「🔑 Gemini AI 設定」輸入 API Key 可啟動原生 Gemini 深度推理)")
                     st.markdown(
                         f"""
                         ### 🎯 AI 商業顧問洞察回覆：
@@ -757,9 +806,8 @@ def render_fastmcp_copilot():
 # Render FastMCP Copilot in the designated location
 if col_ai is not None:
     with col_ai:
-        st.markdown('<div class="right-sidebar-rail">', unsafe_allow_html=True)
+        st.markdown('<div id="right-copilot-panel"></div>', unsafe_allow_html=True)
         render_fastmcp_copilot()
-        st.markdown('</div>', unsafe_allow_html=True)
 elif tab4 is not None:
     with tab4:
         render_fastmcp_copilot()
