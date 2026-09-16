@@ -64,3 +64,7 @@ Thumbs.db
 *credentials*.json
 *service_account*.json
 gcp-key.json
+
+# Elementary Reports
+elementary_report.html
+

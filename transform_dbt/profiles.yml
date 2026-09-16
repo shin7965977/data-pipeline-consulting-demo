@@ -1,5 +1,5 @@
-platzi_profile:
-  target: "{{ env_var('DBT_TARGET', 'duckdb') }}"
+elementary:
+  target: "{{ env_var('DBT_TARGET', 'bigquery') }}"
   outputs:
     bigquery:
       type: bigquery
@@ -9,7 +9,25 @@ platzi_profile:
       threads: 4
       timeout_seconds: 300
       location: "{{ env_var('GCP_REGION', 'US') }}"
-      keyfile: "{{ env_var('GCP_KEYFILE', env_var('GOOGLE_APPLICATION_CREDENTIALS', 'gcp-key.json')) }}"
+      keyfile: "{{ env_var('GCP_KEYFILE', env_var('GOOGLE_APPLICATION_CREDENTIALS', 'C:/Users/shin7/Downloads/CV/data-pipeline-consulting-demo/gcp-key.json')) }}"
+
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('DBT_DUCKDB_PATH', 'local_warehouse.duckdb') }}"
+      threads: 2
+
+platzi_profile:
+  target: "{{ env_var('DBT_TARGET', 'bigquery') }}"
+  outputs:
+    bigquery:
+      type: bigquery
+      method: "{{ env_var('DBT_BQ_METHOD', 'service-account') }}" # 'service-account' or 'oauth'
+      project: "{{ env_var('GCP_PROJECT_ID', 'de-consulting-508822') }}"
+      dataset: "{{ env_var('DBT_BQ_DATASET', 'platzi_silver') }}"
+      threads: 4
+      timeout_seconds: 300
+      location: "{{ env_var('GCP_REGION', 'US') }}"
+      keyfile: "{{ env_var('GCP_KEYFILE', env_var('GOOGLE_APPLICATION_CREDENTIALS', 'C:/Users/shin7/Downloads/CV/data-pipeline-consulting-demo/gcp-key.json')) }}"
 
     duckdb:
       type: duckdb
