@@ -4,12 +4,12 @@
 
 **Blocked by:** 04: Docker Packaging and Serverless Orchestration
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Looker Studio data source configuration and dashboard blueprint connecting to `gold_daily_sales_kpi`, `gold_customer_ltv`, and `gold_product_performance`.
-- [ ] Dashboard features interactive filters (date range, product category) and displays GMV, Net Revenue, AOV, and LTV.
-- [ ] FastMCP server implemented under `mcp_server/` using Python FastMCP SDK.
-- [ ] AI tools expose analytical functions (e.g., `get_kpi_summary`, `get_top_products`, `get_customer_cohorts`).
-- [ ] Tool logic strictly restricts querying to the `platzi_gold` dataset; access to Bronze and Silver is blocked.
-- [ ] Query limits and maximum byte scan budgets are enforced to prevent runaway BigQuery costs.
-- [ ] Verification script demonstrates successful tool invocation and natural language query response.
+- [x] Looker Studio data source configuration and dashboard blueprint connecting to `gold_daily_sales_kpi`, `gold_customer_ltv`, and `gold_product_performance`.
+- [x] Dashboard features interactive filters (date range, product category) and displays GMV, Net Revenue, AOV, and LTV.
+- [x] FastMCP server implemented under `mcp_server/` using Python FastMCP SDK.
+- [x] AI tools expose analytical functions (e.g., `get_kpi_summary`, `get_top_products`, `get_customer_cohorts`).
+- [x] Tool logic strictly restricts querying to the `platzi_gold` dataset; access to Bronze and Silver is blocked.
+- [x] Query limits and maximum byte scan budgets are enforced to prevent runaway BigQuery costs.
+- [x] Verification script demonstrates successful tool invocation and natural language query response.

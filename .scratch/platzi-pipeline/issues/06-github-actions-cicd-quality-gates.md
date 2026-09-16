@@ -4,11 +4,11 @@
 
 **Blocked by:** 04: Docker Packaging and Serverless Orchestration
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] GitHub Actions workflow file `.github/workflows/ci.yml` configured to trigger on pull requests and pushes to `main`.
-- [ ] Ruff configuration and CI step enforcing Python formatting and lint rules.
-- [ ] SQLFluff configuration (`.sqlfluff`) and CI step validating dbt SQL models against best practices.
-- [ ] Pytest suite and CI step verifying simulator state machine logic, discount calculations, and Canonical Schema contracts.
-- [ ] README badges and workflow status reporting configured.
-- [ ] Entire test suite passes in a clean GitHub Actions runner environment.
+- [x] GitHub Actions workflow file `.github/workflows/ci.yml` configured to trigger on pull requests and pushes to `main`.
+- [x] Ruff configuration and CI step enforcing Python formatting and lint rules.
+- [x] SQLFluff configuration (`.sqlfluff`) and CI step validating dbt SQL models against best practices.
+- [x] Pytest suite and CI step verifying simulator state machine logic, discount calculations, and Canonical Schema contracts.
+- [x] README badges and workflow status reporting configured.
+- [x] Entire test suite passes in a clean GitHub Actions runner environment.

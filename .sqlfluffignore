@@ -1,0 +1,5 @@
+target/
+dbt_packages/
+.venv/
+.dlt/
+local_data/
