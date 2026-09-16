@@ -86,6 +86,26 @@ st.markdown(
         border-radius: 50%;
         box-shadow: 0 0 10px #10b981;
     }
+    
+    /* Right Fixed Sidebar Rail (mirrors left sidebar) */
+    .right-sidebar-rail {
+        position: sticky;
+        top: 2.5rem;
+        max-height: calc(100vh - 4rem);
+        overflow-y: auto;
+        background: var(--secondary-background-color, #1e293b);
+        border: 1px solid rgba(128, 128, 128, 0.2);
+        border-radius: 16px;
+        padding: 1.25rem 1.4rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    .right-sidebar-rail::-webkit-scrollbar {
+        width: 6px;
+    }
+    .right-sidebar-rail::-webkit-scrollbar-thumb {
+        background: rgba(128, 128, 128, 0.3);
+        border-radius: 4px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -186,29 +206,29 @@ with st.sidebar:
     export_table = st.selectbox(
         "選擇要下載的 BigQuery 金牌資料表",
         options=[
-            "📅 每日銷售 KPI (gold_daily_sales_kpi - 依所選區間)",
-            "📅 每日銷售 KPI (gold_daily_sales_kpi - 完整全量)",
-            "💎 客戶終身價值 (gold_customer_ltv - 完整全量)",
-            "🏆 商品銷售排行 (gold_product_performance - 完整全量)",
+            "📅 依所選日期區間 (KPI)",
+            "📊 完整歷史每日銷售 (全量)",
+            "💎 客戶終身價值 LTV (全量)",
+            "🏆 熱銷商品業績排行 (全量)",
         ],
     )
-    if "依所選區間" in export_table:
+    if "所選日期區間" in export_table:
         export_df = filtered_kpi
         file_suffix = f"_{start_d}_to_{end_d}" if "start_d" in locals() and "end_d" in locals() else ""
         dl_filename = f"bigquery_gold_daily_kpi{file_suffix}.csv"
         dl_label = f"下載區間 KPI ({len(export_df)} 筆)"
-    elif "gold_daily_sales_kpi - 完整全量" in export_table:
+    elif "完整歷史每日銷售" in export_table:
         export_df = df_kpi
         dl_filename = "bigquery_gold_daily_sales_kpi_full.csv"
-        dl_label = f"下載完整每日 KPI ({len(export_df)} 筆)"
-    elif "gold_customer_ltv" in export_table:
+        dl_label = f"下載全量每日 KPI ({len(export_df)} 筆)"
+    elif "客戶終身價值" in export_table:
         export_df = df_ltv
         dl_filename = "bigquery_gold_customer_ltv_full.csv"
-        dl_label = f"下載完整客戶 LTV ({len(export_df)} 筆)"
+        dl_label = f"下載全量客戶 LTV ({len(export_df)} 筆)"
     else:
         export_df = df_prod
         dl_filename = "bigquery_gold_product_performance_full.csv"
-        dl_label = f"下載完整商品排行 ({len(export_df)} 筆)"
+        dl_label = f"下載全量商品排行 ({len(export_df)} 筆)"
 
     st.download_button(
         label=f"💾 {dl_label} (CSV)",
@@ -525,11 +545,12 @@ with tab3:
 def render_fastmcp_copilot(user_gemini_key: str):
     header_ai1, header_ai2 = st.columns([3, 1])
     with header_ai1:
-        st.markdown("### 🤖 FastMCP 營運顧問")
+        st.markdown("## 🤖 FastMCP 顧問")
+        st.caption("AI Operations Lakehouse Copilot")
     with header_ai2:
         st.markdown(
             """
-            <div style="text-align: right; padding-top: 5px;">
+            <div style="text-align: right; padding-top: 8px;">
                 <span class="status-badge" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;">
                     <span class="pulse-dot"></span> Live
                 </span>
@@ -537,10 +558,13 @@ def render_fastmcp_copilot(user_gemini_key: str):
             """,
             unsafe_allow_html=True,
         )
-    st.caption("🟢 直連 **Google Cloud BigQuery (de-consulting-508822.platzi_gold)**")
-    st.caption("🔒 全自動 PII 脫敏，支援自然語言即時數據分析與業務安全護欄。")
 
-    st.markdown("**⚡ 快速業務提問快捷鍵：**")
+    st.markdown("---")
+    st.markdown(f"**分析標的：**\n`{PROJECT_ID}.platzi_gold`")
+    st.caption("🔒 全自動 PII 脫敏，支援自然語言即時數據分析與業務安全護欄。")
+    st.markdown("---")
+
+    st.markdown("**💡 快速業務提問：**")
     q_col1, q_col2, q_col3 = st.columns(3)
     with q_col1:
         if st.button("📊 一週營收與退款", key="btn_q1", use_container_width=True):
@@ -728,8 +752,9 @@ def render_fastmcp_copilot(user_gemini_key: str):
 # Render FastMCP Copilot in the designated location
 if col_ai is not None:
     with col_ai:
-        with st.container(border=True):
-            render_fastmcp_copilot(user_gemini_key)
+        st.markdown('<div class="right-sidebar-rail">', unsafe_allow_html=True)
+        render_fastmcp_copilot(user_gemini_key)
+        st.markdown('</div>', unsafe_allow_html=True)
 elif tab4 is not None:
     with tab4:
         render_fastmcp_copilot(user_gemini_key)
