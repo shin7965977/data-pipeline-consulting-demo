@@ -7,6 +7,7 @@ from fastmcp import FastMCP
 mcp = FastMCP("platzi-ecommerce-analytics")
 
 ALLOWED_DATASET = "platzi_gold"
+MAX_BYTES_BILLED = 100 * 1024 * 1024  # 100 MB budget protection limit
 
 
 def sanitize_dataset_access(dataset_name: str) -> str:
@@ -33,6 +34,23 @@ def _get_bigquery_client():
         return None
 
 
+def _execute_gold_query(
+    query: str,
+    client: Any,
+    fallback_data: list[dict[str, Any]],
+    limit: int,
+) -> list[dict[str, Any]]:
+    """Execute BigQuery analytical query with scan budget caps or fallback to mock data."""
+    if client:
+        from google.cloud import bigquery
+
+        job_config = bigquery.QueryJobConfig(maximum_bytes_billed=MAX_BYTES_BILLED)
+        query_job = client.query(query, job_config=job_config)
+        return [dict(row.items()) for row in query_job.result()]
+
+    return fallback_data[:limit]
+
+
 @mcp.tool()
 def get_daily_sales_kpi(
     start_date: str | None = None,
@@ -50,26 +68,21 @@ def get_daily_sales_kpi(
     """
     limit = min(limit, 100)
     client = None if mock_mode else _get_bigquery_client()
+    project_id = os.getenv("GCP_PROJECT_ID", client.project if client else "platzi-demo")
 
-    if client:
-        project_id = os.getenv("GCP_PROJECT_ID", client.project)
-        query = f"""
-            SELECT order_date, total_orders, completed_orders, cancelled_orders,
-                   refunded_orders, gmv, net_revenue, aov, cancellation_rate, refund_rate
-            FROM `{project_id}.{ALLOWED_DATASET}.gold_daily_sales_kpi`
-            WHERE 1=1
-        """
-        if start_date:
-            query += f" AND order_date >= '{start_date}'"
-        if end_date:
-            query += f" AND order_date <= '{end_date}'"
-        query += f" ORDER BY order_date DESC LIMIT {limit}"
+    query = f"""
+        SELECT order_date, total_orders, completed_orders, cancelled_orders,
+               refunded_orders, gmv, net_revenue, aov, cancellation_rate, refund_rate
+        FROM `{project_id}.{ALLOWED_DATASET}.gold_daily_sales_kpi`
+        WHERE 1=1
+    """
+    if start_date:
+        query += f" AND order_date >= '{start_date}'"
+    if end_date:
+        query += f" AND order_date <= '{end_date}'"
+    query += f" ORDER BY order_date DESC LIMIT {limit}"
 
-        query_job = client.query(query)
-        return [dict(row.items()) for row in query_job.result()]
-
-    # Deterministic fallback data for testing/demo when offline
-    return [
+    fallback = [
         {
             "order_date": "2026-09-15",
             "total_orders": 45,
@@ -94,7 +107,8 @@ def get_daily_sales_kpi(
             "cancellation_rate": 0.1034,
             "refund_rate": 0.0345,
         },
-    ][:limit]
+    ]
+    return _execute_gold_query(query, client, fallback, limit)
 
 
 @mcp.tool()
@@ -107,21 +121,17 @@ def get_top_products(limit: int = 10, mock_mode: bool = False) -> list[dict[str,
     """
     limit = min(limit, 50)
     client = None if mock_mode else _get_bigquery_client()
+    project_id = os.getenv("GCP_PROJECT_ID", client.project if client else "platzi-demo")
 
-    if client:
-        project_id = os.getenv("GCP_PROJECT_ID", client.project)
-        query = f"""
-            SELECT product_id, product_title, category_name, unit_price,
-                   units_sold, completed_sales_amount, refunded_units
-            FROM `{project_id}.{ALLOWED_DATASET}.gold_product_performance`
-            ORDER BY completed_sales_amount DESC
-            LIMIT {limit}
-        """
-        query_job = client.query(query)
-        return [dict(row.items()) for row in query_job.result()]
+    query = f"""
+        SELECT product_id, product_title, category_name, unit_price,
+               units_sold, completed_sales_amount, refunded_units
+        FROM `{project_id}.{ALLOWED_DATASET}.gold_product_performance`
+        ORDER BY completed_sales_amount DESC
+        LIMIT {limit}
+    """
 
-    # Fallback mock data
-    return [
+    fallback = [
         {
             "product_id": 3,
             "product_title": "Wireless Noise Cancelling Headphones",
@@ -149,7 +159,8 @@ def get_top_products(limit: int = 10, mock_mode: bool = False) -> list[dict[str,
             "completed_sales_amount": 10080.00,
             "refunded_units": 2,
         },
-    ][:limit]
+    ]
+    return _execute_gold_query(query, client, fallback, limit)
 
 
 @mcp.tool()
@@ -169,24 +180,19 @@ def get_customer_metrics(
     """
     limit = min(limit, 100)
     client = None if mock_mode else _get_bigquery_client()
+    project_id = os.getenv("GCP_PROJECT_ID", client.project if client else "platzi-demo")
 
-    if client:
-        project_id = os.getenv("GCP_PROJECT_ID", client.project)
-        query = f"""
-            SELECT customer_id, first_order_date, last_order_date,
-                   total_orders, completed_orders, lifetime_net_revenue, customer_tier
-            FROM `{project_id}.{ALLOWED_DATASET}.gold_customer_ltv`
-            WHERE 1=1
-        """
-        if tier:
-            query += f" AND customer_tier = '{tier}'"
-        query += f" ORDER BY lifetime_net_revenue DESC LIMIT {limit}"
+    query = f"""
+        SELECT customer_id, first_order_date, last_order_date,
+               total_orders, completed_orders, lifetime_net_revenue, customer_tier
+        FROM `{project_id}.{ALLOWED_DATASET}.gold_customer_ltv`
+        WHERE 1=1
+    """
+    if tier:
+        query += f" AND customer_tier = '{tier}'"
+    query += f" ORDER BY lifetime_net_revenue DESC LIMIT {limit}"
 
-        query_job = client.query(query)
-        return [dict(row.items()) for row in query_job.result()]
-
-    # Fallback mock data with zero PII
-    mock_customers = [
+    fallback = [
         {
             "customer_id": 1,
             "first_order_date": "2026-06-15",
@@ -207,8 +213,8 @@ def get_customer_metrics(
         },
     ]
     if tier:
-        mock_customers = [c for c in mock_customers if c["customer_tier"] == tier]
-    return mock_customers[:limit]
+        fallback = [c for c in fallback if c["customer_tier"] == tier]
+    return _execute_gold_query(query, client, fallback, limit)
 
 
 if __name__ == "__main__":

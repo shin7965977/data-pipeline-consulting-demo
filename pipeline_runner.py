@@ -4,6 +4,7 @@ import subprocess
 import sys
 
 from ingestion.run_ingest import run_pipeline
+from ingestion.sources.platzi_store import SimulatorConfig
 
 
 def parse_args():
@@ -56,6 +57,7 @@ def parse_args():
 def run_ingestion_step(
     destination: str = "bigquery",
     dataset: str = "platzi_bronze",
+    config: SimulatorConfig | None = None,
     days: int = 90,
     orders_per_day: int = 40,
     incremental_days: int | None = None,
@@ -64,13 +66,16 @@ def run_ingestion_step(
     print("=" * 60)
     print("STEP 1: INGESTION (dlt -> Bronze Layer)")
     print("=" * 60)
+    sim_config = config or SimulatorConfig(
+        days=days,
+        orders_per_day=orders_per_day,
+        mock_mode=mock_mode,
+    )
     load_info = run_pipeline(
         destination=destination,
         dataset_name=dataset,
-        mock_mode=mock_mode,
-        days=days,
-        orders_per_day=orders_per_day,
         incremental_days=incremental_days,
+        config=sim_config,
     )
     return load_info
 

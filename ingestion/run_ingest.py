@@ -5,24 +5,27 @@ from datetime import datetime, timedelta, timezone
 import dlt
 from dotenv import load_dotenv
 
-from ingestion.sources.platzi_store import PlatziStoreAdapter
+from ingestion.sources.platzi_store import PlatziStoreAdapter, SimulatorConfig
 
 load_dotenv()
 
 
 def create_platzi_source(
+    config: SimulatorConfig | None = None,
     mock_mode: bool = False,
     days: int = 90,
     orders_per_day: int = 40,
     since_timestamp: datetime | None = None,
 ):
     """Declare dlt source and resources for the Platzi Store data pipeline."""
-    adapter = PlatziStoreAdapter(mock_mode=mock_mode)
-    data = adapter.generate_synthetic_orders(
+    sim_config = config or SimulatorConfig(
         days=days,
         orders_per_day=orders_per_day,
         since_timestamp=since_timestamp,
+        mock_mode=mock_mode,
     )
+    adapter = PlatziStoreAdapter(config=sim_config)
+    data = adapter.generate_synthetic_orders(config=sim_config)
 
     @dlt.source(name="platzi_store")
     def platzi_source():
@@ -64,11 +67,20 @@ def run_pipeline(
     incremental_days: int | None = None,
     pipeline_name: str = "platzi_ecom_pipeline",
     pipelines_dir: str | None = None,
+    config: SimulatorConfig | None = None,
 ):
     """Execute the dlt pipeline ingestion into target destination."""
-    since_timestamp = None
-    if incremental_days:
-        since_timestamp = datetime.now(timezone.utc) - timedelta(days=incremental_days)
+    if config:
+        days = config.days
+        orders_per_day = config.orders_per_day
+        mock_mode = config.mock_mode
+        since_timestamp = config.since_timestamp
+    else:
+        since_timestamp = None
+        if incremental_days:
+            since_timestamp = datetime.now(timezone.utc) - timedelta(days=incremental_days)
+
+    if since_timestamp:
         print(
             f"[dlt] Incremental run: extracting orders since {since_timestamp.isoformat()}"
         )

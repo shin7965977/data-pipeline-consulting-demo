@@ -91,3 +91,13 @@ def test_incremental_watermark_filtering(adapter):
     for order in orders:
         order_time = datetime.fromisoformat(order["updated_at"])
         assert order_time >= cutoff
+
+
+def test_simulator_config_dataclass():
+    """Verify that SimulatorConfig cleanly encapsulates parameters."""
+    from ingestion.sources.platzi_store import SimulatorConfig
+
+    config = SimulatorConfig(days=3, orders_per_day=2, mock_mode=True)
+    adapter = PlatziStoreAdapter(config=config)
+    data = adapter.generate_synthetic_orders()
+    assert len(data["raw_orders"]) >= 6

@@ -56,3 +56,22 @@ def test_get_customer_metrics_excludes_pii():
         assert "address" not in record
         assert "customer_id" in record
         assert "lifetime_net_revenue" in record
+
+
+def test_execute_gold_query_enforces_budget_config(monkeypatch):
+    """Verify that BigQuery queries are submitted with maximum_bytes_billed limit."""
+    from unittest.mock import MagicMock
+
+    from mcp_server.server import MAX_BYTES_BILLED, _execute_gold_query
+
+    mock_client = MagicMock()
+    mock_job = MagicMock()
+    mock_job.result.return_value = [{"metric": 100}]
+    mock_client.query.return_value = mock_job
+
+    res = _execute_gold_query("SELECT 1", mock_client, [], 10)
+    assert res == [{"metric": 100}]
+    assert mock_client.query.called
+    job_config = mock_client.query.call_args[1].get("job_config")
+    assert job_config is not None
+    assert job_config.maximum_bytes_billed == MAX_BYTES_BILLED

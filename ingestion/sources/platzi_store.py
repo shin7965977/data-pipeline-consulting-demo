@@ -1,10 +1,21 @@
 import logging
 import random
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any
 
 import requests
+
+
+@dataclass
+class SimulatorConfig:
+    """Encapsulates simulation parameters for e-commerce order generation."""
+
+    days: int = 90
+    orders_per_day: int = 40
+    since_timestamp: datetime | None = None
+    mock_mode: bool = False
 
 
 class OrderLifecycleStatus(str, Enum):
@@ -31,8 +42,13 @@ class PlatziStoreAdapter:
 
     BASE_URL = "https://api.escuelajs.co/api/v1"
 
-    def __init__(self, mock_mode: bool = False):
-        self.mock_mode = mock_mode
+    def __init__(
+        self,
+        config: SimulatorConfig | None = None,
+        mock_mode: bool = False,
+    ):
+        self.config = config or SimulatorConfig(mock_mode=mock_mode)
+        self.mock_mode = self.config.mock_mode
 
     def fetch_products(self) -> list[dict[str, Any]]:
         """Fetch products catalog from Platzi API or return mock products."""
@@ -181,11 +197,21 @@ class PlatziStoreAdapter:
 
     def generate_synthetic_orders(
         self,
-        days: int = 90,
-        orders_per_day: int = 40,
+        days: int | None = None,
+        orders_per_day: int | None = None,
         since_timestamp: datetime | None = None,
+        config: SimulatorConfig | None = None,
     ) -> dict[str, list[dict[str, Any]]]:
         """Synthesize historical or incremental orders adhering to the Canonical Schema."""
+        eff_config = config or self.config
+        eff_days = days if days is not None else eff_config.days
+        eff_orders_per_day = (
+            orders_per_day if orders_per_day is not None else eff_config.orders_per_day
+        )
+        eff_since = (
+            since_timestamp if since_timestamp is not None else eff_config.since_timestamp
+        )
+
         products = self.fetch_products()
         customers = self.fetch_customers()
 
@@ -196,11 +222,11 @@ class PlatziStoreAdapter:
         order_seq = 1000
         item_seq = 5000
 
-        for d in range(days, 0, -1):
+        for d in range(eff_days, 0, -1):
             day_date = now - timedelta(days=d)
             # Weekend surge: Saturdays and Sundays produce 50% more orders
             surge = 1.5 if day_date.weekday() in (5, 6) else 1.0
-            daily_count = int(orders_per_day * surge)
+            daily_count = int(eff_orders_per_day * surge)
 
             for _ in range(daily_count):
                 order_time = day_date + timedelta(
@@ -209,7 +235,7 @@ class PlatziStoreAdapter:
                     seconds=random.randint(0, 59),
                 )
 
-                if since_timestamp and order_time < since_timestamp:
+                if eff_since and order_time < eff_since:
                     continue
 
                 order_id = f"ORD-{order_seq}"
