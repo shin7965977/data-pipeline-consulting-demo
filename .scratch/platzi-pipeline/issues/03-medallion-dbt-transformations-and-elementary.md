@@ -6,13 +6,13 @@
 
 **Status:** ready-for-agent
 
-- [ ] dbt project is initialized with BigQuery connection profile configured via environment variables.
-- [ ] Staging models (`models/staging/`) unpack Bronze raw tables into clean Silver dimensional schemas with PII masked or pseudonymous.
-- [ ] Fact models (`fct_orders`, `fct_order_items`) implement `materialized='incremental'` with `unique_key='order_id'` using `merge` strategy.
-- [ ] Mart models (`models/marts/`) calculate:
+- [x] dbt project is initialized with BigQuery connection profile configured via environment variables.
+- [x] Staging models (`models/staging/`) unpack Bronze raw tables into clean Silver dimensional schemas with PII masked or pseudonymous.
+- [x] Fact models (`fct_orders`, `fct_order_items`) implement `materialized='incremental'` with `unique_key='order_id'` using `merge` strategy.
+- [x] Mart models (`models/marts/`) calculate:
   - `gold_daily_sales_kpi`: Daily GMV, completed order volume, Net Revenue, AOV, cancellation rate.
   - `gold_customer_ltv`: Customer lifetime Net Revenue, order frequency, recency, and value tier.
   - `gold_product_performance`: Units sold, gross sales, refund count, category distribution.
-- [ ] dbt test suite covers primary key uniqueness, not-null constraints, foreign key referential integrity, and business mathematical invariants ($GMV \ge Net\ Revenue$).
-- [ ] Elementary Data package is integrated to provide automated anomaly detection on order volume drops and revenue anomalies.
-- [ ] `dbt run` and `dbt test` execute and pass cleanly against BigQuery.
+- [x] dbt test suite covers primary key uniqueness, not-null constraints, foreign key referential integrity, and business mathematical invariants ($GMV \ge Net\ Revenue$).
+- [x] Elementary Data package is integrated to provide automated anomaly detection on order volume drops and revenue anomalies.
+- [x] `dbt run` and `dbt test` execute and pass cleanly against BigQuery.

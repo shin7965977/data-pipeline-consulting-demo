@@ -1,0 +1,47 @@
+version: 2
+
+sources:
+  - name: platzi_bronze
+    schema: "{{ 'platzi_bronze' if target.name == 'bigquery' else 'main' }}"
+    description: "Raw data ingested by dlt into Bronze layer"
+    tables:
+      - name: raw_orders
+        description: "Raw append-only e-commerce orders"
+        columns:
+          - name: order_id
+            description: "Primary key identifier for the order"
+            tests:
+              - not_null
+          - name: customer_id
+            description: "Foreign key referencing raw_customers"
+            tests:
+              - not_null
+          - name: order_status
+            description: "Lifecycle status: completed, cancelled, refunded"
+            tests:
+              - accepted_values:
+                  values: ['completed', 'cancelled', 'refunded']
+
+      - name: raw_order_items
+        description: "Line items belonging to raw_orders"
+        columns:
+          - name: item_id
+            description: "Primary key identifier for the item"
+            tests:
+              - not_null
+
+      - name: raw_customers
+        description: "Customer registration and profile data"
+        columns:
+          - name: customer_id
+            description: "Primary key for customer"
+            tests:
+              - not_null
+
+      - name: raw_products
+        description: "Product catalog items and categories"
+        columns:
+          - name: product_id
+            description: "Primary key for product"
+            tests:
+              - not_null

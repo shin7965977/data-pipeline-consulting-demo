@@ -57,7 +57,10 @@ class PlatziStoreAdapter:
                     if products:
                         return products
             except requests.RequestException as e:
-                logging.getLogger(__name__).warning("Platzi API product fetch failed, falling back to mock catalog: %s", e)
+                logging.getLogger(__name__).warning(
+                    "Platzi API product fetch failed, falling back to mock catalog: %s",
+                    e,
+                )
 
         # Fallback mock catalog
         return [
@@ -148,7 +151,9 @@ class PlatziStoreAdapter:
                     if customers:
                         return customers
             except requests.RequestException as e:
-                logging.getLogger(__name__).warning("Platzi API customer fetch failed, falling back to mock: %s", e)
+                logging.getLogger(__name__).warning(
+                    "Platzi API customer fetch failed, falling back to mock: %s", e
+                )
 
         # Fallback mock customers
         names = [

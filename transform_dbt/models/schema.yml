@@ -1,0 +1,104 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Normalized dimension table for customers"
+    columns:
+      - name: customer_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_products
+    description: "Normalized dimension table for products and categories"
+    columns:
+      - name: product_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_orders
+    description: "Order transactions fact table"
+    columns:
+      - name: order_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key to dim_customers"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: order_status
+        description: "Order lifecycle status"
+        tests:
+          - accepted_values:
+              values: ['completed', 'cancelled', 'refunded']
+
+  - name: fct_order_items
+    description: "Order items line-level fact table"
+    columns:
+      - name: item_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Foreign key to fct_orders"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_orders')
+              field: order_id
+      - name: product_id
+        description: "Foreign key to dim_products"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
+
+  - name: gold_daily_sales_kpi
+    description: "Daily business metrics and revenue KPIs"
+    columns:
+      - name: order_date
+        description: "Date of the order metrics"
+        tests:
+          - unique
+          - not_null
+      - name: gmv
+        description: "Gross Merchandise Value"
+        tests:
+          - not_null
+      - name: net_revenue
+        description: "Net realized revenue"
+        tests:
+          - not_null
+
+  - name: gold_customer_ltv
+    description: "Customer lifetime value and segment tiers"
+    columns:
+      - name: customer_id
+        description: "Customer identifier"
+        tests:
+          - unique
+          - not_null
+      - name: customer_tier
+        description: "Value tier grouping"
+        tests:
+          - accepted_values:
+              values: ['Platinum', 'Gold', 'Silver', 'Bronze']
+
+  - name: gold_product_performance
+    description: "Product unit sales, revenue, and return rate performance"
+    columns:
+      - name: product_id
+        description: "Product identifier"
+        tests:
+          - unique
+          - not_null

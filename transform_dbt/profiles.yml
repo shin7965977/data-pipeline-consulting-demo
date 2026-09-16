@@ -1,0 +1,17 @@
+platzi_profile:
+  target: "{{ env_var('DBT_TARGET', 'duckdb') }}"
+  outputs:
+    bigquery:
+      type: bigquery
+      method: "{{ env_var('DBT_BQ_METHOD', 'oauth') }}" # 'oauth' for gcloud CLI ADC, or 'service-account'
+      project: "{{ env_var('GCP_PROJECT_ID', 'platzi-demo-project') }}"
+      dataset: "{{ env_var('DBT_BQ_DATASET', 'platzi_silver') }}"
+      threads: 4
+      timeout_seconds: 300
+      location: "{{ env_var('GCP_REGION', 'asia-east1') }}"
+      keyfile: "{{ env_var('GCP_KEYFILE', '') }}"
+
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('DBT_DUCKDB_PATH', 'local_warehouse.duckdb') }}"
+      threads: 2
