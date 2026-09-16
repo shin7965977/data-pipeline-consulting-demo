@@ -34,6 +34,16 @@ def _get_bigquery_client():
         return None
 
 
+def _clean_val(v: Any) -> Any:
+    from decimal import Decimal
+
+    if isinstance(v, Decimal):
+        return float(v)
+    if hasattr(v, "isoformat"):
+        return v.isoformat()
+    return v
+
+
 def _execute_gold_query(
     query: str,
     client: Any,
@@ -46,7 +56,7 @@ def _execute_gold_query(
 
         job_config = bigquery.QueryJobConfig(maximum_bytes_billed=MAX_BYTES_BILLED)
         query_job = client.query(query, job_config=job_config)
-        return [dict(row.items()) for row in query_job.result()]
+        return [{k: _clean_val(v) for k, v in row.items()} for row in query_job.result()]
 
     return fallback_data[:limit]
 
