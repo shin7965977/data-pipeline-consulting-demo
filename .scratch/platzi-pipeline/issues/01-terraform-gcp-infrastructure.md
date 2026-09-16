@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** closed
 
 - [x] Terraform code defines provider settings and region configuration (defaulting to `asia-east1` or `us-central1`).
 - [x] BigQuery datasets `platzi_bronze`, `platzi_silver`, and `platzi_gold` are created with appropriate labels.

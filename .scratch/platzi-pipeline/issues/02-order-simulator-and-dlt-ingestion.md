@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: Terraform GCP Infrastructure Baseline
 
-**Status:** ready-for-agent
+**Status:** closed
 
 - [x] Pluggable source adapter `ingestion/sources/platzi_store.py` decouples API extraction from the pipeline core.
 - [x] Simulator produces 90 days of synthetic historical orders with weekly cyclicality and realistic cancellation/refund ratios.

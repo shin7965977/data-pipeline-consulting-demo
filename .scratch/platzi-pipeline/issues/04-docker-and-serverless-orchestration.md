@@ -4,7 +4,7 @@
 
 **Blocked by:** 03: Medallion Transformations and Data Observability via dbt-core
 
-**Status:** ready-for-agent
+**Status:** closed
 
 - [x] Multi-stage Dockerfile packages Python dependencies, dlt runner, and dbt project with non-root security.
 - [x] Container entrypoint CLI supports `--target=ingest`, `--target=transform`, and `--target=all`.

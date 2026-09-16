@@ -4,7 +4,7 @@
 
 **Blocked by:** 02: Order Simulator and Pluggable dlt Ingestion Engine
 
-**Status:** ready-for-agent
+**Status:** closed
 
 - [x] dbt project is initialized with BigQuery connection profile configured via environment variables.
 - [x] Staging models (`models/staging/`) unpack Bronze raw tables into clean Silver dimensional schemas with PII masked or pseudonymous.
