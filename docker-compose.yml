@@ -1,0 +1,18 @@
+services:
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: platzi-pipeline-runner
+    environment:
+      - PIPELINE_TARGET=all
+      - DLT_DESTINATION=duckdb
+      - DLT_DATASET_NAME=main
+      - DBT_TARGET=duckdb
+      - DBT_DUCKDB_PATH=/app/local_warehouse.duckdb
+      - MOCK_MODE=true
+      - SIMULATION_DAYS=30
+      - ORDERS_PER_DAY=20
+    volumes:
+      - ./local_data:/app/local_data
+    command: ["--target=all", "--mock", "--destination=duckdb"]
