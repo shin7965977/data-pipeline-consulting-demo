@@ -75,3 +75,24 @@ def test_execute_gold_query_enforces_budget_config(monkeypatch):
     job_config = mock_client.query.call_args[1].get("job_config")
     assert job_config is not None
     assert job_config.maximum_bytes_billed == MAX_BYTES_BILLED
+
+
+def test_mbb_consulting_prompts():
+    """Verify FastMCP MBB consulting prompts generate structured guidance."""
+    from mcp_server.server import (
+        customer_rfm_growth_strategy,
+        mbb_executive_performance_review,
+        profitability_issue_tree_diagnostic,
+    )
+
+    p1 = mbb_executive_performance_review()
+    assert "Action Title" in p1
+    assert "MECE" in p1
+
+    p2 = profitability_issue_tree_diagnostic()
+    assert "Net Realization Rate" in p2
+
+    p3 = customer_rfm_growth_strategy()
+    assert "Platinum" in p3
+    assert "Pareto" in p3
+

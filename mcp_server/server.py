@@ -227,6 +227,82 @@ def get_customer_metrics(
     return _execute_gold_query(query, client, fallback, limit)
 
 
+# ==============================================================================
+# FastMCP Prompts: MBB Strategy & Management Consulting Intelligence
+# Integrated with DogInfantry/claude-skill-management-consultant-B1 methodology
+# ==============================================================================
+
+
+@mcp.prompt()
+def mbb_executive_performance_review(
+    time_horizon: str = "last 30 days",
+    focus_area: str = "profitability and revenue leakage",
+) -> str:
+    """MBB Senior Partner caliber executive diagnostic prompt for Platzi E-Commerce.
+
+    Enforces Pyramid Principle (SCQA), MECE issue tree decomposition, and actionable prescriptions.
+    """
+    return f"""
+You are operating as an MBB Senior Management Consultant (McKinsey / BCG / Bain Principal caliber)
+evaluating Platzi E-Commerce performance over the {time_horizon}, with special focus on {focus_area}.
+
+### Core Methodology & Instructions (from MBB Management Consultant Skill):
+1. **Tool Invocation**:
+   - Immediately call `get_daily_sales_kpi` and `get_top_products` to extract live data from the BigQuery Gold layer.
+2. **Three-Test Standard**:
+   - **So What?**: Do not merely recite data numbers. Synthesize the non-obvious business insight.
+   - **Why So?**: Provide quantified causal proof (Unit Economics: GMV, AOV, Cancellation Rate, Refund Rate).
+   - **Now What?**: Give 3 concrete, prioritized, and high-ROI commercial interventions.
+3. **Structured Deliverable Structure**:
+   - **[Executive Governing Thought / Action Title]**: One crisp, bold sentence stating the core business finding.
+   - **[SCQA Context & Burning Platform]**: Situation, Complication, Question, Answer.
+   - **[MECE Issue Tree Decomposition]**:
+     * Revenue Equation: GMV = Total Orders × AOV.
+     * Leakage Analysis: Net Revenue = GMV - (Cancellations + Refunds). Quantify the dollar value lost.
+     * Product Concentration (Pareto 80/20): Identify top-performing and high-refund SKUs.
+   - **[Strategic Recommendations & 30-60-90 Day Roadmap]**: Concrete steps with assigned ownership and expected financial impact.
+"""
+
+
+@mcp.prompt()
+def profitability_issue_tree_diagnostic(
+    target_metric: str = "Net Revenue Leakage and Margin Optimization",
+) -> str:
+    """MECE profitability and leakage diagnostic prompt analyzing product and order attrition."""
+    return f"""
+You are an MBB Operations & Strategy Practice Director diagnosing {target_metric} for Platzi E-Commerce.
+
+### Analytical Protocol:
+1. Call `get_daily_sales_kpi` to evaluate cancellation and refund trend anomalies.
+2. Call `get_top_products` to isolate which categories/products suffer from disproportionate return rates.
+3. Apply DuPont and MECE root cause analysis:
+   - Is leakage driven by operational fulfillment failures, product quality mismatches, or buyer remorse?
+   - Calculate the Net Realization Rate: `Net Revenue / GMV`.
+4. Deliver findings in executive slide/memo format with clear Action Titles for each pillar.
+"""
+
+
+@mcp.prompt()
+def customer_rfm_growth_strategy(
+    segment_focus: str = "Platinum and Gold High-LTV Retention",
+) -> str:
+    """Customer Lifetime Value (LTV) and RFM segmentation strategy prompt."""
+    return f"""
+You are an MBB Customer & Growth Strategy Consultant analyzing {segment_focus} for Platzi E-Commerce.
+
+### Analytical Protocol:
+1. Call `get_customer_rfm_segments` to retrieve customer tiers, order frequencies, and lifetime net revenue.
+2. Perform Pareto Tier Analysis (Platinum, Gold, Silver, Bronze):
+   - Measure revenue contribution of top 20% customers vs. bottom 80%.
+   - Identify repeat purchase cadence and churn velocity (days between first and last order).
+3. Prescribe a high-impact Retention & LTV Expansion Playbook:
+   - VIP Concierge / Loyalty incentives for Platinum.
+   - Cross-sell and repeat-purchase triggers for Gold.
+   - Churn reactivation protocols for at-risk accounts.
+"""
+
+
 if __name__ == "__main__":
     # Run FastMCP server over stdio
     mcp.run()
+
