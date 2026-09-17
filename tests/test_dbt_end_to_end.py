@@ -1,5 +1,7 @@
 import os
+import shutil
 import subprocess
+import sys
 
 from ingestion.run_ingest import run_pipeline
 
@@ -26,10 +28,20 @@ def test_dbt_models_and_tests_end_to_end(tmp_path):
         "DBT_DUCKDB_PATH": actual_db,
     }
 
+    candidates = [
+        shutil.which("dbt"),
+        os.path.join(os.path.dirname(sys.executable), "dbt.exe"),
+        os.path.join(os.path.dirname(sys.executable), "dbt"),
+        "dbt",
+    ]
+    dbt_bin = next(
+        c for c in candidates if c and (os.path.exists(c) if os.path.isabs(c) else True)
+    )
+
     # Test dbt run
     run_res = subprocess.run(
         [
-            ".venv/Scripts/dbt.exe",
+            dbt_bin,
             "run",
             "--project-dir",
             "transform_dbt",
@@ -50,7 +62,7 @@ def test_dbt_models_and_tests_end_to_end(tmp_path):
     # Test dbt test
     test_res = subprocess.run(
         [
-            ".venv/Scripts/dbt.exe",
+            dbt_bin,
             "test",
             "--project-dir",
             "transform_dbt",
