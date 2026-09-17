@@ -53,13 +53,17 @@ An end-to-end, enterprise-grade Modern Data Stack (MDS) implementation designed 
 ```
 
 ### 💼 Key Consulting Highlights
-1. **Near-$0/mo Idle TCO (Serverless-First)**: Instead of paying 24/7 for managed Airflow (Composer ~ $300+/mo), orchestration runs on **Google Cloud Scheduler + Cloud Run Jobs** (~ $0/mo idle cost).
-2. **Canonical Schema Adapter Pattern**: Upstream e-commerce APIs (Shopify, WooCommerce, Platzi) are mapped into standardized schema contracts, insulating dbt models from source schema drift.
-3. **Enterprise PII Governance**: Names and emails are cryptographically salted and SHA-256 hashed at the staging layer; AI agents and BI dashboards never touch raw customer identities.
-4. **Data Observability**: Pre-integrated with **Elementary Data** for automated test anomaly detection, schema drift monitoring, and run history auditing.
-5. **Interactive Streamlit Executive Cockpit (`dashboard.py`)**: Real-time KPI monitoring, Plotly data visualizations, RFM customer segmentation, and an AI-driven natural language chart generator.
-6. **MBB Management Consultant AI Skill (`claude-skill-management-consultant-B1`)**: 129 consulting modules enforcing the **Pyramid Principle (Action Titles)**, **MECE Issue Trees**, **Net Realization Rate** calculations, and **30-60-90 Day Tactical Roadmaps**.
-7. **Domain Relevance AI Guardrails**: Intelligent prompt filtering that strictly defends the assistant against off-topic queries (e.g., politics, entertainment) to ensure professional focus.
+1. **Near-$0/mo Idle TCO (Serverless Visual DAG)**: Instead of paying 24/7 for managed Airflow (Cloud Composer ~ $300+/mo), orchestration is driven by a hybrid serverless DAG: **Google Cloud Scheduler + Google Cloud Workflows + Cloud Run Jobs** (~ $0/mo idle cost; monthly 5,000 steps free tier, documented in [ADR-0003](docs/adr/0003-serverless-dag-orchestration-with-cloud-workflows.md)).
+2. **Visual Step-by-Step DAG Pipeline**: Cloud Workflows (`platzi-pipeline-orchestrator`) coordinates 3 sequential stages with automated long-polling and retry policies:
+   - **Step 1**: Ingest (`dlt` from API to BigQuery Bronze)
+   - **Step 2**: Transform (`dbt run` for Silver dimensional models & Gold marts)
+   - **Step 3**: Data Observability & Tests (`dbt test` + Elementary anomaly checks)
+3. **Canonical Schema Adapter Pattern**: Upstream e-commerce APIs (Shopify, WooCommerce, Platzi) are mapped into standardized schema contracts, insulating dbt models from source schema drift.
+4. **Enterprise PII Governance**: Names and emails are cryptographically salted and SHA-256 hashed at the staging layer; AI agents and BI dashboards never touch raw customer identities.
+5. **Data Observability**: Pre-integrated with **Elementary Data** for automated test anomaly detection, schema drift monitoring, and run history auditing.
+6. **Interactive Streamlit Executive Cockpit (`dashboard.py`)**: Real-time KPI monitoring, Plotly data visualizations, RFM customer segmentation, and an AI-driven natural language chart generator.
+7. **MBB Management Consultant AI Skill (`claude-skill-management-consultant-B1`)**: 129 consulting modules enforcing the **Pyramid Principle (Action Titles)**, **MECE Issue Trees**, **Net Realization Rate** calculations, and **30-60-90 Day Tactical Roadmaps**.
+8. **Domain Relevance AI Guardrails**: Intelligent prompt filtering that strictly defends the assistant against off-topic queries (e.g., politics, entertainment) to ensure professional focus.
 
 ---
 
@@ -67,15 +71,15 @@ An end-to-end, enterprise-grade Modern Data Stack (MDS) implementation designed 
 
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
-| **Infrastructure as Code** | Terraform | BigQuery datasets, Cloud Run Jobs, Cloud Scheduler, IAM & Artifact Registry |
+| **Infrastructure as Code** | Terraform | BigQuery datasets, Cloud Run Jobs, Cloud Workflows, Cloud Scheduler & IAM |
 | **Data Ingestion** | `dlt` (data load tool) | Resilient schema evolution, automatic batching, typing & incremental loading |
 | **Data Transformation** | `dbt-core` + DuckDB / BigQuery | Medallion staging, Star Schema dimensional modeling & Gold marts |
 | **Data Observability** | `elementary-data` + dbt tests | Automated schema test assertions, uniqueness & referential integrity |
+| **Orchestration & DAG** | Cloud Scheduler + Cloud Workflows + Cloud Run | Serverless visual DAG (`Ingest -> Transform -> Test`) with $0 idle cost |
 | **Executive Cockpit** | Streamlit + Plotly | Interactive analytics dashboard with P&L, Pareto SKU, and RFM tiers |
 | **AI Chart Generation** | Google GenAI SDK (Gemini Flash) | Text-to-Chart engine with instant Plotly rendering & domain guardrail |
 | **AI Strategy Consulting** | FastMCP + MBB Consultant Skill | Tool calling over BigQuery Gold marts with structured strategic advisory |
 | **Containerization** | Docker (Multi-stage) | Lean, reproducible image pre-baked with dbt packages and dependencies |
-| **Orchestration** | Cloud Scheduler + Cloud Run | Serverless cron triggers (`0 2 * * *`) with manual cloud run execution |
 | **BI & Analytics** | Google Looker Studio | Executive dashboards, KPI monitoring & customer cohort retention |
 | **CI / CD Quality Gates** | GitHub Actions + Ruff + SQLFluff | Automated static analysis, SQL linting, and full test suite enforcement |
 
