@@ -76,3 +76,17 @@ def test_generate_chart_refund_monitoring(sample_data):
     fig, title, insight, df = generate_chart_from_nl("監控每日退款率與取消率", df_kpi, df_prod, df_ltv)
     assert fig is not None
     assert "退款" in title or "取消" in title
+
+
+def test_generate_chart_rejects_irrelevant_query(sample_data):
+    """Guardrail test: Non-business questions like politics or weather must be rejected."""
+    df_kpi, df_prod, df_ltv = sample_data
+    fig, title, insight, df = generate_chart_from_nl("柯文哲是誰", df_kpi, df_prod, df_ltv)
+    assert fig is None
+    assert "業務範疇" in title or "約束" in title
+    assert "無關" in insight
+
+    fig2, title2, insight2, df2 = generate_chart_from_nl("今天天氣好嗎", df_kpi, df_prod, df_ltv)
+    assert fig2 is None
+    assert "無關" in insight2
+

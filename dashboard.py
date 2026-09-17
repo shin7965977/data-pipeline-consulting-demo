@@ -154,6 +154,29 @@ def generate_chart_from_nl(
     """
     clean_prompt = prompt.strip().lower()
 
+    # Step 0: Domain Relevance Guardrail - strictly reject non-ecommerce or unrelated queries
+    BUSINESS_CHART_KEYWORDS = [
+        "銷售", "營收", "gmv", "訂單", "商品", "客戶", "ltv", "業績", "退款",
+        "會員", "暢銷", "買", "賣", "kpi", "vip", "排行", "利潤", "金額",
+        "單價", "aov", "平台", "電商", "庫存", "品類", "tier", "platinum", "gold", "silver", "bronze",
+        "數據", "指標", "概況", "圖", "走勢", "趨勢", "圓餅", "長條", "柱狀", "散佈",
+        "佔比", "比較", "分析", "chart", "plot", "revenue", "sales", "order", "product", "customer",
+        "履約", "取消", "完成", "均額", "流失", "回購", "消費", "折扣", "折線", "關係", "分佈"
+    ]
+    if not any(kw in clean_prompt for kw in BUSINESS_CHART_KEYWORDS):
+        return (
+            None,
+            "⚠️ 業務範疇約束提醒",
+            f"抱歉，我是專屬於 **Platzi 電商數據分析顧問**。\n\n"
+            f"您輸入的提問 *「{prompt}」* 與本電商營運、銷售績效、商品或顧客等業務數據無關，因此無法為您生成圖表。\n\n"
+            "💡 **建議您可以提問與業務數據相關之問題，例如：**\n"
+            "- 📈 *「請畫出每日 GMV 與實質淨營收的對比走勢圖」*\n"
+            "- 🏆 *「用長條圖呈現銷售額前 10 大熱銷商品」*\n"
+            "- ⚠️ *「畫出每日退款率與取消率的監控走勢圖」*\n"
+            "- 👥 *「幫我用圓餅圖呈現不同會員等級 (Tier) 的營收貢獻」*",
+            pd.DataFrame(),
+        )
+
     # Step 1: Check if Gemini is available for AI-powered visualization reasoning
     gemini_spec = None
     if gemini_api_key:
@@ -164,14 +187,18 @@ def generate_chart_from_nl(
 
             client = genai.Client(api_key=gemini_api_key)
             system_instruction = (
-                "You are an expert Data Visualization and MBB Strategy Consultant. "
-                "The user will ask for a chart or business insight in natural language. "
-                "Available BigQuery datasets:\n"
+                "You are an expert Data Visualization and MBB Strategy Consultant dedicated strictly and exclusively to Platzi E-Commerce analytics. "
+                "The user will ask for a chart or business insight in natural language.\n"
+                "If the user's prompt is NOT related to Platzi E-Commerce business, sales, orders, products, customers, KPIs, or chart visualization "
+                "(e.g. general chat, politics, entertainment, philosophy, history, coding unrelated to this app), "
+                "you MUST respond with: {\"is_irrelevant\": true}\n\n"
+                "Otherwise, analyze the available BigQuery datasets:\n"
                 "1. 'kpi' columns: order_date, total_orders, completed_orders, cancelled_orders, refunded_orders, gmv, net_revenue, aov, cancellation_rate, refund_rate\n"
                 "2. 'products' columns: product_id, product_title, category_name, completed_sales_amount, units_sold, unit_price\n"
                 "3. 'customers' columns: customer_id, customer_name, customer_tier, total_orders, completed_orders, lifetime_net_revenue\n\n"
                 "Respond ONLY with a valid JSON object (no markdown quotes, no explanations):\n"
                 "{\n"
+                '  "is_irrelevant": false,\n'
                 '  "dataset": "kpi" | "products" | "customers",\n'
                 '  "chart_type": "line" | "bar" | "pie" | "scatter" | "area",\n'
                 '  "x": "column_name",\n'
@@ -196,8 +223,22 @@ def generate_chart_from_nl(
         except Exception:
             gemini_spec = None
 
-    # Step 2: If Gemini returned a valid spec, render using that spec
-    if gemini_spec and isinstance(gemini_spec, dict) and "dataset" in gemini_spec:
+    # Step 2: If Gemini returned a valid spec, check relevance and render using that spec
+    if gemini_spec and isinstance(gemini_spec, dict):
+        if gemini_spec.get("is_irrelevant"):
+            return (
+                None,
+                "⚠️ 業務範疇約束提醒",
+                f"抱歉，我是專屬於 **Platzi 電商數據分析顧問**。\n\n"
+                f"您輸入的提問 *「{prompt}」* 與本電商營運、銷售績效、商品或顧客等業務數據無關，因此無法為您生成圖表。\n\n"
+                "💡 **建議您可以提問與業務數據相關之問題，例如：**\n"
+                "- 📈 *「請畫出每日 GMV 與實質淨營收的對比走勢圖」*\n"
+                "- 🏆 *「用長條圖呈現銷售額前 10 大熱銷商品」*\n"
+                "- ⚠️ *「畫出每日退款率與取消率的監控走勢圖」*\n"
+                "- 👥 *「幫我用圓餅圖呈現不同會員等級 (Tier) 的營收貢獻」*",
+                pd.DataFrame(),
+            )
+
         ds_name = gemini_spec.get("dataset")
         c_type = gemini_spec.get("chart_type", "line")
         x_col = gemini_spec.get("x")
@@ -981,22 +1022,36 @@ with tab4:
         )
 
     st.markdown("---")
-    st.subheader(f"📊 {chart_title}")
-    st.plotly_chart(fig_nl, use_container_width=True)
-
-    st.markdown(
-        f"""
-        <div class="metric-card" style="border-left: 4px solid #6366f1;">
-            <div class="metric-label">💡 MBB 顧問商業洞察 (Executive Takeaway)</div>
-            <div style="font-size: 1.05rem; font-weight: 500; color: var(--text-color, #0f172a); margin-top: 0.25rem;">
-                {insight_text}
+    if fig_nl is None:
+        st.warning(f"### {chart_title}")
+        st.markdown(
+            f"""
+            <div class="metric-card" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05);">
+                <div style="font-size: 1.05rem; line-height: 1.6; color: var(--text-color, #0f172a);">
+                    {insight_text}
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.subheader(f"📊 {chart_title}")
+        st.plotly_chart(fig_nl, use_container_width=True)
 
-    with st.expander("🔍 點擊展開：檢視本圖表底層數據表 (Data Preview)"):
-        st.dataframe(raw_df, use_container_width=True, hide_index=True)
+        st.markdown(
+            f"""
+            <div class="metric-card" style="border-left: 4px solid #6366f1;">
+                <div class="metric-label">💡 MBB 顧問商業洞察 (Executive Takeaway)</div>
+                <div style="font-size: 1.05rem; font-weight: 500; color: var(--text-color, #0f172a); margin-top: 0.25rem;">
+                    {insight_text}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        with st.expander("🔍 點擊展開：檢視本圖表底層數據表 (Data Preview)"):
+            st.dataframe(raw_df, use_container_width=True, hide_index=True)
+
 
 
