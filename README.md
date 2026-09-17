@@ -1,5 +1,7 @@
 # Modern Serverless E-Commerce ELT Data Pipeline, Lakehouse & AI Strategy Cockpit
 
+[English](README.md) | [繁體中文](README_zh.md)
+
 [![CI Quality Gates](https://github.com/shin7965977/data-pipeline-consulting-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/shin7965977/data-pipeline-consulting-demo/actions/workflows/ci.yml)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
 [![dbt Core](https://img.shields.io/badge/dbt--core-1.11+-orange.svg)](https://www.getdbt.com/)
@@ -140,11 +142,11 @@ python pipeline_runner.py --target=all --dataset=test_pipeline.duckdb
 ```bash
 streamlit run dashboard.py
 ```
-* **Tab 1: 📊 營收與營運關鍵指標** — 每日 GMV、Net Revenue 淨營收走勢、訂單取消與退款率監控。
-* **Tab 2: 🏆 商品銷售與貢獻分析** — Top SKU 銷售排行榜、類別貢獻與 Pareto 80/20 累積集中度分析。
-* **Tab 3: 💎 顧客終身價值 (LTV) 與分層** — RFM 價值分級（Platinum VIP / Gold / Silver / Bronze）與客單價分佈。
-* **Tab 4: 📈 AI 自然語言圖表生成器** — 透過自然語言即時生成專業 Plotly 圖表，內建商業範疇防護攔截無效提問。
-* **側邊欄: 🤖 FastMCP 智慧營運顧問** — 整合 Gemini 最新 Flash 模型進行 BigQuery Tool Calling，輸出頂級顧問診斷報告。
+* **Tab 1: 📊 Revenue & Operational KPIs** — Daily GMV, Net Revenue realization trends, and cancellation/refund rate tracking.
+* **Tab 2: 🏆 Product Performance & Contribution** — Top SKU leaderboard, category contribution, and Pareto 80/20 concentration analysis.
+* **Tab 3: 💎 Customer Lifetime Value (LTV) & Segmentation** — RFM tiers (Platinum VIP / Gold / Silver / Bronze) and AOV distribution.
+* **Tab 4: 📈 AI Natural Language Chart Generator** — Real-time interactive Plotly chart generation powered by Gemini with domain guardrails.
+* **Sidebar: 🤖 FastMCP AI Strategy Copilot** — Embedded partner-level advisory with BigQuery tool calling and MBB structured diagnostics.
 
 ### 5. Run Docker Container
 ```bash
@@ -174,18 +176,18 @@ python mcp_server/server.py
 
 ---
 
-## 📖 商業顧問與視覺化提問指南 (Management Consultant Prompting Guides)
+## 📖 Management Consulting & Data Visualization Prompting Guides
 
-本專案將麥肯錫（McKinsey）、貝恩（Bain）、BCG（MBB）與 IBM 的頂級顧問方法論深度固化為實用指南，助您在向 AI 提問時獲取最頂級的策略產出：
+This repository codifies the problem-solving methodologies of McKinsey, Bain, BCG (MBB), and IBM into actionable prompting blueprints:
 
-- 👉 **[提問框架.md](提問框架.md)**：
-  - **C-C-T-C-D 5 大核心拼圖**：Context（商業背景）、Complication（現狀異常）、Target（量化目標）、Constraints（邊界約束）、Deliverables（指定產物）。
-  - **空泛提問 vs. 顧問級提問對照表**（涵蓋利潤衰退、新市場拓展、AI 數位轉型實戰案例）。
-  - **隨選即用萬用提問模板** 與「反客為主」需求深掘技巧。
-- 👉 **[圖表生成指南.md](圖表生成指南.md)**：
-  - **C-T-D-S-A 圖表規格框架**：Tool（指定引擎）、Type（圖型選型）、Data（座標與排序）、Styling（灰階高亮對比）、Action Title（結論先行標題）。
-  - **繪圖負向約束清單**：過濾立體陰影、彩虹配色與擁擠圓餅圖。
-  - **3 大高頻商業圖表模板**：策略優先級 2x2 矩陣（Mermaid）、利潤變動瀑布圖（Plotly）、高亮對比長條圖（Seaborn）。
+- 👉 **[Management Consultant Prompting Guide (PROMPT_GUIDE.md)](PROMPT_GUIDE.md)** / [繁體中文版](提問框架.md):
+  - **C-C-T-C-D 5-Piece Framework**: Context, Complication, Target metric, Constraints, and Deliverables format.
+  - **Fluffy vs. Consultant-Grade Comparison Table** (Margin compression, new market expansion, digital transformation).
+  - **Copy-Paste Universal Prompt Template** and the "Turn the Tables" client interrogation technique.
+- 👉 **[Data Visualization Prompting Guide (CHART_PROMPT_GUIDE.md)](CHART_PROMPT_GUIDE.md)** / [繁體中文版](圖表生成指南.md):
+  - **C-T-D-S-A Chart Specification Framework**: Tool & engine, Type, Data mapping, Styling hierarchy, and Action Title.
+  - **Negative Constraints Checklist**: Banishing 3D effects, rainbow palettes, and overcrowded pie charts.
+  - **3 High-Frequency Executive Templates**: Strategic Prioritization 2x2 Matrix (Plotly), Profit Variance Waterfall (Plotly), and Horizontal Benchmark Bar (Seaborn/Plotly).
 
 ---
 
