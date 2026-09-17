@@ -15,41 +15,62 @@ An end-to-end, enterprise-grade Modern Data Stack (MDS) implementation designed 
 
 ## 🏛️ Architecture Overview
 
-```
-[ Platzi Fake Store REST API ] + [ Python Order Simulator (3-State Lifecycle) ]
-                                |
-                                v
-                [ Canonical Schema Normalizer ]
-                                |
-                                v
-               [ dlt Ingestion Engine (DuckDB / BigQuery) ]
-                                |
-                                v
-               +----------------------------------+
-               |  Medallion Architecture (GCP BQ)  |
-               |                                  |
-               |  [BRONZE] raw_* (Append-only)    |
-               |          |                       |
-               |          v                       |
-               |  [SILVER] stg_* (PII Masking)    |
-               |          |                       |
-               |          v                       |
-               |  [SILVER] dim_*, fct_* (Star)    |
-               |          |                       |
-               |          v                       |
-               |  [GOLD]   gold_* (Marts & KPIs)  |
-               +----------------------------------+
-                     |             |            |
-                     v             v            v
-    [ Streamlit Strategy Cockpit ] |  [ FastMCP AI Agent Service ]
-    - Tab 1: Sales & P&L KPIs      |  - Gemini 2.5/3.6 Flash Tool Calling
-    - Tab 2: Pareto 80/20 SKU      |  - Strict Gold-layer Whitelist
-    - Tab 3: Customer LTV & RFM    |  - MBB Management Consultant Skill
-    - Tab 4: AI Natural Language   |    (Pyramid Principle, MECE Tree)
-             Chart Generator       v
-                        [ Looker Studio BI ]
-                        - Executive Sales Overview
-                        - Cohort & Retention Analysis
+```mermaid
+flowchart TD
+    subgraph Ingestion["📥 Data Sources & Ingestion Layer"]
+        API["🌐 Platzi Fake Store REST API"]
+        SIM["⚙️ Python Order Simulator<br/>(3-State Lifecycle)"]
+        NORM["🔄 Canonical Schema Normalizer"]
+        DLT["🚀 dlt Ingestion Engine<br/>(DuckDB / BigQuery)"]
+        API --> NORM
+        SIM --> NORM
+        NORM --> DLT
+    end
+
+    subgraph Medallion["🏛️ Medallion Lakehouse (Google BigQuery)"]
+        BRONZE["🥉 [BRONZE] raw_*<br/>(Append-only Ingestion)"]
+        STG["🥈 [SILVER] stg_*<br/>(PII Salted SHA-256 Masking)"]
+        STAR["🥈 [SILVER] dim_*, fct_*<br/>(Star Schema Dimensional Modeling)"]
+        GOLD["🥇 [GOLD] gold_*<br/>(Business Marts & Executive KPIs)"]
+        
+        BRONZE -->|dbt clean & mask| STG
+        STG -->|dbt dimensional transform| STAR
+        STAR -->|dbt business aggregation| GOLD
+    end
+
+    DLT --> BRONZE
+
+    subgraph Orchestration["⏱️ Serverless DAG Orchestration ($0 Idle Cost)"]
+        SCHED["⏰ Cloud Scheduler<br/>(02:00 UTC Cron)"]
+        WF["⚡ Cloud Workflows<br/>(Visual DAG Orchestrator)"]
+        RUN["📦 Cloud Run Jobs<br/>(Ingest ➔ Transform ➔ Test)"]
+        SCHED --> WF --> RUN
+    end
+
+    RUN -.->|Automates| Ingestion
+    RUN -.->|Executes| Medallion
+
+    subgraph Consumption["📊 Analytics & AI Consumption Layer"]
+        STREAMLIT["💻 Streamlit Strategy Cockpit<br/>• Tab 1: Sales & P&L KPIs<br/>• Tab 2: Pareto 80/20 SKU<br/>• Tab 3: Customer LTV & RFM<br/>• Tab 4: AI Natural Language Chart Gen"]
+        MCP["🤖 FastMCP AI Agent Service<br/>• Gemini 2.5/3.6 Flash Tool Calling<br/>• MBB Management Consultant Skill<br/>• Strict Gold-layer Whitelist & Guardrail"]
+        LOOKER["📈 Looker Studio BI<br/>• Executive Sales Overview<br/>• Cohort & Retention Analysis"]
+    end
+
+    GOLD --> STREAMLIT
+    GOLD --> MCP
+    GOLD --> LOOKER
+
+    classDef bronze fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#92400e;
+    classDef silver fill:#f3f4f6,stroke:#4b5563,stroke-width:2px,color:#1f2937;
+    classDef gold fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#854d0e;
+    classDef app fill:#e0e7ff,stroke:#4f46e5,stroke-width:2px,color:#312e81;
+    classDef ai fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#581c87;
+
+    class BRONZE bronze;
+    class STG,STAR silver;
+    class GOLD gold;
+    class STREAMLIT app;
+    class MCP ai;
 ```
 
 ### 💼 Key Consulting Highlights
