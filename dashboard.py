@@ -98,8 +98,21 @@ st.markdown(
 PROJECT_ID = os.getenv("GCP_PROJECT_ID", "de-consulting-508822")
 KEY_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", os.path.abspath("gcp-key.json"))
 
+# 1. Local execution: Check for local gcp-key.json
 if os.path.exists(KEY_PATH):
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = KEY_PATH
+# 2. Streamlit Cloud execution: Check for st.secrets["gcp_service_account"]
+elif hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
+    import json
+    import tempfile
+
+    sa_info = dict(st.secrets["gcp_service_account"])
+    tmp_sa = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json")
+    json.dump(sa_info, tmp_sa)
+    tmp_sa.flush()
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = tmp_sa.name
+    if "project_id" in sa_info:
+        PROJECT_ID = sa_info["project_id"]
 
 
 @st.cache_data(ttl=300)
