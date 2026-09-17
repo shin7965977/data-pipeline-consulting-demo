@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from dashboard import generate_chart_from_nl
+from chart_generator import generate_chart_from_nl
 
 
 @pytest.fixture

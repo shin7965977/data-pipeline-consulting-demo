@@ -28,8 +28,8 @@ jobs:
 
       - name: Run Ruff (Python Linting & Formatting)
         run: |
-          ruff check ingestion/ tests/ mcp_server/ pipeline_runner.py
-          ruff format --check ingestion/ tests/ mcp_server/ pipeline_runner.py
+          ruff check ingestion/ tests/ mcp_server/ pipeline_runner.py chart_generator.py
+          ruff format --check ingestion/ tests/ mcp_server/ pipeline_runner.py chart_generator.py
 
       - name: Run SQLFluff (dbt SQL Linting)
         run: |
