@@ -81,10 +81,10 @@ resource "google_cloud_run_v2_job" "pipeline_job" {
   ]
 }
 
-# Cloud Scheduler Job for Daily Automated Execution
+# Cloud Scheduler Job for Daily Automated Execution (Triggers Cloud Workflows)
 resource "google_cloud_scheduler_job" "pipeline_schedule" {
   name             = "platzi-daily-pipeline-schedule"
-  description      = "Daily trigger for Platzi E-Commerce Data Pipeline (Runs at 02:00 UTC)"
+  description      = "Daily trigger for Platzi E-Commerce Data Pipeline via Cloud Workflows DAG (Runs at 02:00 UTC)"
   schedule         = "0 2 * * *"
   time_zone        = "Etc/UTC"
   attempt_deadline = "320s"
@@ -92,7 +92,8 @@ resource "google_cloud_scheduler_job" "pipeline_schedule" {
 
   http_target {
     http_method = "POST"
-    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.pipeline_job.name}:run"
+    uri         = "https://workflowexecutions.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/workflows/${google_workflows_workflow.pipeline_workflow.name}/executions"
+    body        = base64encode("{}")
 
     oauth_token {
       service_account_email = google_service_account.pipeline_sa.email
@@ -101,14 +102,15 @@ resource "google_cloud_scheduler_job" "pipeline_schedule" {
 
   depends_on = [
     google_project_service.enabled_apis,
-    google_cloud_run_v2_job.pipeline_job
+    google_workflows_workflow.pipeline_workflow
   ]
 }
 
-# Grant Cloud Run Invoker permission to the Pipeline Service Account
-resource "google_cloud_run_v2_job_iam_member" "scheduler_invoker" {
+# Grant Cloud Run Invoker permission to the Pipeline Service Account for Workflows execution
+resource "google_cloud_run_v2_job_iam_member" "workflow_job_invoker" {
   location = var.region
   name     = google_cloud_run_v2_job.pipeline_job.name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${google_service_account.pipeline_sa.email}"
 }
+

@@ -5,6 +5,7 @@ locals {
     "artifactregistry.googleapis.com",
     "run.googleapis.com",
     "cloudscheduler.googleapis.com",
+    "workflows.googleapis.com",
     "iam.googleapis.com"
   ]
 }
@@ -74,7 +75,10 @@ locals {
   pipeline_roles = [
     "roles/bigquery.dataEditor",
     "roles/bigquery.jobUser",
-    "roles/artifactregistry.writer"
+    "roles/artifactregistry.writer",
+    "roles/workflows.invoker",
+    "roles/run.developer",
+    "roles/iam.serviceAccountUser"
   ]
 }
 

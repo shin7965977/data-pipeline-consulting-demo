@@ -13,9 +13,9 @@ def parse_args():
     )
     parser.add_argument(
         "--target",
-        choices=["all", "ingest", "transform"],
+        choices=["all", "ingest", "transform", "test"],
         default=os.getenv("PIPELINE_TARGET", "all"),
-        help="Pipeline phase to execute (all, ingest, transform)",
+        help="Pipeline phase to execute (all, ingest, transform, test)",
     )
     parser.add_argument(
         "--destination",
@@ -86,7 +86,7 @@ def run_transformation_step(
     profiles_dir: str = "transform_dbt",
 ):
     print("=" * 60)
-    print("STEP 2: TRANSFORMATION & TESTING (dbt-core -> Silver & Gold)")
+    print("STEP 2: TRANSFORMATION (dbt run -> Silver & Gold)")
     print("=" * 60)
     target = dbt_target or os.getenv("DBT_TARGET", "bigquery")
     env = {**dict(os.environ), "DBT_TARGET": target}
@@ -110,6 +110,21 @@ def run_transformation_step(
         print("[dbt] dbt run failed! Exiting pipeline.")
         return res_run.returncode
 
+    print("[dbt] Transformations completed successfully!")
+    return 0
+
+
+def run_testing_step(
+    dbt_target: str | None = None,
+    project_dir: str = "transform_dbt",
+    profiles_dir: str = "transform_dbt",
+) -> int:
+    print("=" * 60)
+    print("STEP 3: TESTING & OBSERVABILITY (dbt test -> Elementary)")
+    print("=" * 60)
+    target = dbt_target or os.getenv("DBT_TARGET", "bigquery")
+    env = {**dict(os.environ), "DBT_TARGET": target}
+
     # dbt test
     cmd_test = [
         sys.executable,
@@ -123,13 +138,13 @@ def run_transformation_step(
         "--select",
         "platzi_transform",
     ]
-    print("[dbt] Running quality tests...")
+    print(f"[dbt] Running quality tests against target: {target}...")
     res_test = subprocess.run(cmd_test, env=env, check=False)
     if res_test.returncode != 0:
         print("[dbt] dbt test failed! Exiting pipeline.")
         return res_test.returncode
 
-    print("[dbt] Transformations and tests completed successfully!")
+    print("[dbt] Quality tests and Elementary observability completed successfully!")
     return 0
 
 
@@ -154,9 +169,15 @@ def run_pipeline_orchestrator(
             mock_mode=mock_mode,
         )
 
+    dbt_target = "duckdb" if destination == "duckdb" else "bigquery"
+
     if target in ("all", "transform"):
-        dbt_target = "duckdb" if destination == "duckdb" else "bigquery"
         ret = run_transformation_step(dbt_target=dbt_target)
+        if ret != 0:
+            return ret
+
+    if target in ("all", "test"):
+        ret = run_testing_step(dbt_target=dbt_target)
         if ret != 0:
             return ret
 

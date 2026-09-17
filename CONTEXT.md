@@ -47,3 +47,16 @@ _Avoid_: Checkpoint, Bookmark
 - **Bronze**: 原始資料層。由 `dlt` 自動寫入，保留 API / Simulator 的原始巢狀 JSON，採 Append-only 記錄歷史。
 - **Silver**: 清洗與標準化層。由 `dbt` 轉換，將巢狀結構展平為符合 Kimball 標準的維度表（`dim_*`）與事實表（`fct_*`）。
 - **Gold**: 商業指標與聚合層。由 `dbt` 產出面向下游 Looker Studio 與 FastMCP 的高效能聚合表（`gold_*`）。
+
+## Architecture & Orchestration
+
+- **Data Flow**: Ingestion (`dlt`) -> Transformation (`dbt run`) -> Quality Assurance (`dbt test` + Elementary Data).
+- **Serverless Orchestration**:
+  - **Scheduler**: Google Cloud Scheduler (Cron `0 2 * * *`)
+  - **Visual DAG**: Google Cloud Workflows (`platzi-pipeline-orchestrator`), providing step-by-step visual monitoring in GCP Console without server overhead.
+  - **Compute**: Google Cloud Run Jobs (`platzi-pipeline-job`), executing containerized steps (`--target=ingest|transform|test`) on demand.
+- **Architecture Decision Records (ADRs)**:
+  - [`docs/adr/0001-serverless-orchestration-cloud-run-and-scheduler.md`](docs/adr/0001-serverless-orchestration-cloud-run-and-scheduler.md)
+  - [`docs/adr/0002-pluggable-sources-and-incremental-strategy.md`](docs/adr/0002-pluggable-sources-and-incremental-strategy.md)
+  - [`docs/adr/0003-serverless-dag-orchestration-with-cloud-workflows.md`](docs/adr/0003-serverless-dag-orchestration-with-cloud-workflows.md)
+

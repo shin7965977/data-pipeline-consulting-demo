@@ -65,6 +65,8 @@ Thumbs.db
 *service_account*.json
 gcp-key.json
 
-# Elementary Reports
+# Elementary Reports & Cache
 elementary_report.html
+edr_target/
+
 
