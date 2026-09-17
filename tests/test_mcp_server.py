@@ -95,4 +95,3 @@ def test_mbb_consulting_prompts():
     p3 = customer_rfm_growth_strategy()
     assert "Platinum" in p3
     assert "Pareto" in p3
-

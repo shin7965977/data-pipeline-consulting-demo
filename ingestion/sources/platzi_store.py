@@ -209,7 +209,9 @@ class PlatziStoreAdapter:
             orders_per_day if orders_per_day is not None else eff_config.orders_per_day
         )
         eff_since = (
-            since_timestamp if since_timestamp is not None else eff_config.since_timestamp
+            since_timestamp
+            if since_timestamp is not None
+            else eff_config.since_timestamp
         )
 
         products = self.fetch_products()

@@ -56,7 +56,9 @@ def _execute_gold_query(
 
         job_config = bigquery.QueryJobConfig(maximum_bytes_billed=MAX_BYTES_BILLED)
         query_job = client.query(query, job_config=job_config)
-        return [{k: _clean_val(v) for k, v in row.items()} for row in query_job.result()]
+        return [
+            {k: _clean_val(v) for k, v in row.items()} for row in query_job.result()
+        ]
 
     return fallback_data[:limit]
 
@@ -78,7 +80,9 @@ def get_daily_sales_kpi(
     """
     limit = min(limit, 100)
     client = None if mock_mode else _get_bigquery_client()
-    project_id = os.getenv("GCP_PROJECT_ID", client.project if client else "platzi-demo")
+    project_id = os.getenv(
+        "GCP_PROJECT_ID", client.project if client else "platzi-demo"
+    )
 
     query = f"""
         SELECT order_date, total_orders, completed_orders, cancelled_orders,
@@ -131,7 +135,9 @@ def get_top_products(limit: int = 10, mock_mode: bool = False) -> list[dict[str,
     """
     limit = min(limit, 50)
     client = None if mock_mode else _get_bigquery_client()
-    project_id = os.getenv("GCP_PROJECT_ID", client.project if client else "platzi-demo")
+    project_id = os.getenv(
+        "GCP_PROJECT_ID", client.project if client else "platzi-demo"
+    )
 
     query = f"""
         SELECT product_id, product_title, category_name, unit_price,
@@ -190,7 +196,9 @@ def get_customer_metrics(
     """
     limit = min(limit, 100)
     client = None if mock_mode else _get_bigquery_client()
-    project_id = os.getenv("GCP_PROJECT_ID", client.project if client else "platzi-demo")
+    project_id = os.getenv(
+        "GCP_PROJECT_ID", client.project if client else "platzi-demo"
+    )
 
     query = f"""
         SELECT customer_id, first_order_date, last_order_date,
@@ -305,4 +313,3 @@ You are an MBB Customer & Growth Strategy Consultant analyzing {segment_focus} f
 if __name__ == "__main__":
     # Run FastMCP server over stdio
     mcp.run()
-

@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+
 from dashboard import generate_chart_from_nl
 
 
@@ -44,7 +45,9 @@ def sample_data():
 
 def test_generate_chart_kpi_trend(sample_data):
     df_kpi, df_prod, df_ltv = sample_data
-    fig, title, insight, df = generate_chart_from_nl("請畫出每日 GMV 與實質淨營收趨勢", df_kpi, df_prod, df_ltv)
+    fig, title, insight, _ = generate_chart_from_nl(
+        "請畫出每日 GMV 與實質淨營收趨勢", df_kpi, df_prod, df_ltv
+    )
     assert fig is not None
     assert "GMV" in title or "對比" in title
     assert len(insight) > 0
@@ -52,28 +55,36 @@ def test_generate_chart_kpi_trend(sample_data):
 
 def test_generate_chart_top_products(sample_data):
     df_kpi, df_prod, df_ltv = sample_data
-    fig, title, insight, df = generate_chart_from_nl("請用長條圖呈現熱銷商品排行", df_kpi, df_prod, df_ltv)
+    fig, title, _, _ = generate_chart_from_nl(
+        "請用長條圖呈現熱銷商品排行", df_kpi, df_prod, df_ltv
+    )
     assert fig is not None
     assert "商品" in title
 
 
 def test_generate_chart_category_pie(sample_data):
     df_kpi, df_prod, df_ltv = sample_data
-    fig, title, insight, df = generate_chart_from_nl("幫我畫各商品品類銷售佔比圓餅圖", df_kpi, df_prod, df_ltv)
+    fig, title, _, _ = generate_chart_from_nl(
+        "幫我畫各商品品類銷售佔比圓餅圖", df_kpi, df_prod, df_ltv
+    )
     assert fig is not None
     assert "品類" in title or "佔比" in title
 
 
 def test_generate_chart_customer_tier(sample_data):
     df_kpi, df_prod, df_ltv = sample_data
-    fig, title, insight, df = generate_chart_from_nl("各會員等級顧客價值分佈圓餅圖", df_kpi, df_prod, df_ltv)
+    fig, title, _, _ = generate_chart_from_nl(
+        "各會員等級顧客價值分佈圓餅圖", df_kpi, df_prod, df_ltv
+    )
     assert fig is not None
     assert "會員" in title or "等級" in title
 
 
 def test_generate_chart_refund_monitoring(sample_data):
     df_kpi, df_prod, df_ltv = sample_data
-    fig, title, insight, df = generate_chart_from_nl("監控每日退款率與取消率", df_kpi, df_prod, df_ltv)
+    fig, title, _, _ = generate_chart_from_nl(
+        "監控每日退款率與取消率", df_kpi, df_prod, df_ltv
+    )
     assert fig is not None
     assert "退款" in title or "取消" in title
 
@@ -81,12 +92,15 @@ def test_generate_chart_refund_monitoring(sample_data):
 def test_generate_chart_rejects_irrelevant_query(sample_data):
     """Guardrail test: Non-business questions like politics or weather must be rejected."""
     df_kpi, df_prod, df_ltv = sample_data
-    fig, title, insight, df = generate_chart_from_nl("柯文哲是誰", df_kpi, df_prod, df_ltv)
+    fig, title, insight, _ = generate_chart_from_nl(
+        "柯文哲是誰", df_kpi, df_prod, df_ltv
+    )
     assert fig is None
     assert "業務範疇" in title or "約束" in title
     assert "無關" in insight
 
-    fig2, title2, insight2, df2 = generate_chart_from_nl("今天天氣好嗎", df_kpi, df_prod, df_ltv)
+    fig2, _, insight2, _ = generate_chart_from_nl(
+        "今天天氣好嗎", df_kpi, df_prod, df_ltv
+    )
     assert fig2 is None
     assert "無關" in insight2
-

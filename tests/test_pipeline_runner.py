@@ -64,9 +64,7 @@ def test_run_orchestrator_target_routing():
     with (
         patch("pipeline_runner.run_ingestion_step") as mock_ingest,
         patch("pipeline_runner.run_transformation_step") as mock_transform,
-        patch(
-            "pipeline_runner.run_testing_step", return_value=0
-        ) as mock_test,
+        patch("pipeline_runner.run_testing_step", return_value=0) as mock_test,
     ):
         # Target: test only
         res = run_pipeline_orchestrator(target="test", mock_mode=True)
@@ -80,9 +78,7 @@ def test_run_orchestrator_target_routing():
         patch(
             "pipeline_runner.run_transformation_step", return_value=0
         ) as mock_transform,
-        patch(
-            "pipeline_runner.run_testing_step", return_value=0
-        ) as mock_test,
+        patch("pipeline_runner.run_testing_step", return_value=0) as mock_test,
     ):
         # Target: all
         res = run_pipeline_orchestrator(target="all", mock_mode=True)
@@ -90,4 +86,3 @@ def test_run_orchestrator_target_routing():
         assert mock_ingest.called
         assert mock_transform.called
         assert mock_test.called
-
