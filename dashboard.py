@@ -430,16 +430,17 @@ def render_fastmcp_copilot():
     st.caption("AI Operations Lakehouse Copilot · ⚡ Live")
     st.caption(f"🔒 鎖定 BigQuery `({PROJECT_ID}.platzi_gold)` 脫敏分析")
 
-    # Gemini AI API Key Setting
+    # Gemini AI API Key Setting (Strict BYOK - Bring Your Own Key)
     st.markdown("##### 🔑 Gemini AI 設定")
     user_gemini_key = st.text_input(
-        "輸入 Gemini API Key (選填)",
+        "輸入您的 Google Gemini API Key",
         type="password",
-        value=os.getenv("GEMINI_API_KEY", ""),
-        help="輸入後將啟用 Google Gemini 原生對話與 Function Calling，直接與 BigQuery 進行 AI 互動！",
+        value=st.session_state.get("sidebar_gemini_api_key", ""),
+        placeholder="AIzaSy...",
+        help="請輸入您自己的 Google Gemini API Key（可於 Google AI Studio 免費申請）。系統不會儲存您的金鑰，連線結束即釋放。",
         key="sidebar_gemini_api_key",
     )
-    st.caption("⚡ **全自動模型協議**：系統自動偵測並調用 Google API 最新旗艦模型（版本絕不寫死）。")
+    st.caption("🔒 **安全保障（BYOK 模式）**：系統絕不儲存金鑰，亦不使用開發者帳號付費。[👉 點此免費獲取 API Key](https://aistudio.google.com/app/apikey)")
 
     st.markdown("##### 💡 快速業務提問")
     q_col1, q_col2 = st.columns(2)
@@ -1009,7 +1010,7 @@ with tab4:
     st.subheader("✨ 自然語言 AI 智能圖表生成器 (Text-to-Chart)")
     st.caption("🤖 支援自然繁體中文輸入任何圖表需求，AI 即時自動選取 BigQuery 金牌資料欄位並繪製互動式 Plotly 圖表")
 
-    gemini_key = st.session_state.get("sidebar_gemini_api_key", os.getenv("GEMINI_API_KEY", ""))
+    gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
 
     st.markdown("##### 💡 點擊範例指令立即生圖：")
     c_btn1, c_btn2, c_btn3 = st.columns(3)
