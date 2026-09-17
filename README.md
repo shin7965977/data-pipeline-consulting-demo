@@ -125,6 +125,10 @@ python mcp_server/server.py
 - `get_top_products(metric, limit)`: Top performing products ranked by total revenue or units sold.
 - `get_customer_metrics(limit)`: High-value customer LTV percentiles, frequency, and monetary scores.
 
+### 📖 商業顧問提問指南 (Management Consultant Prompting Guide)
+想要獲得頂級顧問水準的精準策略分析？請參閱本專案的提問指南與萬用模板：
+👉 **[提問框架.md](提問框架.md)**（包含 C-C-T-C-D 5 大核心拼圖、空泛 vs. 顧問級提問對照表、與一鍵複製模板）。
+
 ---
 
 ## 📊 Business Intelligence (Looker Studio)
