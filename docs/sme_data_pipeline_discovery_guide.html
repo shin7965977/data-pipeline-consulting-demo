@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中小企業數據營運痛點調研與診斷工作台 (Interactive Discovery Workspace)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --border-color: #cbd5e1;
+            --bg-main: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            font-size: 10pt;
+            padding-bottom: 80px;
+        }
+
+        /* Container */
+        .workspace-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 28px 36px;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        /* Top Bar Floating Controls */
+        .sticky-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(10px);
+            color: #ffffff;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .toolbar-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .save-indicator {
+            font-size: 0.8rem;
+            color: #34d399;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .toolbar-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-action {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.825rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-action:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .btn-primary-action {
+            background: #2563eb;
+            border-color: #3b82f6;
+        }
+
+        /* Header Area */
+        .doc-header {
+            border-bottom: 3px solid #1e3a8a;
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .doc-title-area h1 {
+            color: #0f172a;
+            font-size: 20pt;
+            margin: 0 0 6px 0;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .doc-title-area .subtitle {
+            color: #2563eb;
+            font-size: 11pt;
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 8pt;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #bfdbfe;
+            margin-bottom: 6px;
+        }
+
+        /* Interviewee Metadata Form */
+        .interview-meta-card {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        .meta-field label {
+            display: block;
+            font-size: 8pt;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .meta-field input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 9pt;
+            font-family: inherit;
+            background: #ffffff;
+            transition: border-color 0.2s;
+        }
+        .meta-field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        /* Executive Callout */
+        .exec-callout {
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 22px;
+            font-size: 9.5pt;
+            color: #1e3a8a;
+        }
+
+        /* Section Headings */
+        h2 {
+            color: #0f172a;
+            font-size: 13pt;
+            margin: 22px 0 12px 0;
+            padding-bottom: 5px;
+            border-bottom: 1.5px solid #e2e8f0;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Module Boxes */
+        .module-box {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            background: #ffffff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+            transition: border-color 0.2s;
+        }
+        .module-box:hover {
+            border-color: #94a3b8;
+        }
+        .module-header {
+            background: #f1f5f9;
+            padding: 10px 16px;
+            border-bottom: 1px solid #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .module-title {
+            font-size: 10.5pt;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .module-tech-badge {
+            font-size: 8pt;
+            font-weight: 700;
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1px solid #c7d2fe;
+        }
+        .module-body {
+            padding: 16px 18px;
+        }
+
+        /* Question Item */
+        .question-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+        .question-card:last-child {
+            margin-bottom: 0;
+        }
+        .question-card:focus-within {
+            background: #ffffff;
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+        }
+        .q-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .q-tag {
+            font-size: 7.5pt;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .tag-open { background: #dbeafe; color: #1e40af; }
+        .tag-deep { background: #fef3c7; color: #92400e; }
+        .tag-quant { background: #fee2e2; color: #991b1b; }
+
+        .severity-selector {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 8pt;
+            color: #64748b;
+        }
+        .star-rating {
+            display: flex;
+            gap: 2px;
+            cursor: pointer;
+        }
+        .star {
+            color: #cbd5e1;
+            font-size: 13pt;
+            transition: color 0.15s;
+        }
+        .star.active {
+            color: #f59e0b;
+        }
+
+        .q-text {
+            font-size: 9.5pt;
+            color: #0f172a;
+            font-weight: 700;
+            margin: 4px 0 3px 0;
+            line-height: 1.45;
+        }
+        .q-hint {
+            font-size: 8pt;
+            color: #64748b;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        /* Note Input Area */
+        .note-textarea {
+            width: 100%;
+            min-height: 52px;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 9pt;
+            font-family: inherit;
+            color: #1e293b;
+            background: #ffffff;
+            resize: vertical;
+            transition: border-color 0.2s;
+            line-height: 1.5;
+        }
+        .note-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #ffffff;
+        }
+        .note-textarea::placeholder {
+            color: #94a3b8;
+            font-size: 8.5pt;
+        }
+
+        .quant-input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 8.5pt;
+            color: #475569;
+        }
+        .quant-input {
+            padding: 4px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 8.5pt;
+            width: 130px;
+            background: #ffffff;
+        }
+
+        /* Diagnostic Live Summary */
+        .live-summary-card {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 24px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-metric {
+            text-align: center;
+        }
+        .metric-val {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #38bdf8;
+            line-height: 1;
+        }
+        .metric-lbl {
+            font-size: 8pt;
+            color: #94a3b8;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            margin: 12px 0 20px 0;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 700;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        /* Modal for Exporting */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-box {
+            background: #ffffff;
+            width: 90%;
+            max-width: 700px;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+        .modal-body textarea {
+            width: 100%;
+            height: 380px;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 9pt;
+            line-height: 1.4;
+            background: #f8fafc;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        /* Print Media Styling */
+        @media print {
+            .sticky-toolbar, .modal-overlay, .btn-action { display: none !important; }
+            body { background: #ffffff !important; font-size: 9pt !important; padding: 0 !important; }
+            .workspace-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+            }
+            .note-textarea {
+                border: 1px dashed #cbd5e1 !important;
+                min-height: 40px !important;
+                background: #ffffff !important;
+            }
+            .question-card {
+                page-break-inside: avoid;
+            }
+            .module-box {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- STICKY INTERACTIVE TOOLBAR -->
+    <div class="sticky-toolbar">
+        <div class="toolbar-title">
+            <span>📋 電商痛點診斷工作台</span>
+            <span class="save-indicator" id="saveStatus">● 已自動儲存至瀏覽器</span>
+        </div>
+        <div class="toolbar-actions">
+            <button class="btn-action" id="btnExportMarkdown">📤 匯出訪談紀錄 (Markdown)</button>
+            <button class="btn-action" id="btnPrint">🖨️ 列印 / 存為 PDF</button>
+            <button class="btn-action btn-primary-action" id="btnSaveManual">💾 立即手動儲存</button>
+            <button class="btn-action" id="btnResetAll" style="background: rgba(239, 68, 68, 0.3);">🗑️ 清空重填</button>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="workspace-container">
+
+        <!-- HEADER -->
+        <div class="doc-header">
+            <div class="doc-title-area">
+                <span class="badge">MBB Consulting Interactive Discovery Tool</span>
+                <h1>中小企業數據營運痛點調研診斷手冊</h1>
+                <p class="subtitle">可即時打字輸入 · 自動儲存 · 量化痛點程度 · 產生診斷摘要</p>
+            </div>
+        </div>
+
+        <!-- INTERVIEWEE METADATA -->
+        <div class="interview-meta-card">
+            <div class="meta-field">
+                <label>受訪公司名稱</label>
+                <input type="text" id="metaCompany" placeholder="例：晨星電商有限公司">
+            </div>
+            <div class="meta-field">
+                <label>受訪者姓名 / 職稱</label>
+                <input type="text" id="metaPerson" placeholder="例：林總經理 / 電商主管">
+            </div>
+            <div class="meta-field">
+                <label>訪談日期</label>
+                <input type="date" id="metaDate">
+            </div>
+            <div class="meta-field">
+                <label>主訪顧問 / 記錄人</label>
+                <input type="text" id="metaInterviewer" placeholder="您的姓名">
+            </div>
+        </div>
+
+        <div class="exec-callout">
+            <strong>💡 調研執行提示 (The Mom Test)</strong>：<br>
+            請直接在下方各問題的輸入框中，記錄受訪者說出的<strong>「痛點原話」</strong>與<strong>「具體數字（如：每週花 5 小時、退款率 8%）」</strong>。點選星號可為該項痛點嚴重度評分，上方工具列會隨打即存！
+        </div>
+
+        <!-- MODULE 1 -->
+        <h2>📂 模組 1：資料取得與手動搬運 (Data Silos & Manual Friction)</h2>
+        <div class="module-box">
+            <div class="module-header">
+                <span class="module-title">模組 1：多通路資料孤島與人工搬運</span>
+                <span class="module-tech-badge">對應專案：dlt 自動化排程增量擷取 (Bronze Ingestion)</span>
+            </div>
+            <div class="module-body">
+                <!-- Q1.1 -->
+                <div class="question-card" data-qid="q1_1">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-open">開門現況題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q1_1_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">1.1「貴公司目前的訂單、商品與客戶數據，分別存放在哪些系統（官網、蝦皮、POS、金物流後台）？」</p>
+                    <p class="q-hint">探查目的：確認是否存在「多通路資料孤島」，是否有統一集中的資料庫。</p>
+                    <textarea class="note-textarea" id="note_q1_1" placeholder="📝 記錄受訪者回答（例如：官網用 91APP、蝦皮旗艦店、實體門市用客製 POS，後台互不相通...）"></textarea>
+                </div>
+
+                <!-- Q1.2 -->
+                <div class="question-card" data-qid="q1_2">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-deep">痛點深挖題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q1_2_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">1.2「為了產出給老闆或主管看的日報/週報，團隊是否需要每天手動登入各後台下載 CSV/Excel 並複製貼上？」</p>
+                    <p class="q-hint">探查目的：鎖定重複性極高、極易被 dlt 自動排程取代的人工搬表流程。</p>
+                    <textarea class="note-textarea" id="note_q1_2" placeholder="📝 記錄受訪者回答（例如：助理小陳每天早上 9 點要登入三處下載訂單表，手動合併到一個總表...）"></textarea>
+                </div>
+
+                <!-- Q1.3 -->
+                <div class="question-card" data-qid="q1_3">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-quant">商業影響量化題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q1_3_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">1.3「這套『下載 ➔ 複製貼上 ➔ 公式計算』的流程，每週大約佔用同仁多少小時？曾因為人工複製出錯而影響對帳嗎？」</p>
+                    <p class="q-hint">量化錨點：每週浪費工時與人工貼錯失誤頻率。</p>
+                    <textarea class="note-textarea" id="note_q1_3" placeholder="📝 記錄受訪者回答（例如：每週一耗時 3~4 小時，上個月曾貼錯欄位導致毛利計算失誤...）"></textarea>
+                    <div class="quant-input-row">
+                        <span>⏱️ 估計每週浪費人工工時：</span>
+                        <input type="text" class="quant-input" id="quant_q1_3_hours" placeholder="例：5 小時 / 週">
+                        <span>💸 估計月人力成本損失：</span>
+                        <input type="text" class="quant-input" id="quant_q1_3_cost" placeholder="例：12,000 元">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 2 -->
+        <h2>📂 模組 2：數據清洗與指標口徑治理 (Data Quality & KPI Governance)</h2>
+        <div class="module-box">
+            <div class="module-header">
+                <span class="module-title">模組 2：指標衝突與退款獲利漏損</span>
+                <span class="module-tech-badge">對應專案：dbt 金銀銅湖倉分層轉換 + 自動化品質測試守門</span>
+            </div>
+            <div class="module-body">
+                <!-- Q2.1 -->
+                <div class="question-card" data-qid="q2_1">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-open">開門現況題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q2_1_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">2.1「在內部會議上看『總營收』或『訂單總額』時，業務、行銷與財務三個部門看到的數字總是一致的嗎？」</p>
+                    <p class="q-hint">探查目的：檢視是否有「各部門各自拉表、口徑不一」導致的溝通內耗。</p>
+                    <textarea class="note-textarea" id="note_q2_1" placeholder="📝 記錄受訪者回答（例如：常常對不上，行銷報的是含退款的交易額，財務認列的是實收現金...）"></textarea>
+                </div>
+
+                <!-- Q2.2 -->
+                <div class="question-card" data-qid="q2_2">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-deep">痛點深挖題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q2_2_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">2.2「當計算真實淨營收時，訂單取消、退貨退款、優惠折抵與運費補貼，目前是由誰、在何時手動扣除？」</p>
+                    <p class="q-hint">探查目的：確認是否混淆了 GMV 與實質淨營收 (Net Revenue)，是否存在利潤流失盲區。</p>
+                    <textarea class="note-textarea" id="note_q2_2" placeholder="📝 記錄受訪者回答（例如：月底結帳會計才抓退貨單一筆筆對，平時看板根本看不到即時淨額...）"></textarea>
+                </div>
+
+                <!-- Q2.3 -->
+                <div class="question-card" data-qid="q2_3">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-quant">商業影響量化題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q2_3_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">2.3「過去是否有過行銷活動看似業績大爆發，但月底財務結算扣除退款與退貨成本後，才發現根本虧損的情況？」</p>
+                    <p class="q-hint">量化錨點：虛假業績繁榮導致的行銷預算錯置與毛利稀釋。</p>
+                    <textarea class="note-textarea" id="note_q2_3" placeholder="📝 記錄受訪者回答（例如：大促銷打 7 折加上退款率飆到 12%，活動帳面做百萬但實質淨賠 5 萬...）"></textarea>
+                    <div class="quant-input-row">
+                        <span>📉 估計常態取消/退款率：</span>
+                        <input type="text" class="quant-input" id="quant_q2_3_rate" placeholder="例：8.5%">
+                        <span>💸 估計月度毛利流失額：</span>
+                        <input type="text" class="quant-input" id="quant_q2_3_leakage" placeholder="例：30,000 元">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 3 -->
+        <h2>📂 模組 3：報表時效性與自訂探索 (Reporting Latency & BI Canvas)</h2>
+        <div class="module-box">
+            <div class="module-header">
+                <span class="module-title">模組 3：決策時效延遲與自訂分析彈性</span>
+                <span class="module-tech-badge">對應專案：Streamlit 即時儀表板 + Power BI 拖曳自訂畫布 (PyGWalker)</span>
+            </div>
+            <div class="module-body">
+                <!-- Q3.1 -->
+                <div class="question-card" data-qid="q3_1">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-open">開門現況題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q3_1_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">3.1「管理層平常多久看一次核心指標（GMV、客單價 AOV、顧客終身價值 LTV）？是即時能查，還是要等週報/月報？」</p>
+                    <p class="q-hint">探查目的：衡量數據時效延遲（Latency），確認決策是否有盲期。</p>
+                    <textarea class="note-textarea" id="note_q3_1" placeholder="📝 記錄受訪者回答（例如：只能看每週一出刊的 Excel 週報，遇到連假甚至要等兩週...）"></textarea>
+                </div>
+
+                <!-- Q3.2 -->
+                <div class="question-card" data-qid="q3_2">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-deep">痛點深挖題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q3_2_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">3.2「如果老闆臨時想看一個深入分析（例如：『特定品類在 VIP 客戶間的退款趨勢』），團隊需要多久才能產出這張圖？」</p>
+                    <p class="q-hint">探查目的：評估現有系統是否死板、缺乏隨選拖曳或 AI 自動排版能力。</p>
+                    <textarea class="note-textarea" id="note_q3_2" placeholder="📝 記錄受訪者回答（例如：現成 POS 做不出來，要請工程師撈資料或手動用樞紐分析表做半天...）"></textarea>
+                </div>
+
+                <!-- Q3.3 -->
+                <div class="question-card" data-qid="q3_3">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-quant">商業影響量化題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q3_3_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">3.3「目前公司是否有購買昂貴的 BI 軟體授權（如 Power BI / Tableau 每人每月數百至上千元），但實際使用率卻偏低？」</p>
+                    <p class="q-hint">量化錨點：外購軟體月租浪費 vs 學習門檻高無法推廣至全員。</p>
+                    <textarea class="note-textarea" id="note_q3_3" placeholder="📝 記錄受訪者回答（例如：買了 3 個 Power BI 帳號一年花好幾萬，但最後大家還是叫工程師匯出 Excel...）"></textarea>
+                    <div class="quant-input-row">
+                        <span>💵 目前每年外購 BI 軟體費用：</span>
+                        <input type="text" class="quant-input" id="quant_q3_3_soft_cost" placeholder="例：36,000 元">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 4 -->
+        <h2>📂 模組 4：商業異常歸因與決策支援 (Root-Cause & AI Copilot)</h2>
+        <div class="module-box">
+            <div class="module-header">
+                <span class="module-title">模組 4：異常因果歸因與主動決策支援</span>
+                <span class="module-tech-badge">對應專案：FastMCP 深度商業歸因 + Gemini 顧問多輪對話 (Mode A)</span>
+            </div>
+            <div class="module-body">
+                <!-- Q4.1 -->
+                <div class="question-card" data-qid="q4_1">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-open">開門現況題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q4_1_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">4.1「當某週營收突然下滑 15%，或是退款率異常飆高時，內部通常如何找出原因？需要開幾次跨部門會議？」</p>
+                    <p class="q-hint">探查目的：確認是否缺乏「因果分解樹」，多數小公司停留在互相猜測與推諉。</p>
+                    <textarea class="note-textarea" id="note_q4_1" placeholder="📝 記錄受訪者回答（例如：開會吵半天，行銷怪物流送太慢、客服怪商品尺寸標錯，查不出根本原因...）"></textarea>
+                </div>
+
+                <!-- Q4.2 -->
+                <div class="question-card" data-qid="q4_2">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-deep">痛點深挖題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q4_2_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">4.2「目前系統是否能自動發出異常預警並給出行動建議？還是通常要等到客人投訴、庫存積壓才被動救火？」</p>
+                    <p class="q-hint">探查目的：評估從「被動看歷史圖」躍升至「AI 顧問主動給戰術」的商業價值。</p>
+                    <textarea class="note-textarea" id="note_q4_2" placeholder="📝 記錄受訪者回答（例如：完全沒有自動預警，通常都是客人負評洗版或是倉庫爆倉才發現問題大條...）"></textarea>
+                </div>
+
+                <!-- Q4.3 -->
+                <div class="question-card" data-qid="q4_3">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-quant">商業影響量化題</span>
+                        <div class="severity-selector">
+                            痛點評分：
+                            <div class="star-rating" data-for="q4_3_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">4.3「如果有一個 AI 顧問能每天秒級產出『SCQA 商業診斷 + 30天挽回方針 + 召回簡訊文案』，這能為主管節省多少時間？」</p>
+                    <p class="q-hint">量化錨點：將 3 天跨部門調查與推諉縮短至 30 秒，搶回止血黃金 72 小時。</p>
+                    <textarea class="note-textarea" id="note_q4_3" placeholder="📝 記錄受訪者回答（例如：如果能自動產出未結帳挽回簡訊跟折價碼，光挽回 5% 棄單每個月就能多做好幾萬...）"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE DIAGNOSTIC SCORECARD -->
+        <div class="live-summary-card">
+            <div>
+                <h3 style="color: #ffffff; font-size: 1.25rem; margin-bottom: 4px;">📊 訪談診斷即時打分與總結</h3>
+                <p style="color: #94a3b8; font-size: 0.85rem;">系統根據您在上述 12 個問題所勾選的星號評級，自動加權計算痛點指數：</p>
+            </div>
+            <div style="display: flex; gap: 32px;">
+                <div class="summary-metric">
+                    <div class="metric-val" id="scoreOverall">0</div>
+                    <div class="metric-lbl">綜合痛點指數 / 100</div>
+                </div>
+                <div class="summary-metric">
+                    <div class="metric-val" id="topPriorityModule" style="font-size: 1.2rem; color: #f59e0b; margin-top: 6px;">模組 1</div>
+                    <div class="metric-lbl">建議切入首選 (P0)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VALUE MAPPING TABLE -->
+        <h2>🚀 痛點 ➔ 專案解方快速映射表 (訪談後提案依據)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 25%;">痛點維度</th>
+                    <th style="width: 35%;">客戶可能抱怨的原話 (痛點徵兆)</th>
+                    <th style="width: 40%;">本專案功能與成效價值 (Feature Value)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1. 人工資料搬運</strong></td>
+                    <td><em>「每週一小陳都要花半天抓各後台報表，格式常常跑掉被罵。」</em></td>
+                    <td><strong>dlt 自動增量同步</strong>：每晚自動載入 BigQuery 湖倉，週一開機報表已就緒，節省 90% 人力。</td>
+                </tr>
+                <tr>
+                    <td><strong>2. 指標對帳不齊</strong></td>
+                    <td><em>「行銷說業績破百萬，但財務扣掉退款卻發現根本虧損。」</em></td>
+                    <td><strong>dbt 金銀銅建模治理</strong>：嚴格扣除取消與退貨，透明呈現實質淨營收與每一分真實毛利。</td>
+                </tr>
+                <tr>
+                    <td><strong>3. 看板時效延遲</strong></td>
+                    <td><em>「想看各品類交叉圖，但現有後台拉不出來、買專業軟體又太貴。」</em></td>
+                    <td><strong>內建類 Power BI/Tableau 畫布</strong>：打字或滑鼠拖曳秒級產圖，省下每年數萬至十數萬授權費。</td>
+                </tr>
+                <tr>
+                    <td><strong>4. 缺乏異常歸因</strong></td>
+                    <td><em>「業績掉了大家開會吵了一上午，還不知道哪一款商品出問題。」</em></td>
+                    <td><strong>FastMCP AI 商業顧問</strong>：秒出 SCQA 歸因報告，並附贈即時 VIP 挽回簡訊模板與 30 天止血方針。</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+    <!-- EXPORT MODAL -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title">📄 訪談紀要匯出 (Markdown / 格式化文字)</div>
+                <button class="modal-close" id="btnCloseModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="exportText" readonly></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-action" id="btnCopyExport" style="background: #2563eb;">📋 複製到剪貼簿</button>
+                <button class="btn-action" id="btnDownloadExport" style="background: #10b981;">💾 下載為 .md 檔案</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const STORAGE_KEY = "sme_discovery_interview_v1";
+
+        // Collect all input IDs
+        const metaFields = ['metaCompany', 'metaPerson', 'metaDate', 'metaInterviewer'];
+        const questionIds = [
+            'q1_1', 'q1_2', 'q1_3',
+            'q2_1', 'q2_2', 'q2_3',
+            'q3_1', 'q3_2', 'q3_3',
+            'q4_1', 'q4_2', 'q4_3'
+        ];
+        const quantFields = ['quant_q1_3_hours', 'quant_q1_3_cost', 'quant_q2_3_rate', 'quant_q2_3_leakage', 'quant_q3_3_soft_cost'];
+
+        // Stars state: { q1_1: 4, ... }
+        let ratings = {};
+
+        // Star rating click events
+        document.querySelectorAll('.star-rating').forEach(ratingGroup => {
+            const forId = ratingGroup.getAttribute('data-for').replace('_stars', '');
+            const stars = ratingGroup.querySelectorAll('.star');
+            
+            stars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const val = parseInt(star.getAttribute('data-val'), 10);
+                    ratings[forId] = val;
+                    renderStars(ratingGroup, val);
+                    saveData();
+                    calculateSummary();
+                });
+            });
+        });
+
+        function renderStars(ratingGroup, val) {
+            const stars = ratingGroup.querySelectorAll('.star');
+            stars.forEach(s => {
+                const sVal = parseInt(s.getAttribute('data-val'), 10);
+                s.classList.toggle('active', sVal <= val);
+            });
+        }
+
+        // Auto-save logic
+        function saveData() {
+            const data = {
+                meta: {},
+                notes: {},
+                quants: {},
+                ratings: ratings
+            };
+
+            metaFields.forEach(f => {
+                const el = document.getElementById(f);
+                if (el) data.meta[f] = el.value;
+            });
+
+            questionIds.forEach(qid => {
+                const el = document.getElementById(`note_${qid}`);
+                if (el) data.notes[qid] = el.value;
+            });
+
+            quantFields.forEach(qf => {
+                const el = document.getElementById(qf);
+                if (el) data.quants[qf] = el.value;
+            });
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            showSaveIndicator();
+        }
+
+        function loadData() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) {
+                // Set today's date by default
+                const dateEl = document.getElementById('metaDate');
+                if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+                return;
+            }
+
+            try {
+                const data = JSON.parse(raw);
+
+                // Load meta
+                if (data.meta) {
+                    metaFields.forEach(f => {
+                        const el = document.getElementById(f);
+                        if (el && data.meta[f]) el.value = data.meta[f];
+                    });
+                }
+
+                // Load notes
+                if (data.notes) {
+                    questionIds.forEach(qid => {
+                        const el = document.getElementById(`note_${qid}`);
+                        if (el && data.notes[qid]) el.value = data.notes[qid];
+                    });
+                }
+
+                // Load quants
+                if (data.quants) {
+                    quantFields.forEach(qf => {
+                        const el = document.getElementById(qf);
+                        if (el && data.quants[qf]) el.value = data.quants[qf];
+                    });
+                }
+
+                // Load ratings
+                if (data.ratings) {
+                    ratings = data.ratings;
+                    document.querySelectorAll('.star-rating').forEach(ratingGroup => {
+                        const forId = ratingGroup.getAttribute('data-for').replace('_stars', '');
+                        if (ratings[forId]) {
+                            renderStars(ratingGroup, ratings[forId]);
+                        }
+                    });
+                }
+
+                calculateSummary();
+            } catch (err) {
+                console.error("Failed to load local data", err);
+            }
+        }
+
+        function showSaveIndicator() {
+            const el = document.getElementById('saveStatus');
+            if (el) {
+                el.textContent = "● 已即時儲存 (" + new Date().toLocaleTimeString() + ")";
+                el.style.color = "#34d399";
+            }
+        }
+
+        // Listen for input changes
+        document.querySelectorAll('input, textarea').forEach(el => {
+            el.addEventListener('input', () => {
+                saveData();
+                calculateSummary();
+            });
+        });
+
+        // Summary calculation
+        function calculateSummary() {
+            let totalStars = 0;
+            let count = 0;
+            const moduleTotals = { "模組 1": 0, "模組 2": 0, "模組 3": 0, "模組 4": 0 };
+
+            questionIds.forEach(qid => {
+                const starVal = ratings[qid] || 0;
+                totalStars += starVal;
+                count++;
+
+                if (qid.startsWith('q1')) moduleTotals["模組 1"] += starVal;
+                else if (qid.startsWith('q2')) moduleTotals["模組 2"] += starVal;
+                else if (qid.startsWith('q3')) moduleTotals["模組 3"] += starVal;
+                else if (qid.startsWith('q4')) moduleTotals["模組 4"] += starVal;
+            });
+
+            // Overall score out of 100 (max stars = 12 * 5 = 60)
+            const overallScore = Math.round((totalStars / 60) * 100);
+            const scoreEl = document.getElementById('scoreOverall');
+            if (scoreEl) scoreEl.textContent = overallScore;
+
+            // Find top module
+            let topModule = "模組 1";
+            let maxMScore = -1;
+            for (const [mName, mScore] of Object.entries(moduleTotals)) {
+                if (mScore > maxMScore) {
+                    maxMScore = mScore;
+                    topModule = mName;
+                }
+            }
+            const topEl = document.getElementById('topPriorityModule');
+            if (topEl) topEl.textContent = topModule;
+        }
+
+        // Print
+        document.getElementById('btnPrint').addEventListener('click', () => {
+            window.print();
+        });
+
+        // Save manual
+        document.getElementById('btnSaveManual').addEventListener('click', () => {
+            saveData();
+            alert('✅ 訪談紀錄已成功儲存至瀏覽器！');
+        });
+
+        // Reset
+        document.getElementById('btnResetAll').addEventListener('click', () => {
+            if (confirm('確定要清空目前的所有訪談筆記與打分嗎？（清空後無法復原）')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        });
+
+        // Export Markdown Modal
+        const exportModal = document.getElementById('exportModal');
+        const exportText = document.getElementById('exportText');
+        const btnExport = document.getElementById('btnExportMarkdown');
+        const btnCloseModal = document.getElementById('btnCloseModal');
+
+        btnExport.addEventListener('click', () => {
+            generateMarkdownSummary();
+            exportModal.style.display = 'flex';
+        });
+
+        btnCloseModal.addEventListener('click', () => {
+            exportModal.style.display = 'none';
+        });
+
+        function generateMarkdownSummary() {
+            const comp = document.getElementById('metaCompany').value || "未填寫";
+            const person = document.getElementById('metaPerson').value || "未填寫";
+            const date = document.getElementById('metaDate').value || new Date().toISOString().split('T')[0];
+            const interviewer = document.getElementById('metaInterviewer').value || "顧問";
+            const score = document.getElementById('scoreOverall').textContent;
+            const topMod = document.getElementById('topPriorityModule').textContent;
+
+            let md = `# 中小企業數據營運痛點訪談紀要\n\n`;
+            md += `* **受訪客戶**：${comp}\n`;
+            md += `* **受訪對象**：${person}\n`;
+            md += `* **訪談日期**：${date}\n`;
+            md += `* **訪談顧問**：${interviewer}\n`;
+            md += `* **痛點總評分**：${score} / 100（首選切入模組：${topMod}）\n\n`;
+            md += `---\n\n`;
+
+            const sections = [
+                {
+                    title: "一、模組 1：資料取得與手動搬運 (dlt 自動化)",
+                    qs: [
+                        { id: "q1_1", text: "1.1 多通路數據存放現狀" },
+                        { id: "q1_2", text: "1.2 手動下載與複製貼上流程" },
+                        { id: "q1_3", text: "1.3 每週耗時與出錯率量化" }
+                    ]
+                },
+                {
+                    title: "二、模組 2：數據清洗與指標口徑治理 (dbt 湖倉分層)",
+                    qs: [
+                        { id: "q2_1", text: "2.1 跨部門營收數字對齊現狀" },
+                        { id: "q2_2", text: "2.2 訂單取消與退款手動扣除流程" },
+                        { id: "q2_3", text: "2.3 活動虛假繁榮與毛利稀釋量化" }
+                    ]
+                },
+                {
+                    title: "三、模組 3：報表時效性與自訂探索 (BI 畫布)",
+                    qs: [
+                        { id: "q3_1", text: "3.1 關鍵指標查閱頻率與延遲" },
+                        { id: "q3_2", text: "3.2 臨時交叉分析圖表產出時效" },
+                        { id: "q3_3", text: "3.3 外購 BI 軟體費用與使用率" }
+                    ]
+                },
+                {
+                    title: "四、模組 4：商業異常歸因與決策支援 (FastMCP AI 顧問)",
+                    qs: [
+                        { id: "q4_1", text: "4.1 業績下滑與退款飆高歸因會議" },
+                        { id: "q4_2", text: "4.2 系統自動異常預警與行動對策" },
+                        { id: "q4_3", text: "4.3 AI 挽回簡訊與策略價值量化" }
+                    ]
+                }
+            ];
+
+            sections.forEach(sec => {
+                md += `### ${sec.title}\n`;
+                sec.qs.forEach(q => {
+                    const note = document.getElementById(`note_${q.id}`).value.trim() || "（無筆記）";
+                    const stars = ratings[q.id] ? "⭐".repeat(ratings[q.id]) : "未評分";
+                    md += `* **${q.text}** [痛點評級：${stars}]\n`;
+                    md += `  > 客戶原話與筆記：${note}\n\n`;
+                });
+            });
+
+            // Add quant summary
+            const q1_hours = document.getElementById('quant_q1_3_hours').value;
+            const q1_cost = document.getElementById('quant_q1_3_cost').value;
+            const q2_rate = document.getElementById('quant_q2_3_rate').value;
+            const q2_leakage = document.getElementById('quant_q2_3_leakage').value;
+            const q3_soft = document.getElementById('quant_q3_3_soft_cost').value;
+
+            md += `### 五、關鍵量化商業損失匯總\n`;
+            if (q1_hours) md += `* **每週浪費工時**：${q1_hours}\n`;
+            if (q1_cost) md += `* **月度人力浪費金額**：${q1_cost}\n`;
+            if (q2_rate) md += `* **常態取消/退款率**：${q2_rate}\n`;
+            if (q2_leakage) md += `* **月度毛利流失估計**：${q2_leakage}\n`;
+            if (q3_soft) md += `* **現有外購 BI 軟體年費**：${q3_soft}\n`;
+
+            md += `\n---\n*本訪談紀錄由中小企業數據營運痛點調研工作台自動生成*`;
+
+            exportText.value = md;
+        }
+
+        document.getElementById('btnCopyExport').addEventListener('click', () => {
+            exportText.select();
+            navigator.clipboard.writeText(exportText.value).then(() => {
+                alert('📋 訪談紀要已成功複製到剪貼簿！可直接貼到 LINE、Email 或 Notion。');
+            });
+        });
+
+        document.getElementById('btnDownloadExport').addEventListener('click', () => {
+            const comp = document.getElementById('metaCompany').value || "客戶訪談紀要";
+            const blob = new Blob([exportText.value], { type: 'text/markdown;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${comp}_痛點調研紀要.md`;
+            a.click();
+        });
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
