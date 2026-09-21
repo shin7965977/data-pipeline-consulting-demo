@@ -136,17 +136,31 @@ def generate_chart_from_nl(
                 '  "insight": "1-2 sentences of MBB-level business insight in Traditional Chinese"\n'
                 "}"
             )
-            res = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.1,
-                    response_mime_type="application/json",
-                ),
-            )
-            if res and res.text:
-                gemini_spec = json.loads(res.text)
+            import streamlit as st
+            from fastmcp_diagnostic import get_gemini_candidate_models
+
+            pref_m = st.session_state.get("gemini_selected_model", "auto")
+            candidates = get_gemini_candidate_models(client, preferred_model=pref_m)
+
+            for candidate in candidates:
+                try:
+                    res = client.models.generate_content(
+                        model=candidate,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            temperature=0.1,
+                            response_mime_type="application/json",
+                        ),
+                    )
+                    if res and res.text:
+                        gemini_spec = json.loads(res.text)
+                        break
+                except Exception as e:
+                    err_s = str(e)
+                    if any(k in err_s for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND", "overloaded", "Spikes in demand"]):
+                        continue
+                    break
         except Exception:  # noqa: BLE001
             gemini_spec = None
 
