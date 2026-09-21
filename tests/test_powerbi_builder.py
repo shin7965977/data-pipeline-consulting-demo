@@ -85,10 +85,13 @@ def test_build_custom_chart_empty_guard():
 
 
 def test_build_pygwalker_spec(sample_data):
-    from powerbi_builder import build_pygwalker_spec
     import json
 
-    spec_str = build_pygwalker_spec(sample_data, x_col="category", y_col="sales", geom="bar", agg="sum")
+    from powerbi_builder import build_pygwalker_spec
+
+    spec_str = build_pygwalker_spec(
+        sample_data, x_col="category", y_col="sales", geom="bar", agg="sum"
+    )
     parsed = json.loads(spec_str)
     assert isinstance(parsed, list)
     assert len(parsed) == 1
@@ -98,10 +101,13 @@ def test_build_pygwalker_spec(sample_data):
 
 
 def test_generate_pygwalker_spec_from_nl(sample_data):
-    from powerbi_builder import generate_pygwalker_spec_from_nl
     import json
 
-    spec_str, msg = generate_pygwalker_spec_from_nl("我想看各類別 sales 長條圖", sample_data)
+    from powerbi_builder import generate_pygwalker_spec_from_nl
+
+    spec_str, msg = generate_pygwalker_spec_from_nl(
+        "我想看各類別 sales 長條圖", sample_data
+    )
     assert spec_str is not None
     parsed = json.loads(spec_str)
     assert parsed[0]["encodings"]["columns"][0]["fid"] == "category"
@@ -111,6 +117,7 @@ def test_generate_pygwalker_spec_from_nl(sample_data):
 def test_sanitize_df_for_pygwalker():
     import datetime
     from decimal import Decimal
+
     from powerbi_builder import sanitize_df_for_pygwalker
 
     test_df = pd.DataFrame(
@@ -123,4 +130,3 @@ def test_sanitize_df_for_pygwalker():
     cleaned = sanitize_df_for_pygwalker(test_df)
     assert cleaned["amount"].dtype == float
     assert pd.api.types.is_datetime64_any_dtype(cleaned["first_order_date"])
-

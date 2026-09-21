@@ -33,7 +33,7 @@ def get_gemini_candidate_models(client: Any, preferred_model: str = "") -> list[
             return float(nums[0]) if nums else 0.0
 
         discovered.sort(key=version_score, reverse=True)
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         pass
 
     fallback_defaults = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-2.5-flash"]
@@ -102,9 +102,9 @@ def run_fastmcp_chart_diagnostic(
     # 1. Try Gemini AI with MBB System Prompt
     if gemini_api_key:
         try:
+            import streamlit as st
             from google import genai
             from google.genai import types
-            import streamlit as st
 
             client = genai.Client(api_key=gemini_api_key)
             preferred = st.session_state.get("gemini_selected_model", "auto")
@@ -153,11 +153,24 @@ def run_fastmcp_chart_diagnostic(
                         st.session_state["gemini_active_used_model"] = candidate
                         st.session_state.pop("gemini_api_last_error", None)
                         return res.text.strip()
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     last_err = e
                     err_str = str(e)
                     # Automatically cascade down on 503, 429, high demand or missing model
-                    if any(k in err_str for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND", "overloaded", "Spikes in demand"]):
+                    if any(
+                        k in err_str
+                        for k in [
+                            "503",
+                            "UNAVAILABLE",
+                            "429",
+                            "RESOURCE_EXHAUSTED",
+                            "high demand",
+                            "404",
+                            "NOT_FOUND",
+                            "overloaded",
+                            "Spikes in demand",
+                        ]
+                    ):
                         continue
                     break
 
@@ -177,10 +190,15 @@ def run_fastmcp_chart_diagnostic(
                         "Google 模型尖峰高負載 (503 UNAVAILABLE)：系統已自動嘗試多層降級，已啟用 FastMCP 離線顧問引擎。"
                     )
                 else:
-                    st.session_state["gemini_api_last_error"] = f"API 呼叫失敗：{err_str[:120]}"
-        except Exception as outer_e:
+                    st.session_state["gemini_api_last_error"] = (
+                        f"API 呼叫失敗：{err_str[:120]}"
+                    )
+        except Exception as outer_e:  # noqa: BLE001
             import streamlit as st
-            st.session_state["gemini_api_last_error"] = f"API 初始化失敗：{str(outer_e)[:120]}"
+
+            st.session_state["gemini_api_last_error"] = (
+                f"API 初始化失敗：{str(outer_e)[:120]}"
+            )
 
     # 2. Rule-Based Offline MBB Synthesizer (Zero-Failure Fallback)
     primary_metric = numeric_cols[0] if numeric_cols else "指標"
@@ -290,6 +308,7 @@ def continue_fastmcp_chat(
             )
 
             import streamlit as st
+
             preferred = st.session_state.get("gemini_selected_model", "auto")
             candidates = get_gemini_candidate_models(client, preferred_model=preferred)
 
@@ -309,10 +328,23 @@ def continue_fastmcp_chat(
                         st.session_state["gemini_active_used_model"] = candidate
                         st.session_state.pop("gemini_api_last_error", None)
                         return res.text.strip()
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     last_err = e
                     err_str = str(e)
-                    if any(k in err_str for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND", "overloaded", "Spikes in demand"]):
+                    if any(
+                        k in err_str
+                        for k in [
+                            "503",
+                            "UNAVAILABLE",
+                            "429",
+                            "RESOURCE_EXHAUSTED",
+                            "high demand",
+                            "404",
+                            "NOT_FOUND",
+                            "overloaded",
+                            "Spikes in demand",
+                        ]
+                    ):
                         continue
                     break
 
@@ -332,15 +364,22 @@ def continue_fastmcp_chat(
                         "Google 模型尖峰高負載 (503 UNAVAILABLE)：系統已自動嘗試多層降級，已啟用 FastMCP 離線顧問引擎。"
                     )
                 else:
-                    st.session_state["gemini_api_last_error"] = f"API 呼叫失敗：{err_str[:120]}"
-        except Exception as outer_e:
+                    st.session_state["gemini_api_last_error"] = (
+                        f"API 呼叫失敗：{err_str[:120]}"
+                    )
+        except Exception as outer_e:  # noqa: BLE001
             import streamlit as st
-            st.session_state["gemini_api_last_error"] = f"API 初始化失敗：{str(outer_e)[:120]}"
+
+            st.session_state["gemini_api_last_error"] = (
+                f"API 初始化失敗：{str(outer_e)[:120]}"
+            )
 
     # 2. Offline Consultant Knowledge Base (Zero-Failure Fallback)
     q_lower = user_message.lower()
 
-    if any(k in q_lower for k in ["sms", "簡訊", "email", "模板", "挽回", "文案", "召回"]):
+    if any(
+        k in q_lower for k in ["sms", "簡訊", "email", "模板", "挽回", "文案", "召回"]
+    ):
         return (
             "### 📱 MBB 推薦速贏挽回簡訊 (SMS) 與推播文案模板\n\n"
             "**【高轉換召回簡訊模板 · 觸發時機：訂單取消 15 分鐘內】**\n"
@@ -363,7 +402,10 @@ def continue_fastmcp_chat(
             "2. **3 萬元（退款防線）**：針對高發退款品項更換高清尺寸對照圖與強化售前 QA。"
         )
 
-    if any(k in q_lower for k in ["董事會", "主管", "ceo", "會議", "報告", "摘要", "takeaway", "匯報"]):
+    if any(
+        k in q_lower
+        for k in ["董事會", "主管", "ceo", "會議", "報告", "摘要", "takeaway", "匯報"]
+    ):
         return (
             f"### 👔 給董事會 / C-Level 的 1 分鐘高階匯報摘要 (Executive Brief)\n\n"
             f"**主題**：當前業務動能檢視與漏斗損耗防範（基於 `{chart_title}` 數據指標）\n\n"
@@ -372,7 +414,9 @@ def continue_fastmcp_chat(
             "3. **本季戰術落地主線**：啟動 30 天速贏行動（挽回 SMS + 付款失敗防護），預計以低於 10 萬成本帶動 3%~5% 淨利潤回流。"
         )
 
-    if any(k in q_lower for k in ["商品", "品類", "搭售", "出清", "滯銷", "尾部", "bundle"]):
+    if any(
+        k in q_lower for k in ["商品", "品類", "搭售", "出清", "滯銷", "尾部", "bundle"]
+    ):
         return (
             "### 📦 長尾商品搭售 (Bundling) 與庫存出清方案\n\n"
             "**1. 錨定熱銷主力品搭售 (Bundle Anchor)**：將銷量 Top 20% 的暢銷品與長尾低週轉品打包成「組合優惠包」，提供組合價 85 折，利用主力品的強需求拉動庫存去化。\n"
@@ -380,7 +424,9 @@ def continue_fastmcp_chat(
             "3. **階梯清倉紅利**：對滯銷天數超過 60 天的 SKU，直接給予第一線銷售或推播專屬折扣券，止血倉儲租金成本。"
         )
 
-    if any(k in q_lower for k in ["會員", "vip", "留存", "ltv", "復購", "分級", "loyalty"]):
+    if any(
+        k in q_lower for k in ["會員", "vip", "留存", "ltv", "復購", "分級", "loyalty"]
+    ):
         return (
             "### 👑 VIP 核心會員權益與 90 天留存體系 (Loyalty Program)\n\n"
             "**1. 分級特權差異化**：白金與黃金會員享有「免運無門檻」與「退換貨到府免運」，強化心理歸屬感與首選結帳意願。\n"
@@ -497,14 +543,18 @@ def get_dynamic_followup_suggestions(
 
     # Contextual affinity scoring
     c_lower = chart_title.lower()
+
     def affinity(item: tuple[str, str]) -> float:
         lbl, _ = item
         score = 1.0
-        if any(w in c_lower for w in ["會員", "客群", "ltv", "customer"]) and any(k in lbl for k in ["會員", "復購", "VIP", "新客"]):
-            score += 3.0
-        elif any(w in c_lower for w in ["商品", "品類", "product", "category"]) and any(k in lbl for k in ["商品", "搭售", "價格", "尾部"]):
-            score += 3.0
-        elif any(w in c_lower for w in ["退款", "取消", "refund", "cancel"]) and any(k in lbl for k in ["退款", "取消", "物流", "金流", "預算"]):
+        if (
+            any(w in c_lower for w in ["會員", "客群", "ltv", "customer"])
+            and any(k in lbl for k in ["會員", "復購", "VIP", "新客"])
+            or any(w in c_lower for w in ["商品", "品類", "product", "category"])
+            and any(k in lbl for k in ["商品", "搭售", "價格", "尾部"])
+            or any(w in c_lower for w in ["退款", "取消", "refund", "cancel"])
+            and any(k in lbl for k in ["退款", "取消", "物流", "金流", "預算"])
+        ):
             score += 3.0
         return score
 
@@ -530,10 +580,13 @@ def render_fastmcp_chat_widget(
     are rendered inside a unified conversational container, allowing seamless ongoing dialogue.
     """
     import os
+
     import streamlit as st
 
     if not gemini_api_key:
-        gemini_api_key = st.session_state.get("sidebar_gemini_api_key", "") or os.getenv("GEMINI_API_KEY", "")
+        gemini_api_key = st.session_state.get(
+            "sidebar_gemini_api_key", ""
+        ) or os.getenv("GEMINI_API_KEY", "")
 
     history_key = f"mcp_chat_hist_{unique_key}"
 
@@ -541,7 +594,10 @@ def render_fastmcp_chat_widget(
     if (
         history_key not in st.session_state
         or not st.session_state[history_key]
-        or (initial_diagnostic and st.session_state[history_key][0].get("content") != initial_diagnostic)
+        or (
+            initial_diagnostic
+            and st.session_state[history_key][0].get("content") != initial_diagnostic
+        )
     ):
         st.session_state[history_key] = [
             {"role": "assistant", "content": initial_diagnostic}
@@ -555,15 +611,18 @@ def render_fastmcp_chat_widget(
         if gemini_api_key:
             try:
                 from google import genai
+
                 client = genai.Client(api_key=gemini_api_key)
                 detected_name = resolve_active_gemini_model(client)
                 st.session_state[model_state_key] = detected_name
-            except Exception:
+            except Exception:  # noqa: BLE001
                 st.session_state[model_state_key] = "Gemini AI"
         else:
             st.session_state[model_state_key] = "FastMCP 離線顧問引擎"
 
-    raw_model_name = st.session_state.get("gemini_active_used_model") or st.session_state.get(model_state_key, "Gemini AI")
+    raw_model_name = st.session_state.get(
+        "gemini_active_used_model"
+    ) or st.session_state.get(model_state_key, "Gemini AI")
     if "gemini" in raw_model_name.lower():
         parts = raw_model_name.replace("models/", "").split("-")
         model_badge = " ".join([p.capitalize() for p in parts])
@@ -574,7 +633,7 @@ def render_fastmcp_chat_widget(
     c_head, c_badge = st.columns([3.5, 1.5])
     with c_head:
         st.markdown(
-            f"""
+            """
             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
                 <span style="font-size: 1.35rem;">🏛️</span>
                 <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-color, #0f172a);">
@@ -584,7 +643,9 @@ def render_fastmcp_chat_widget(
             """,
             unsafe_allow_html=True,
         )
-        st.caption(f"分析主題：**{chart_title}** · 您可於下方對話視窗持續追問商業戰術細節")
+        st.caption(
+            f"分析主題：**{chart_title}** · 您可於下方對話視窗持續追問商業戰術細節"
+        )
     with c_badge:
         st.markdown(
             f"""
@@ -600,7 +661,9 @@ def render_fastmcp_chat_widget(
     # Surface API connection warning if user provided a key that failed authentication
     api_err = st.session_state.get("gemini_api_last_error")
     if api_err and gemini_api_key:
-        st.warning(f"⚠️ **Gemini 模型連線提示**：{api_err}\n\n*系統已自動啟用 FastMCP 離線顧問引擎為您提供 MBB 結構化分析。*")
+        st.warning(
+            f"⚠️ **Gemini 模型連線提示**：{api_err}\n\n*系統已自動啟用 FastMCP 離線顧問引擎為您提供 MBB 結構化分析。*"
+        )
 
     # Render ALL conversation turns in the same unified chat stream (Gemini-style)
     chat_container = st.container()
@@ -629,7 +692,11 @@ def render_fastmcp_chat_widget(
 
     for i, (label, prompt) in enumerate(dynamic_suggestions):
         with cols_sug[i]:
-            if st.button(label, key=f"btn_sug_{unique_key}_{turn_idx}_{i}", use_container_width=True):
+            if st.button(
+                label,
+                key=f"btn_sug_{unique_key}_{turn_idx}_{i}",
+                use_container_width=True,
+            ):
                 preset_query = prompt
 
     # Gemini-style Chat Input Bar (Form with Enter-to-send support)
@@ -644,9 +711,13 @@ def render_fastmcp_chat_widget(
                 key=f"input_box_{unique_key}_{turn_idx}",
             )
         with col_send:
-            send_btn = st.form_submit_button("發送 💬", type="primary", use_container_width=True)
+            send_btn = st.form_submit_button(
+                "發送 💬", type="primary", use_container_width=True
+            )
 
-    query_to_send = preset_query or (user_input.strip() if send_btn and user_input.strip() else None)
+    query_to_send = preset_query or (
+        user_input.strip() if send_btn and user_input.strip() else None
+    )
 
     if query_to_send:
         # Append user message
@@ -659,17 +730,22 @@ def render_fastmcp_chat_widget(
                 df=df,
                 gemini_api_key=gemini_api_key,
             )
-            st.session_state[history_key].append({"role": "assistant", "content": reply})
+            st.session_state[history_key].append(
+                {"role": "assistant", "content": reply}
+            )
         st.rerun()
 
     # Reset chat option
     if len(st.session_state[history_key]) > 1:
-        col_opt1, col_opt2 = st.columns([4.2, 1.8])
+        _col_opt1, col_opt2 = st.columns([4.2, 1.8])
         with col_opt2:
-            if st.button("🗑️ 清空追問歷程", key=f"btn_reset_chat_{unique_key}", help="清空後續追問，重新回到初次診斷基準報告", use_container_width=True):
+            if st.button(
+                "🗑️ 清空追問歷程",
+                key=f"btn_reset_chat_{unique_key}",
+                help="清空後續追問，重新回到初次診斷基準報告",
+                use_container_width=True,
+            ):
                 st.session_state[history_key] = [
                     {"role": "assistant", "content": initial_diagnostic}
                 ]
                 st.rerun()
-
-

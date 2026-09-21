@@ -1,5 +1,4 @@
 import pandas as pd
-import pytest
 
 from fastmcp_diagnostic import run_fastmcp_chart_diagnostic
 
@@ -50,17 +49,23 @@ def test_continue_fastmcp_chat_offline_suggestions():
     history = [{"role": "assistant", "content": "Initial report"}]
 
     # Test 1: SMS template
-    reply_sms = continue_fastmcp_chat(history, "請給我挽回簡訊 SMS 模板", "營收走勢", df_sample)
+    reply_sms = continue_fastmcp_chat(
+        history, "請給我挽回簡訊 SMS 模板", "營收走勢", df_sample
+    )
     assert "SMS" in reply_sms or "簡訊" in reply_sms
     assert "VIPRECOVER" in reply_sms
 
     # Test 2: Budget allocation
-    reply_budget = continue_fastmcp_chat(history, "10萬元預算該優先投退款還是取消？", "營收走勢", df_sample)
+    reply_budget = continue_fastmcp_chat(
+        history, "10萬元預算該優先投退款還是取消？", "營收走勢", df_sample
+    )
     assert "預算" in reply_budget
     assert "取消" in reply_budget
 
     # Test 3: Board executive summary
-    reply_board = continue_fastmcp_chat(history, "幫我產出給董事會的摘要", "營收走勢", df_sample)
+    reply_board = continue_fastmcp_chat(
+        history, "幫我產出給董事會的摘要", "營收走勢", df_sample
+    )
     assert "董事會" in reply_board or "C-Level" in reply_board
 
     # Test 4: Empty query handling
@@ -71,6 +76,7 @@ def test_continue_fastmcp_chat_offline_suggestions():
 def test_render_fastmcp_chat_widget_signature():
     """Verify render_fastmcp_chat_widget parameters and fallback handling."""
     import inspect
+
     from fastmcp_diagnostic import render_fastmcp_chat_widget
 
     sig = inspect.signature(render_fastmcp_chat_widget)
@@ -86,12 +92,12 @@ def test_get_dynamic_followup_suggestions():
     from fastmcp_diagnostic import get_dynamic_followup_suggestions
 
     df_sample = pd.DataFrame({"gmv": [1000.0, 2000.0]})
-    
+
     # 1. Opening turn: returns 3 suggestions
     hist_turn1 = [{"role": "assistant", "content": "Initial report"}]
     suggs1 = get_dynamic_followup_suggestions("每日 GMV 走勢", hist_turn1, df_sample)
     assert len(suggs1) == 3
-    
+
     # 2. If user already asked about SMS, SMS should be filtered out
     hist_turn2 = [
         {"role": "assistant", "content": "Initial report"},
@@ -151,9 +157,8 @@ def test_get_gemini_candidate_models():
     assert "gemini-2.5-flash" in cands_auto
 
     # Test manual preference to 3.6
-    cands_36 = get_gemini_candidate_models(MockClient(), preferred_model="gemini-3.6-flash")
+    cands_36 = get_gemini_candidate_models(
+        MockClient(), preferred_model="gemini-3.6-flash"
+    )
     assert cands_36[0] == "gemini-3.6-flash"
     assert "gemini-2.5-flash" in cands_36
-
-
-

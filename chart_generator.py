@@ -137,6 +137,7 @@ def generate_chart_from_nl(
                 "}"
             )
             import streamlit as st
+
             from fastmcp_diagnostic import get_gemini_candidate_models
 
             pref_m = st.session_state.get("gemini_selected_model", "auto")
@@ -156,9 +157,22 @@ def generate_chart_from_nl(
                     if res and res.text:
                         gemini_spec = json.loads(res.text)
                         break
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     err_s = str(e)
-                    if any(k in err_s for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND", "overloaded", "Spikes in demand"]):
+                    if any(
+                        k in err_s
+                        for k in [
+                            "503",
+                            "UNAVAILABLE",
+                            "429",
+                            "RESOURCE_EXHAUSTED",
+                            "high demand",
+                            "404",
+                            "NOT_FOUND",
+                            "overloaded",
+                            "Spikes in demand",
+                        ]
+                    ):
                         continue
                     break
         except Exception:  # noqa: BLE001

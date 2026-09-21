@@ -60,7 +60,9 @@ def build_custom_chart(
             if pandas_agg == "count":
                 agg_df = work_df.groupby(group_cols)[y_col].count().reset_index()
             else:
-                agg_df = work_df.groupby(group_cols)[y_col].agg(pandas_agg).reset_index()
+                agg_df = (
+                    work_df.groupby(group_cols)[y_col].agg(pandas_agg).reset_index()
+                )
 
             # Sorting & Top N
             if sort_by == "y_desc":
@@ -171,7 +173,13 @@ def build_custom_chart(
     fig.update_layout(
         height=450,
         margin={"l": 25, "r": 25, "t": 45, "b": 25},
-        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
+        legend={
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.02,
+            "xanchor": "right",
+            "x": 1,
+        },
     )
 
     # Executive Summary Text
@@ -205,41 +213,73 @@ def build_pygwalker_spec(
 
     def get_field_meta(col: str):
         is_num = pd.api.types.is_numeric_dtype(df[col]) if col in df.columns else False
-        is_date = pd.api.types.is_datetime64_any_dtype(df[col]) if col in df.columns else False
+        is_date = (
+            pd.api.types.is_datetime64_any_dtype(df[col])
+            if col in df.columns
+            else False
+        )
         if is_date:
-            return {"fid": col, "name": col, "semanticType": "temporal", "analyticType": "dimension"}
+            return {
+                "fid": col,
+                "name": col,
+                "semanticType": "temporal",
+                "analyticType": "dimension",
+            }
         elif is_num:
-            return {"fid": col, "name": col, "semanticType": "quantitative", "analyticType": "measure", "aggName": agg}
+            return {
+                "fid": col,
+                "name": col,
+                "semanticType": "quantitative",
+                "analyticType": "measure",
+                "aggName": agg,
+            }
         else:
-            return {"fid": col, "name": col, "semanticType": "nominal", "analyticType": "dimension"}
+            return {
+                "fid": col,
+                "name": col,
+                "semanticType": "nominal",
+                "analyticType": "dimension",
+            }
 
     x_meta = get_field_meta(x_col)
     y_meta = get_field_meta(y_col)
-    dimensions = [get_field_meta(c) for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])]
-    measures = [get_field_meta(c) for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    dimensions = [
+        get_field_meta(c)
+        for c in df.columns
+        if not pd.api.types.is_numeric_dtype(df[c])
+    ]
+    measures = [
+        get_field_meta(c) for c in df.columns if pd.api.types.is_numeric_dtype(df[c])
+    ]
 
     encodings = {
         "dimensions": dimensions,
         "measures": measures,
         "rows": [y_meta],
         "columns": [x_meta],
-        "color": [get_field_meta(color_col)] if color_col and color_col in df.columns else [],
+        "color": [get_field_meta(color_col)]
+        if color_col and color_col in df.columns
+        else [],
         "opacity": [],
         "size": [],
         "shape": [],
         "details": [],
         "filters": [],
     }
-    spec_list = [{
-        "visId": f"gw_{x_col}_{y_col}",
-        "name": f"{x_col} vs {y_col}",
-        "encodings": encodings,
-        "config": {
-            "geoms": [geom if geom in ["bar", "line", "circle", "area", "arc"] else "bar"],
-            "coordSystem": "generic",
-            "limit": -1,
-        },
-    }]
+    spec_list = [
+        {
+            "visId": f"gw_{x_col}_{y_col}",
+            "name": f"{x_col} vs {y_col}",
+            "encodings": encodings,
+            "config": {
+                "geoms": [
+                    geom if geom in ["bar", "line", "circle", "area", "arc"] else "bar"
+                ],
+                "coordSystem": "generic",
+                "limit": -1,
+            },
+        }
+    ]
     return json.dumps(spec_list)
 
 
@@ -269,9 +309,10 @@ def generate_pygwalker_spec_from_nl(
             system_instruction = (
                 f"You are a BI Data Analyst assistant. The user wants to configure a visual chart on a dataset with columns: [{cols_summary}].\n"
                 "Extract the best X-axis column (dimension or date), Y-axis column (metric/number), chart geometry ('bar', 'line', 'circle', 'area', 'arc'), and aggregation ('sum', 'mean', 'count').\n"
-                "Respond ONLY with a valid JSON object: {\"x\": \"col\", \"y\": \"col\", \"geom\": \"bar\"|\"line\"|\"circle\"|\"area\"|\"arc\", \"agg\": \"sum\"|\"mean\"|\"count\", \"color\": \"col\"|null}"
+                'Respond ONLY with a valid JSON object: {"x": "col", "y": "col", "geom": "bar"|"line"|"circle"|"area"|"arc", "agg": "sum"|"mean"|"count", "color": "col"|null}'
             )
             from fastmcp_diagnostic import get_gemini_candidate_models
+
             pref_m = st.session_state.get("gemini_selected_model", "auto")
             candidates = get_gemini_candidate_models(client, preferred_model=pref_m)
 
@@ -289,9 +330,22 @@ def generate_pygwalker_spec_from_nl(
                     )
                     if res and res.text:
                         break
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     err_s = str(e)
-                    if any(k in err_s for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND", "overloaded", "Spikes in demand"]):
+                    if any(
+                        k in err_s
+                        for k in [
+                            "503",
+                            "UNAVAILABLE",
+                            "429",
+                            "RESOURCE_EXHAUSTED",
+                            "high demand",
+                            "404",
+                            "NOT_FOUND",
+                            "overloaded",
+                            "Spikes in demand",
+                        ]
+                    ):
                         continue
                     break
             if res and res.text:
@@ -303,23 +357,37 @@ def generate_pygwalker_spec_from_nl(
                     agg = parsed.get("agg", "sum")
                     if parsed.get("color") in df.columns:
                         color_col = parsed["color"]
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
     # 2. Heuristic rule-based fallback (Works 100% offline)
     if not (x_col and y_col):
         num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-        non_num_cols = [c for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])]
+        non_num_cols = [
+            c for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])
+        ]
 
         # Determine X
-        if any(w in clean_prompt for w in ["日期", "date", "趨勢", "走勢", "時間", "每日", "歷史"]) and any("date" in c.lower() for c in df.columns):
+        if any(
+            w in clean_prompt
+            for w in ["日期", "date", "趨勢", "走勢", "時間", "每日", "歷史"]
+        ) and any("date" in c.lower() for c in df.columns):
             x_col = next(c for c in df.columns if "date" in c.lower())
             geom = "line"
-        elif any(w in clean_prompt for w in ["類別", "分類", "category"]) and "category_name" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["類別", "分類", "category"])
+            and "category_name" in df.columns
+        ):
             x_col = "category_name"
-        elif any(w in clean_prompt for w in ["商品", "產品", "product"]) and "product_title" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["商品", "產品", "product"])
+            and "product_title" in df.columns
+        ):
             x_col = "product_title"
-        elif any(w in clean_prompt for w in ["會員", "等級", "tier", "客戶"]) and "customer_tier" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["會員", "等級", "tier", "客戶"])
+            and "customer_tier" in df.columns
+        ):
             x_col = "customer_tier"
         elif non_num_cols:
             x_col = non_num_cols[0]
@@ -327,24 +395,48 @@ def generate_pygwalker_spec_from_nl(
             x_col = df.columns[0]
 
         # Determine Y
-        if any(w in clean_prompt for w in ["淨營收", "net_revenue", "淨收入"]) and "net_revenue" in df.columns:
+        if (
+            any(w in clean_prompt for w in ["淨營收", "net_revenue", "淨收入"])
+            and "net_revenue" in df.columns
+        ):
             y_col = "net_revenue"
-        elif any(w in clean_prompt for w in ["gmv", "總額", "總營收", "銷售額", "金流"]) and "gmv" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["gmv", "總額", "總營收", "銷售額", "金流"])
+            and "gmv" in df.columns
+        ):
             y_col = "gmv"
-        elif any(w in clean_prompt for w in ["銷售額", "業績", "amount"]) and "completed_sales_amount" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["銷售額", "業績", "amount"])
+            and "completed_sales_amount" in df.columns
+        ):
             y_col = "completed_sales_amount"
-        elif any(w in clean_prompt for w in ["終身價值", "ltv", "lifetime"]) and "lifetime_net_revenue" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["終身價值", "ltv", "lifetime"])
+            and "lifetime_net_revenue" in df.columns
+        ):
             y_col = "lifetime_net_revenue"
         elif any(w in clean_prompt for w in ["客單價", "aov"]) and "aov" in df.columns:
             y_col = "aov"
             agg = "mean"
-        elif any(w in clean_prompt for w in ["件數", "數量", "units"]) and "units_sold" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["件數", "數量", "units"])
+            and "units_sold" in df.columns
+        ):
             y_col = "units_sold"
-        elif any(w in clean_prompt for w in ["退款", "refund"]) and "refunded_orders" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["退款", "refund"])
+            and "refunded_orders" in df.columns
+        ):
             y_col = "refunded_orders"
-        elif any(w in clean_prompt for w in ["取消", "cancel"]) and "cancelled_orders" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["取消", "cancel"])
+            and "cancelled_orders" in df.columns
+        ):
             y_col = "cancelled_orders"
-        elif any(w in clean_prompt for w in ["訂單數", "orders"]) and "total_orders" in df.columns:
+        elif (
+            any(w in clean_prompt for w in ["訂單數", "orders"])
+            and "total_orders" in df.columns
+        ):
             y_col = "total_orders"
         elif num_cols:
             y_col = num_cols[0]
@@ -352,9 +444,14 @@ def generate_pygwalker_spec_from_nl(
             y_col = df.columns[-1]
 
     if not (x_col and y_col and x_col in df.columns and y_col in df.columns):
-        return None, "⚠️ 無法根據指令比對到合適的資料維度與度量，請嘗試具體描述欄位名稱。"
+        return (
+            None,
+            "⚠️ 無法根據指令比對到合適的資料維度與度量，請嘗試具體描述欄位名稱。",
+        )
 
-    spec = build_pygwalker_spec(df, x_col=x_col, y_col=y_col, geom=geom, agg=agg, color_col=color_col)
+    spec = build_pygwalker_spec(
+        df, x_col=x_col, y_col=y_col, geom=geom, agg=agg, color_col=color_col
+    )
     msg = f"✨ **AI 自動配置成功**：X 軸 ➔ `{x_col}`、Y 軸 ➔ `{y_col}`（{agg}）、圖表形狀 ➔ `{geom.upper()}`。您可於下方畫布繼續滑鼠自由拖曳微調！"
     return spec, msg
 
@@ -368,22 +465,29 @@ def sanitize_df_for_pygwalker(df: pd.DataFrame) -> pd.DataFrame:
         return df
     clean_df = df.copy()
     from decimal import Decimal
+
     for col in clean_df.columns:
         dtype_str = str(clean_df[col].dtype).lower()
         if "dbdate" in dtype_str or "date" in col.lower() or "time" in col.lower():
             try:
                 clean_df[col] = pd.to_datetime(clean_df[col])
-            except Exception:
+            except Exception:  # noqa: BLE001
                 clean_df[col] = clean_df[col].astype(str)
         elif clean_df[col].dtype == object and len(clean_df) > 0:
-            sample_val = clean_df[col].dropna().iloc[0] if not clean_df[col].dropna().empty else None
+            sample_val = (
+                clean_df[col].dropna().iloc[0]
+                if not clean_df[col].dropna().empty
+                else None
+            )
             if sample_val is not None:
                 if isinstance(sample_val, Decimal):
                     clean_df[col] = clean_df[col].astype(float)
-                elif hasattr(sample_val, "isoformat") or hasattr(sample_val, "strftime"):
+                elif hasattr(sample_val, "isoformat") or hasattr(
+                    sample_val, "strftime"
+                ):
                     try:
                         clean_df[col] = pd.to_datetime(clean_df[col])
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         clean_df[col] = clean_df[col].astype(str)
     return clean_df
 
@@ -402,7 +506,9 @@ def render_powerbi_studio(
 ):
     """Render the full Power BI/Tableau drag-and-drop interactive canvas with AI Copilot."""
     st.subheader("🎛️ 類 Power BI / Tableau 視覺化自訂看板")
-    st.caption("基於 Google Cloud BigQuery 金牌數據庫 · 支援 AI 自然語言指令自動排版與滑鼠自由拖曳")
+    st.caption(
+        "基於 Google Cloud BigQuery 金牌數據庫 · 支援 AI 自然語言指令自動排版與滑鼠自由拖曳"
+    )
 
     # Dataset Configurations (Supports custom datasets from Silver / Bronze layers)
     dataset_configs = kwargs.get("dataset_configs") or {
@@ -429,7 +535,11 @@ def render_powerbi_studio(
             with col_ds:
                 ds_keys = list(dataset_configs.keys())
                 ds_names = [cfg["name"] for cfg in dataset_configs.values()]
-                default_idx = ds_keys.index(default_dataset_key) if default_dataset_key in ds_keys else 0
+                default_idx = (
+                    ds_keys.index(default_dataset_key)
+                    if default_dataset_key in ds_keys
+                    else 0
+                )
                 selected_ds_name = st.selectbox(
                     "📁 選擇要載入探索工作台的 BigQuery 金牌資料表：",
                     options=ds_names,
@@ -449,7 +559,9 @@ def render_powerbi_studio(
                 )
                 i18n_code = lang_options[selected_lang_label]
 
-            active_cfg = next(v for v in dataset_configs.values() if v["name"] == selected_ds_name)
+            active_cfg = next(
+                v for v in dataset_configs.values() if v["name"] == selected_ds_name
+            )
             walker_df = active_cfg["df"]
 
             # AI Natural Language to Canvas Copilot
@@ -464,7 +576,12 @@ def render_powerbi_studio(
                     label_visibility="collapsed",
                 )
             with c_copilot_btn:
-                if st.button("🪄 AI 自動排版", key=f"{key_prefix}_btn_apply_ai", type="primary", use_container_width=True):
+                if st.button(
+                    "🪄 AI 自動排版",
+                    key=f"{key_prefix}_btn_apply_ai",
+                    type="primary",
+                    use_container_width=True,
+                ):
                     gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
                     if nl_canvas_input.strip():
                         spec_json, status_msg = generate_pygwalker_spec_from_nl(
@@ -478,7 +595,12 @@ def render_powerbi_studio(
                         else:
                             st.session_state[f"{key_prefix}_msg"] = status_msg
             with c_copilot_reset:
-                if st.button("🔄 清空重設", key=f"{key_prefix}_btn_reset_spec", use_container_width=True, help="重設為空白工作台"):
+                if st.button(
+                    "🔄 清空重設",
+                    key=f"{key_prefix}_btn_reset_spec",
+                    use_container_width=True,
+                    help="重設為空白工作台",
+                ):
                     st.session_state[f"{key_prefix}_active_spec"] = ""
                     st.session_state[f"{key_prefix}_msg"] = "已重設為空白探索工作台。"
 
@@ -496,8 +618,9 @@ def render_powerbi_studio(
             # Reset DuckDB transaction state if previously aborted
             try:
                 import duckdb
+
                 duckdb.execute("ROLLBACK")
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
             clean_walker_df = sanitize_df_for_pygwalker(walker_df)
@@ -523,7 +646,9 @@ def render_powerbi_studio(
                     help="調用 FastMCP 顧問引擎：對目前在畫布中探索的資料表進行 MBB 深度歸因診斷與戰術方針規劃",
                 )
             with col_pbi_mcp_info:
-                st.caption(f"⚡ **FastMCP 畫布即時診斷**：針對當前選定之 `{selected_ds_name}` 執行 SCQA + MECE 議題樹歸因，並支援連續對話追問！")
+                st.caption(
+                    f"⚡ **FastMCP 畫布即時診斷**：針對當前選定之 `{selected_ds_name}` 執行 SCQA + MECE 議題樹歸因，並支援連續對話追問！"
+                )
 
             diag_pbi_key = f"{key_prefix}_fastmcp_diag_result"
             if run_pbi_mcp:
@@ -550,11 +675,22 @@ def render_powerbi_studio(
                         unsafe_allow_html=True,
                     )
 
-                with st.spinner("🤖 FastMCP 顧問正在分析當前畫布資料庫並生成商業歸因診斷..."):
+                with st.spinner(
+                    "🤖 FastMCP 顧問正在分析當前畫布資料庫並生成商業歸因診斷..."
+                ):
                     import fastmcp_diagnostic
+
                     gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
-                    chart_desc = f"Power BI 視覺化畫布 - {selected_ds_name}" if has_active_chart else f"BigQuery 資料表全量健檢 - {selected_ds_name}"
-                    prompt_desc = nl_canvas_input if has_active_chart and nl_canvas_input else f"針對 {selected_ds_name} 進行全表基線健康度診斷"
+                    chart_desc = (
+                        f"Power BI 視覺化畫布 - {selected_ds_name}"
+                        if has_active_chart
+                        else f"BigQuery 資料表全量健檢 - {selected_ds_name}"
+                    )
+                    prompt_desc = (
+                        nl_canvas_input
+                        if has_active_chart and nl_canvas_input
+                        else f"針對 {selected_ds_name} 進行全表基線健康度診斷"
+                    )
 
                     pbi_diag_report = fastmcp_diagnostic.run_fastmcp_chart_diagnostic(
                         chart_title=chart_desc,
@@ -566,6 +702,7 @@ def render_powerbi_studio(
 
             if st.session_state.get(diag_pbi_key):
                 import fastmcp_diagnostic
+
                 gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
                 fastmcp_diagnostic.render_fastmcp_chat_widget(
                     unique_key=f"pbi_{key_prefix}",
@@ -578,8 +715,9 @@ def render_powerbi_studio(
         except Exception as ex:  # noqa: BLE001
             try:
                 import duckdb
+
                 duckdb.execute("ROLLBACK")
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
             st.error(f"PyGWalker 載入時發生異常：{ex}")
     else:
