@@ -23,3 +23,5 @@ tornado>=6.4.0
 pytest>=8.0.0
 ruff>=0.5.0
 sqlfluff>=3.0.0
+google-cloud-storage>=2.14.0
+elementary-data>=0.14.0

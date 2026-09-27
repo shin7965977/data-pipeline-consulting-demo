@@ -71,6 +71,11 @@ resource "google_cloud_run_v2_job" "pipeline_job" {
           name  = "ORDERS_PER_DAY"
           value = "40"
         }
+
+        env {
+          name  = "ELEMENTARY_REPORT_BUCKET"
+          value = google_storage_bucket.observability_bucket.name
+        }
       }
     }
   }

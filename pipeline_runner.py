@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 
@@ -50,6 +51,11 @@ def parse_args():
         action="store_true",
         default=os.getenv("MOCK_MODE", "false").lower() == "true",
         help="Run simulator with mock catalog without hitting external APIs",
+    )
+    parser.add_argument(
+        "--report-bucket",
+        default=os.getenv("ELEMENTARY_REPORT_BUCKET"),
+        help="Optional GCS bucket to automatically publish Elementary Observability HTML report",
     )
     return parser.parse_args()
 
@@ -114,10 +120,70 @@ def run_transformation_step(
     return 0
 
 
+def generate_and_publish_elementary_report(
+    project_dir: str = "transform_dbt",
+    profiles_dir: str = "transform_dbt",
+    report_file: str = "elementary_report.html",
+    gcs_bucket: str | None = None,
+) -> str | None:
+    """Generate Elementary Observability HTML report and optionally upload to GCS."""
+    print("-" * 60)
+    print("[Elementary] Generating automated Observability report...")
+    bucket_name = gcs_bucket or os.getenv(
+        "ELEMENTARY_REPORT_BUCKET", "de-consulting-508822_cloudbuild"
+    )
+
+    edr_bin = shutil.which("edr") or os.path.join(os.path.dirname(sys.executable), "edr")
+    if sys.platform == "win32" and not edr_bin.endswith(".exe") and os.path.exists(edr_bin + ".exe"):
+        edr_bin += ".exe"
+
+    cmd_edr = [
+        edr_bin,
+        "report",
+        "--project-dir",
+        project_dir,
+        "--profiles-dir",
+        profiles_dir,
+        "--file-path",
+        report_file,
+    ]
+    try:
+        res = subprocess.run(cmd_edr, check=False)
+        if res.returncode != 0:
+            print(f"[Elementary] edr report exited with returncode {res.returncode}")
+        else:
+            print(f"[Elementary] Report successfully generated at: {report_file}")
+    except Exception as e:
+        print(f"[Elementary] Warning: Failed to execute edr report: {e}")
+        return None
+
+    # Upload to Google Cloud Storage if bucket name is specified
+    if bucket_name and os.path.exists(report_file):
+        try:
+            print(f"[Elementary] Uploading report to GCS bucket: {bucket_name}...")
+            from google.cloud import storage
+
+            client = storage.Client()
+            bucket = client.bucket(bucket_name)
+            blob_name = os.path.basename(report_file)
+            blob = bucket.blob(blob_name)
+            blob.cache_control = "no-cache, max-age=0"
+            blob.upload_from_filename(report_file, content_type="text/html")
+            public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+            print(f"[Elementary] Report is live at: {public_url}")
+            return public_url
+        except Exception as e:
+            print(f"[Elementary] Note: GCS upload skipped or failed: {e}")
+            return None
+
+    return report_file
+
+
 def run_testing_step(
     dbt_target: str | None = None,
     project_dir: str = "transform_dbt",
     profiles_dir: str = "transform_dbt",
+    gcs_bucket: str | None = None,
 ) -> int:
     print("=" * 60)
     print("STEP 3: TESTING & OBSERVABILITY (dbt test -> Elementary)")
@@ -140,6 +206,14 @@ def run_testing_step(
     ]
     print(f"[dbt] Running quality tests against target: {target}...")
     res_test = subprocess.run(cmd_test, env=env, check=False)
+
+    # Always generate/update Elementary report so latest test runs are reflected
+    generate_and_publish_elementary_report(
+        project_dir=project_dir,
+        profiles_dir=profiles_dir,
+        gcs_bucket=gcs_bucket,
+    )
+
     if res_test.returncode != 0:
         print("[dbt] dbt test failed! Exiting pipeline.")
         return res_test.returncode
@@ -156,6 +230,7 @@ def run_pipeline_orchestrator(
     orders_per_day: int = 40,
     incremental_days: int | None = None,
     mock_mode: bool = False,
+    report_bucket: str | None = None,
 ) -> int:
     print(f"Starting Platzi Pipeline Orchestrator with target: {target}")
 
@@ -177,7 +252,7 @@ def run_pipeline_orchestrator(
             return ret
 
     if target in ("all", "test"):
-        ret = run_testing_step(dbt_target=dbt_target)
+        ret = run_testing_step(dbt_target=dbt_target, gcs_bucket=report_bucket)
         if ret != 0:
             return ret
 
@@ -195,6 +270,7 @@ def main():
         orders_per_day=args.orders_per_day,
         incremental_days=args.incremental_days,
         mock_mode=args.mock,
+        report_bucket=args.report_bucket,
     )
     sys.exit(code)
 

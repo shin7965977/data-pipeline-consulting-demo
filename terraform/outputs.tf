@@ -43,3 +43,13 @@ output "workflow_console_url" {
   value       = "https://console.cloud.google.com/workflows/workflow/${var.region}/${google_workflows_workflow.pipeline_workflow.name}/executions?project=${var.project_id}"
 }
 
+output "elementary_report_bucket" {
+  description = "Google Cloud Storage bucket hosting the automated Elementary Observability report"
+  value       = google_storage_bucket.observability_bucket.name
+}
+
+output "elementary_report_url" {
+  description = "Public or internal HTTP URL to access the always-updated Elementary Observability report"
+  value       = "https://storage.googleapis.com/${google_storage_bucket.observability_bucket.name}/elementary_report.html"
+}
+

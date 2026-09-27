@@ -6,6 +6,7 @@ locals {
     "run.googleapis.com",
     "cloudscheduler.googleapis.com",
     "workflows.googleapis.com",
+    "storage.googleapis.com",
     "iam.googleapis.com"
   ]
 }
@@ -87,4 +88,34 @@ resource "google_project_iam_member" "pipeline_sa_roles" {
   project  = var.project_id
   role     = each.key
   member   = "serviceAccount:${google_service_account.pipeline_sa.email}"
+}
+
+# 5. Cloud Storage Bucket for Elementary Observability Reports
+resource "google_storage_bucket" "observability_bucket" {
+  name                        = "${var.project_id}-elementary-reports"
+  location                    = var.region
+  force_destroy               = var.delete_contents_on_destroy
+  uniform_bucket_level_access = true
+  labels                      = merge(var.labels, { service = "observability" })
+
+  website {
+    main_page_suffix = "elementary_report.html"
+    not_found_page   = "elementary_report.html"
+  }
+
+  depends_on = [google_project_service.enabled_apis]
+}
+
+# Grant Pipeline Service Account admin access to the report bucket
+resource "google_storage_bucket_iam_member" "pipeline_sa_storage_admin" {
+  bucket = google_storage_bucket.observability_bucket.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.pipeline_sa.email}"
+}
+
+# Allow public or internal read access to the HTML report
+resource "google_storage_bucket_iam_member" "public_report_viewer" {
+  bucket = google_storage_bucket.observability_bucket.name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
 }
