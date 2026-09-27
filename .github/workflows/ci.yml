@@ -14,6 +14,13 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Principle 4: Secret Scanning (TruffleHog)'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -26,20 +33,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Ruff (Python Linting & Formatting)
+      - name: 'Principle 1: Code Style & Syntax - Python (Ruff)'
         run: |
           ruff check ingestion/ tests/ mcp_server/ pipeline_runner.py chart_generator.py
           ruff format --check ingestion/ tests/ mcp_server/ pipeline_runner.py chart_generator.py
 
-      - name: Run SQLFluff (dbt SQL Linting)
+      - name: 'Principle 1: Code Style & Syntax - dbt SQL (SQLFluff)'
         run: |
           sqlfluff lint transform_dbt/models/
 
-      - name: Install dbt Dependencies & Parse Manifest
+      - name: 'Principle 3: Schema DAG & Breaking Changes Check (dbt parse)'
         run: |
           dbt deps --project-dir transform_dbt --profiles-dir transform_dbt
           dbt parse --project-dir transform_dbt --profiles-dir transform_dbt
 
-      - name: Run Pytest (Unit & End-to-End Tests)
+      - name: 'Principle 2 & 5: Business Logic Invariants & Data Contracts (Pytest & dbt test)'
         run: |
           pytest tests/ -v
