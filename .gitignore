@@ -67,6 +67,7 @@ gcp-key.json
 
 # Elementary Reports & Cache
 elementary_report.html
+dbt_docs.html
 edr_target/
 
 

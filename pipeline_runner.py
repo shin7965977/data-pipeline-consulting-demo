@@ -120,6 +120,28 @@ def run_transformation_step(
     return 0
 
 
+def upload_file_to_gcs(local_file: str, bucket_name: str, target_name: str | None = None) -> str | None:
+    """Helper to upload a local HTML file to GCS with no-cache headers."""
+    if not (bucket_name and os.path.exists(local_file)):
+        return None
+    try:
+        from google.cloud import storage
+
+        if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ and os.path.exists("gcp-key.json"):
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.abspath("gcp-key.json")
+
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        blob_name = target_name or os.path.basename(local_file)
+        blob = bucket.blob(blob_name)
+        blob.cache_control = "no-cache, max-age=0"
+        blob.upload_from_filename(local_file, content_type="text/html")
+        return f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+    except Exception as e:
+        print(f"[Storage] Warning: Failed to upload {local_file} to GCS: {e}")
+        return None
+
+
 def generate_and_publish_elementary_report(
     project_dir: str = "transform_dbt",
     profiles_dir: str = "transform_dbt",
@@ -157,26 +179,96 @@ def generate_and_publish_elementary_report(
         print(f"[Elementary] Warning: Failed to execute edr report: {e}")
         return None
 
-    # Upload to Google Cloud Storage if bucket name is specified
     if bucket_name and os.path.exists(report_file):
-        try:
-            print(f"[Elementary] Uploading report to GCS bucket: {bucket_name}...")
-            from google.cloud import storage
-
-            client = storage.Client()
-            bucket = client.bucket(bucket_name)
-            blob_name = os.path.basename(report_file)
-            blob = bucket.blob(blob_name)
-            blob.cache_control = "no-cache, max-age=0"
-            blob.upload_from_filename(report_file, content_type="text/html")
-            public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
-            print(f"[Elementary] Report is live at: {public_url}")
+        public_url = upload_file_to_gcs(report_file, bucket_name)
+        if public_url:
+            print(f"[Elementary] Live Report: {public_url}")
             return public_url
-        except Exception as e:
-            print(f"[Elementary] Note: GCS upload skipped or failed: {e}")
-            return None
 
     return report_file
+
+
+def generate_and_publish_dbt_docs(
+    project_dir: str = "transform_dbt",
+    profiles_dir: str = "transform_dbt",
+    report_file: str = "dbt_docs.html",
+    gcs_bucket: str | None = None,
+) -> str | None:
+    """Generate dbt docs, bundle into a standalone single-file HTML, and upload to GCS."""
+    print("-" * 60)
+    print("[dbt Docs] Generating Data Catalog & Lineage documentation...")
+    bucket_name = gcs_bucket or os.getenv(
+        "ELEMENTARY_REPORT_BUCKET", "de-consulting-508822_cloudbuild"
+    )
+
+    cmd_docs = [
+        sys.executable,
+        "-m",
+        "dbt.cli.main",
+        "docs",
+        "generate",
+        "--project-dir",
+        project_dir,
+        "--profiles-dir",
+        profiles_dir,
+    ]
+    try:
+        res = subprocess.run(cmd_docs, check=False)
+        if res.returncode != 0:
+            print(f"[dbt Docs] Warning: docs generate exited with code {res.returncode}")
+            return None
+
+        # Bundle index.html + manifest.json + catalog.json into standalone HTML
+        target_dir = os.path.join(project_dir, "target")
+        index_path = os.path.join(target_dir, "index.html")
+        manifest_path = os.path.join(target_dir, "manifest.json")
+        catalog_path = os.path.join(target_dir, "catalog.json")
+
+        if os.path.exists(index_path) and os.path.exists(manifest_path) and os.path.exists(catalog_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                html = f.read()
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = f.read()
+            with open(catalog_path, "r", encoding="utf-8") as f:
+                catalog = f.read()
+
+            html = html.replace('"MANIFEST.JSON INLINE DATA"', manifest, 1)
+            html = html.replace('"CATALOG.JSON INLINE DATA"', catalog, 1)
+
+            with open(report_file, "w", encoding="utf-8") as f:
+                f.write(html)
+            print(f"[dbt Docs] Standalone Catalog & Lineage bundled: {report_file}")
+
+            if bucket_name:
+                public_url = upload_file_to_gcs(report_file, bucket_name)
+                if public_url:
+                    print(f"[dbt Docs] Live Catalog: {public_url}")
+                    return public_url
+    except Exception as e:
+        print(f"[dbt Docs] Warning: Failed to bundle dbt docs: {e}")
+        return None
+
+    return report_file
+
+
+def publish_unified_portal(
+    portal_source: str = "docs/portal.html",
+    gcs_bucket: str | None = None,
+) -> str | None:
+    """Upload Unified DataOps Portal (portal.html and index.html) to GCS."""
+    print("-" * 60)
+    print("[Portal] Publishing Unified DataOps Portal...")
+    bucket_name = gcs_bucket or os.getenv(
+        "ELEMENTARY_REPORT_BUCKET", "de-consulting-508822_cloudbuild"
+    )
+    if bucket_name and os.path.exists(portal_source):
+        # Upload as both portal.html and index.html
+        url_portal = upload_file_to_gcs(portal_source, bucket_name, "portal.html")
+        upload_file_to_gcs(portal_source, bucket_name, "index.html")
+        if url_portal:
+            print(f"[Portal] Live Unified Portal: {url_portal}")
+            return url_portal
+    return None
 
 
 def run_testing_step(
@@ -186,7 +278,7 @@ def run_testing_step(
     gcs_bucket: str | None = None,
 ) -> int:
     print("=" * 60)
-    print("STEP 3: TESTING & OBSERVABILITY (dbt test -> Elementary)")
+    print("STEP 3: TESTING, OBSERVABILITY & GOVERNANCE PORTAL")
     print("=" * 60)
     target = dbt_target or os.getenv("DBT_TARGET", "bigquery")
     env = {**dict(os.environ), "DBT_TARGET": target}
@@ -207,18 +299,38 @@ def run_testing_step(
     print(f"[dbt] Running quality tests against target: {target}...")
     res_test = subprocess.run(cmd_test, env=env, check=False)
 
-    # Always generate/update Elementary report so latest test runs are reflected
-    generate_and_publish_elementary_report(
+    # 1. Elementary Report (Testing & Observability)
+    elem_url = generate_and_publish_elementary_report(
         project_dir=project_dir,
         profiles_dir=profiles_dir,
         gcs_bucket=gcs_bucket,
     )
 
+    # 2. dbt Docs (Catalog & Lineage)
+    docs_url = generate_and_publish_dbt_docs(
+        project_dir=project_dir,
+        profiles_dir=profiles_dir,
+        gcs_bucket=gcs_bucket,
+    )
+
+    # 3. Unified Portal (Executive Dashboard Hub)
+    portal_url = publish_unified_portal(gcs_bucket=gcs_bucket)
+
+    print("=" * 60)
+    print("[SUCCESS] UNIFIED DATAOPS PLATFORM READY:")
+    if portal_url:
+        print(f"  * [Portal Hub]      : {portal_url}")
+    if elem_url:
+        print(f"  * [Elementary Tests]: {elem_url}")
+    if docs_url:
+        print(f"  * [dbt Catalog & DAG]: {docs_url}")
+    print("=" * 60)
+
     if res_test.returncode != 0:
         print("[dbt] dbt test failed! Exiting pipeline.")
         return res_test.returncode
 
-    print("[dbt] Quality tests and Elementary observability completed successfully!")
+    print("[dbt] All tests, observability & governance portals completed successfully!")
     return 0
 
 
