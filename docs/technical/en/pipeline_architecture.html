@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataOps System Architecture Diagram & Engineering Playbook</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #f8fafc;
+            --dot-color: #cbd5e1;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --panel-bg: rgba(255, 255, 255, 0.98);
+            --border-color: #e2e8f0;
+            --accent-blue: #2563eb;
+            --accent-cyan: #06b6d4;
+            --accent-amber: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-green: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Plus Jakarta Sans', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-canvas);
+            color: var(--text-dark);
+            user-select: none;
+        }
+
+        /* Engineering Dot-Grid Canvas Background */
+        .viewport {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background-image: radial-gradient(var(--dot-color) 1.2px, transparent 1.2px);
+            background-size: 24px 24px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+        }
+
+        .viewport:active {
+            cursor: grabbing;
+        }
+
+        /* Top Navigation Header */
+        .top-navbar {
+            position: fixed;
+            top: 18px;
+            left: 24px;
+            right: 24px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .brand-badge {
+            pointer-events: auto;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-badge h1 {
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-badge span.sub {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 500;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            padding-left: 10px;
+        }
+
+        /* Stage Quick Jump Buttons */
+        .stage-nav {
+            pointer-events: auto;
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            padding: 6px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        }
+
+        .stage-nav-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .stage-nav-btn:hover {
+            color: var(--accent-blue);
+            background: #eff6ff;
+        }
+
+        .stage-nav-btn.active {
+            background: var(--accent-blue);
+            color: #ffffff;
+        }
+
+        /* Floating Viewport Controls */
+        .canvas-controls {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: #334155;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .control-btn:hover {
+            background: #f1f5f9;
+            color: var(--accent-blue);
+        }
+
+        .control-btn:not(:last-child) {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Hint Badge */
+        .hint-badge {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            z-index: 90;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* SVG Stage & Node Styling */
+        #architecture-canvas {
+            transform-origin: center center;
+            transition: transform 0.1s ease-out;
+        }
+
+        .stage-box {
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .stage-box:hover .stage-bg {
+            stroke-width: 2.5px;
+            filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.08));
+        }
+
+        .node-element {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .node-element:hover {
+            filter: drop-shadow(0 6px 14px rgba(0,0,0,0.12));
+        }
+
+        .node-element:hover rect,
+        .node-element:hover path,
+        .node-element:hover polygon {
+            stroke-width: 2px !important;
+        }
+
+        /* Interactive Floating Card / Modal */
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 480px;
+            height: 100vh;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border-left: 1px solid var(--border-color);
+            box-shadow: -10px 0 40px rgba(15, 23, 42, 0.12);
+            z-index: 200;
+            transform: translateX(100%);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            user-select: text;
+        }
+
+        .drawer-overlay.active {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            padding: 24px 28px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            background: #ffffff;
+        }
+
+        .drawer-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .drawer-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            line-height: 1.35;
+        }
+
+        .close-btn {
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .close-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .drawer-body {
+            padding: 28px;
+            overflow-y: auto;
+            flex: 1;
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
+
+        .drawer-section {
+            margin-bottom: 24px;
+        }
+
+        .drawer-section-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .content-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            color: #334155;
+        }
+
+        .content-box ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        .content-box li {
+            margin-bottom: 8px;
+        }
+
+        .content-box li:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Check list within modal */
+        .checklist-container {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #14532d;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .check-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .check-item input[type="checkbox"] {
+            margin-top: 3px;
+            accent-color: #16a34a;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Floating Tooltip preview on mouse hover */
+        .hover-preview-tooltip {
+            position: fixed;
+            pointer-events: none;
+            z-index: 150;
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(10px);
+            color: #ffffff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Navigation -->
+<div class="top-navbar">
+    <div class="brand-badge">
+        <h1>📐 DataOps Architecture Playbook</h1>
+        <span class="sub">Standard Engineering Architecture & Decision Playbook Canvas</span>
+    </div>
+
+    <div class="stage-nav">
+        <button class="stage-nav-btn" onclick="openStageDrawer('ingestion')">1. Ingestion</button>
+        <button class="stage-nav-btn" onclick="openStageDrawer('lakehouse')">2. Medallion Lakehouse</button>
+        <button class="stage-nav-btn" onclick="openStageDrawer('orchestration')">3. Orchestration</button>
+        <button class="stage-nav-btn" onclick="openStageDrawer('observability')">4. Observability Loop</button>
+        <button class="stage-nav-btn" onclick="openStageDrawer('serving')">5. Consumption & Serving</button>
+    </div>
+</div>
+
+<!-- Floating Controls -->
+<div class="canvas-controls">
+    <button class="control-btn" title="Zoom In" onclick="zoom(0.15)">＋</button>
+    <button class="control-btn" title="Zoom Out" onclick="zoom(-0.15)">－</button>
+    <button class="control-btn" title="Reset View" onclick="resetView()">⟲</button>
+    <button class="control-btn" title="Toggle Fullscreen" onclick="toggleFullScreen()">⛶</button>
+</div>
+
+<div class="hint-badge">
+    💡 Tip: Click and drag canvas to pan, scroll wheel to zoom. <strong>Hover or click any stage box</strong> to inspect design logic & engineering checklists.
+</div>
+
+<!-- Engineering Shapes & Lines Legend Widget -->
+<div style="position: fixed; bottom: 68px; left: 24px; z-index: 90; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 16px; font-size: 0.8rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); display: flex; gap: 16px; align-items: center; color: #334155;">
+    <span style="font-weight: 800; color: #0f172a; border-right: 1px solid #cbd5e1; padding-right: 12px;">Legend</span>
+    <span style="display: flex; align-items: center; gap: 6px;">🛢️ <strong>Cylinder</strong>: Storage Table</span>
+    <span style="display: flex; align-items: center; gap: 6px;">🔷 <strong>Diamond</strong>: Quality/Security Gate</span>
+    <span style="display: flex; align-items: center; gap: 6px;">📦 <strong>Rectangle</strong>: Stateless Compute</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><strong>── Solid</strong>: Data Plane</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><strong>- - Dashed</strong>: Control Plane</span>
+</div>
+
+<!-- Floating Tooltip -->
+<div id="hover-tooltip" class="hover-preview-tooltip">Click to inspect detailed engineering playbook</div>
+
+<!-- Viewport with SVG Diagram -->
+<div class="viewport" id="viewport">
+    <svg id="architecture-canvas" width="1680" height="720" viewBox="0 0 1680 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+        
+        <!-- Definitions for Arrowheads and Gradients -->
+        <defs>
+            <marker id="arrow-gray" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M 0 0 L 8 4 L 0 8 z" fill="#64748b" />
+            </marker>
+            <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M 0 0 L 8 4 L 0 8 z" fill="#2563eb" />
+            </marker>
+            <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M 0 0 L 8 4 L 0 8 z" fill="#10b981" />
+            </marker>
+            <marker id="arrow-pink" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M 0 0 L 8 4 L 0 8 z" fill="#ec4899" />
+            </marker>
+            <marker id="arrow-cyan" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M 0 0 L 8 4 L 0 8 z" fill="#0891b2" />
+            </marker>
+
+            <!-- Cylinder Database Top Pattern -->
+            <linearGradient id="db-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="100%" stop-color="#f1f5f9"/>
+            </linearGradient>
+        </defs>
+
+        <!-- ========================================== -->
+        <!-- STAGE 1: INGESTION (Right-side in reference, mapped logically) -->
+        <!-- ========================================== -->
+        <g class="stage-box" id="stage-ingestion" onclick="openStageDrawer('ingestion')" onmouseenter="showTooltip(event, 'Stage 1: Data Ingestion & Contracts')" onmouseleave="hideTooltip()">
+            <rect class="stage-bg" x="30" y="210" width="310" height="340" rx="16" fill="#fdf2f8" stroke="#f472b6" stroke-width="1.8" stroke-dasharray="6 6" fill-opacity="0.6"/>
+            <rect x="46" y="196" width="220" height="28" rx="6" fill="#ec4899"/>
+            <text x="56" y="215" fill="#ffffff" font-size="12" font-weight="700">1. Data Ingestion (IoT & APIs)</text>
+
+            <!-- Node: External REST APIs -->
+            <g class="node-element" id="node-api">
+                <rect x="55" y="260" width="120" height="70" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+                <text x="115" y="290" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">Platzi Fake Store</text>
+                <text x="115" y="306" text-anchor="middle" font-size="9" fill="#64748b">REST API (Catalog/Users)</text>
+            </g>
+
+            <!-- Node: Simulator -->
+            <g class="node-element" id="node-sim">
+                <rect x="55" y="355" width="120" height="70" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+                <text x="115" y="385" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">Order Simulator</text>
+                <text x="115" y="401" text-anchor="middle" font-size="9" fill="#64748b">3-State Lifecycle Engine</text>
+            </g>
+
+            <!-- Node: Canonical Adapter & DLT -->
+            <g class="node-element" id="node-dlt">
+                <rect x="205" y="300" width="115" height="90" rx="8" fill="#ffffff" stroke="#ec4899" stroke-width="1.6"/>
+                <text x="262" y="335" text-anchor="middle" font-size="11" font-weight="700" fill="#be185d">dlt Engine</text>
+                <text x="262" y="352" text-anchor="middle" font-size="9" fill="#64748b">Schema Evolution</text>
+                <text x="262" y="367" text-anchor="middle" font-size="9" font-weight="600" fill="#ec4899">Canonical Adapter</text>
+            </g>
+
+            <!-- Internal Connections -->
+            <path d="M 175 295 L 205 330" stroke="#f472b6" stroke-width="1.5" marker-end="url(#arrow-pink)"/>
+            <path d="M 175 390 L 205 360" stroke="#f472b6" stroke-width="1.5" marker-end="url(#arrow-pink)"/>
+        </g>
+
+        <!-- Connecting Flow: Ingestion -> Medallion Lakehouse -->
+        <path d="M 340 345 L 390 345" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow-gray)"/>
+        <rect x="345" y="332" width="40" height="16" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+        <text x="365" y="344" text-anchor="middle" font-size="8" font-weight="600" fill="#475569">LOAD</text>
+
+        <!-- ========================================== -->
+        <!-- STAGE 2: MEDALLION LAKEHOUSE (Core DataOps) -->
+        <!-- ========================================== -->
+        <g class="stage-box" id="stage-lakehouse" onclick="openStageDrawer('lakehouse')" onmouseenter="showTooltip(event, 'Stage 2: Medallion Lakehouse (BigQuery)')" onmouseleave="hideTooltip()">
+            <rect class="stage-bg" x="390" y="160" width="530" height="420" rx="16" fill="#ecfeff" stroke="#22d3ee" stroke-width="1.8" stroke-dasharray="6 6" fill-opacity="0.6"/>
+            <rect x="406" y="146" width="240" height="28" rx="6" fill="#0891b2"/>
+            <text x="416" y="165" fill="#ffffff" font-size="12" font-weight="700">2. DataOps Lakehouse (GCP)</text>
+
+            <!-- Cylinder 1: Bronze Raw Data -->
+            <g class="node-element" id="node-bronze">
+                <!-- Cylinder Body -->
+                <path d="M 420 280 C 420 270 490 270 490 280 L 490 340 C 490 350 420 350 420 340 Z" fill="url(#db-gradient)" stroke="#0891b2" stroke-width="1.5"/>
+                <ellipse cx="455" cy="280" rx="35" ry="10" fill="#e0f2fe" stroke="#0891b2" stroke-width="1.5"/>
+                <text x="455" y="310" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">Bronze: raw_*</text>
+                <text x="455" y="325" text-anchor="middle" font-size="8" fill="#64748b">Append-only GCS/BQ</text>
+            </g>
+
+            <!-- Diamond: Quality Gate (dbt test / Great Expectations) -->
+            <g class="node-element" id="node-gate">
+                <polygon points="565,260 615,310 565,360 515,310" fill="#ffffff" stroke="#0891b2" stroke-width="1.6"/>
+                <text x="565" y="305" text-anchor="middle" font-size="9" font-weight="800" fill="#0891b2">Quality Gate</text>
+                <text x="565" y="318" text-anchor="middle" font-size="8" fill="#64748b">dbt 32 tests</text>
+                <text x="565" y="330" text-anchor="middle" font-size="7" font-weight="700" fill="#10b981">PII Salted Hashing</text>
+            </g>
+
+            <!-- Cylinder 2: Silver Cleaned & Star Schema -->
+            <g class="node-element" id="node-silver">
+                <path d="M 660 280 C 660 270 735 270 735 280 L 735 340 C 735 350 660 350 660 340 Z" fill="url(#db-gradient)" stroke="#0891b2" stroke-width="1.5"/>
+                <ellipse cx="697" cy="280" rx="37" ry="10" fill="#e0f2fe" stroke="#0891b2" stroke-width="1.5"/>
+                <text x="697" y="308" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">Silver: dim & fct</text>
+                <text x="697" y="322" text-anchor="middle" font-size="8" fill="#64748b">Kimball Star Schema</text>
+                <text x="697" y="334" text-anchor="middle" font-size="8" fill="#0891b2">Partitioned</text>
+            </g>
+
+            <!-- Cylinder 3: Gold Marts -->
+            <g class="node-element" id="node-gold">
+                <path d="M 820 280 C 820 270 895 270 895 280 L 895 340 C 895 350 820 350 820 340 Z" fill="url(#db-gradient)" stroke="#eab308" stroke-width="1.8"/>
+                <ellipse cx="857" cy="280" rx="37" ry="10" fill="#fef9c3" stroke="#eab308" stroke-width="1.8"/>
+                <text x="857" y="308" text-anchor="middle" font-size="10" font-weight="800" fill="#854d0e">Gold: Marts</text>
+                <text x="857" y="322" text-anchor="middle" font-size="8" fill="#64748b">Pre-aggregated KPIs</text>
+                <text x="857" y="334" text-anchor="middle" font-size="8" font-weight="700" fill="#ca8a04">GMV & Net Revenue</text>
+            </g>
+
+            <!-- Lakehouse Internal Connections -->
+            <path d="M 490 310 L 515 310" stroke="#0891b2" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+            <path d="M 615 310 L 660 310" stroke="#0891b2" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+            
+            <!-- Connection between Silver and Gold with dbt label -->
+            <path d="M 735 310 L 820 310" stroke="#0891b2" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+            <rect x="745" y="298" width="65" height="18" rx="4" fill="#334155"/>
+            <text x="777" y="311" text-anchor="middle" font-size="8" font-weight="600" fill="#ffffff">dbt: Normalize</text>
+        </g>
+
+        <!-- Connecting Flow: Gold -> Consumption & Serving -->
+        <path d="M 920 310 L 970 310" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow-gray)"/>
+        <rect x="925" y="298" width="40" height="16" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+        <text x="945" y="310" text-anchor="middle" font-size="8" font-weight="600" fill="#475569">EXPOSE</text>
+
+        <!-- ========================================== -->
+        <!-- STAGE 3 & 4: SERVERLESS ORCHESTRATION (Top Flow) -->
+        <!-- ========================================== -->
+        <g class="stage-box" id="stage-orchestration" onclick="openStageDrawer('orchestration')" onmouseenter="showTooltip(event, 'Stage 3: Serverless Orchestration Hub ($0 Idle)')" onmouseleave="hideTooltip()">
+            <rect class="stage-bg" x="390" y="35" width="530" height="95" rx="14" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="6 6" fill-opacity="0.6"/>
+            <rect x="406" y="23" width="220" height="24" rx="6" fill="#f59e0b"/>
+            <text x="416" y="39" fill="#ffffff" font-size="11" font-weight="700">3. Serverless Orchestrator ($0 Idle)</text>
+
+            <!-- Node: Scheduler -->
+            <g class="node-element">
+                <rect x="415" y="55" width="105" height="55" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+                <text x="467" y="78" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">Cloud Scheduler</text>
+                <text x="467" y="93" text-anchor="middle" font-size="8" fill="#64748b">Cron 02:00 UTC</text>
+            </g>
+
+            <!-- Node: Workflows (Visual DAG) -->
+            <g class="node-element">
+                <rect x="545" y="55" width="130" height="55" rx="6" fill="#ffffff" stroke="#f59e0b" stroke-width="1.5"/>
+                <text x="610" y="78" text-anchor="middle" font-size="10" font-weight="700" fill="#b45309">Cloud Workflows</text>
+                <text x="610" y="93" text-anchor="middle" font-size="8" font-weight="600" fill="#f59e0b">Visual DAG State Machine</text>
+            </g>
+
+            <!-- Node: Cloud Run Jobs -->
+            <g class="node-element">
+                <rect x="700" y="55" width="135" height="55" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+                <text x="767" y="78" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">Cloud Run Jobs</text>
+                <text x="767" y="93" text-anchor="middle" font-size="8" fill="#64748b">Ingest ➔ Transform ➔ Test</text>
+            </g>
+
+            <!-- Step Connectors -->
+            <path d="M 520 82 L 545 82" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+            <path d="M 675 82 L 700 82" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+
+            <!-- Control Flow: Cloud Run Jobs dispatching steps (Clear labeled control lines) -->
+            <!-- Step 1 to Ingestion dlt -->
+            <path d="M 720 110 L 720 135 L 262 135 L 262 300" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 4" fill="none" marker-end="url(#arrow-pink)"/>
+            <rect x="440" y="125" width="130" height="18" rx="4" fill="#fffbeb" stroke="#f59e0b"/>
+            <text x="505" y="138" text-anchor="middle" font-size="8" font-weight="700" fill="#b45309">Step 1: Execute dlt Ingest</text>
+
+            <!-- Step 2 to Transform dbt -->
+            <path d="M 767 110 L 767 295" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 4" fill="none" marker-end="url(#arrow-cyan)"/>
+            <rect x="710" y="225" width="115" height="18" rx="4" fill="#fffbeb" stroke="#f59e0b"/>
+            <text x="767" y="238" text-anchor="middle" font-size="8" font-weight="700" fill="#b45309">Step 2: dbt run</text>
+
+            <!-- Step 3 to Quality Gate Test -->
+            <path d="M 740 110 L 740 180 L 565 180 L 565 260" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 4" fill="none" marker-end="url(#arrow-cyan)"/>
+            <rect x="585" y="172" width="115" height="18" rx="4" fill="#fffbeb" stroke="#f59e0b"/>
+            <text x="642" y="184" text-anchor="middle" font-size="8" font-weight="700" fill="#b45309">Step 3: dbt test</text>
+        </g>
+
+        <!-- ========================================== -->
+        <!-- STAGE 5: OBSERVABILITY & ANOMALY LOOP (Bottom Left) -->
+        <!-- ========================================== -->
+        <g class="stage-box" id="stage-observability" onclick="openStageDrawer('observability')" onmouseenter="showTooltip(event, 'Stage 4: Data Observability & SRE Feedback')" onmouseleave="hideTooltip()">
+            <rect class="stage-bg" x="30" y="600" width="310" height="95" rx="14" fill="#ecfdf5" stroke="#10b981" stroke-width="1.6" stroke-dasharray="6 6" fill-opacity="0.6"/>
+            <rect x="46" y="588" width="220" height="24" rx="6" fill="#10b981"/>
+            <text x="56" y="604" fill="#ffffff" font-size="11" font-weight="700">4. Observability & Lineage Loop</text>
+
+            <rect x="55" y="620" width="260" height="60" rx="8" fill="#ffffff" stroke="#10b981" stroke-width="1.4"/>
+            <text x="185" y="643" text-anchor="middle" font-size="10" font-weight="800" fill="#047857">Elementary Data Observability</text>
+            <text x="185" y="658" text-anchor="middle" font-size="8" fill="#64748b">Schema Drift • Data Lineage • Volume Anomaly</text>
+            <text x="185" y="670" text-anchor="middle" font-size="8" font-weight="600" fill="#10b981">MTTR Automated Incident Feedback</text>
+
+            <!-- Observability Feedback Loop Lines -->
+            <path d="M 185 600 L 185 550" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow-green)"/>
+            <path d="M 565 360 L 565 645 L 340 645" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 4" fill="none" marker-end="url(#arrow-green)"/>
+        </g>
+
+        <!-- ========================================== -->
+        <!-- STAGE 6: CONSUMPTION & PRODUCT SERVING (Right Side) -->
+        <!-- ========================================== -->
+        <g class="stage-box" id="stage-serving" onclick="openStageDrawer('serving')" onmouseenter="showTooltip(event, 'Stage 5: Business Consumption & AI Serving')" onmouseleave="hideTooltip()">
+            <rect class="stage-bg" x="970" y="160" width="670" height="420" rx="16" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.8" stroke-dasharray="6 6" fill-opacity="0.6"/>
+            <rect x="986" y="146" width="220" height="28" rx="6" fill="#7c3aed"/>
+            <text x="996" y="165" fill="#ffffff" font-size="12" font-weight="700">5. Product Serving & AI Layer</text>
+
+            <!-- Serving Node 1: FastMCP AI Advisor -->
+            <g class="node-element" id="node-mcp">
+                <rect x="1005" y="220" width="185" height="100" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.8"/>
+                <text x="1097" y="250" text-anchor="middle" font-size="11" font-weight="800" fill="#6d28d9">FastMCP AI Consultant</text>
+                <text x="1097" y="268" text-anchor="middle" font-size="9" fill="#64748b">Gemini Flash Tool Calling</text>
+                <text x="1097" y="284" text-anchor="middle" font-size="9" font-weight="600" fill="#7c3aed">MBB Pyramid Principle / Issue Trees</text>
+                <text x="1097" y="300" text-anchor="middle" font-size="8" font-weight="700" fill="#ef4444">🛡️ Business Bound Guardrails</text>
+            </g>
+
+            <!-- Serving Node 2: Streamlit C-Level Dashboard -->
+            <g class="node-element" id="node-streamlit">
+                <rect x="1225" y="220" width="185" height="100" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.8"/>
+                <text x="1317" y="250" text-anchor="middle" font-size="11" font-weight="800" fill="#6d28d9">Streamlit Strategy Hub</text>
+                <text x="1317" y="268" text-anchor="middle" font-size="9" fill="#64748b">Tab 1: Financial P&L KPI Hub</text>
+                <text x="1317" y="284" text-anchor="middle" font-size="9" fill="#64748b">Tab 2: Pareto 80/20 Analysis</text>
+                <text x="1317" y="300" text-anchor="middle" font-size="8" font-weight="600" fill="#7c3aed">Tab 3: Customer LTV & RFM Matrix</text>
+            </g>
+
+            <!-- Serving Node 3: Looker Studio BI -->
+            <g class="node-element" id="node-looker">
+                <rect x="1445" y="220" width="170" height="100" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.8"/>
+                <text x="1530" y="250" text-anchor="middle" font-size="11" font-weight="800" fill="#6d28d9">Looker Studio BI</text>
+                <text x="1530" y="268" text-anchor="middle" font-size="9" fill="#64748b">Executive Sales Performance</text>
+                <text x="1530" y="284" text-anchor="middle" font-size="9" fill="#64748b">Cohort Retention Analysis</text>
+                <text x="1530" y="300" text-anchor="middle" font-size="8" font-weight="600" fill="#7c3aed">BI Engine In-Memory Cache</text>
+            </g>
+
+            <!-- Serving Sub-system: User Action & Feedback Loop -->
+            <rect x="1110" y="380" width="400" height="70" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/>
+            <text x="1310" y="408" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b">User Actions & Business Decision Feedback</text>
+            <text x="1310" y="426" text-anchor="middle" font-size="9" fill="#64748b">Promotions, At-Risk Churn Recovery, Pricing Optimization</text>
+
+            <path d="M 1097 320 L 1097 415 L 1110 415" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+            <path d="M 1317 320 L 1317 380" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+            <path d="M 1530 320 L 1530 415 L 1510 415" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+        </g>
+
+        <!-- Long Feedback Loop from Consumption back to Ingestion (Global Closed-loop) -->
+        <path d="M 1510 415 L 1650 415 L 1650 680 L 185 680" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5 5" fill="none" marker-end="url(#arrow-gray)"/>
+        <rect x="850" y="670" width="170" height="20" rx="4" fill="#334155"/>
+        <text x="935" y="684" text-anchor="middle" font-size="9" font-weight="600" fill="#ffffff">Closed-Loop Feedback: Strategic Decisions Reshape Operational Metrics</text>
+
+    </svg>
+</div>
+
+<!-- Slide-Out Drawer / Modal for Stage Details -->
+<div class="drawer-overlay" id="drawer">
+    <div class="drawer-header">
+        <div>
+            <span class="drawer-badge" id="drawer-badge">STAGE</span>
+            <h2 class="drawer-title" id="drawer-title">Stage Architecture Deep Dive</h2>
+        </div>
+        <button class="close-btn" onclick="closeDrawer()" title="Close">&times;</button>
+    </div>
+
+    <div class="drawer-body">
+        <div class="drawer-section">
+            <div class="drawer-section-title">
+                <span>🎯</span> System Design Logic (Why this Design?)
+            </div>
+            <div class="content-box" id="drawer-why">
+                Loading...
+            </div>
+        </div>
+
+        <div class="drawer-section">
+            <div class="drawer-section-title">
+                <span>⚠️</span> Engineering Considerations & Trade-offs
+            </div>
+            <div class="content-box" id="drawer-future">
+                Loading...
+            </div>
+        </div>
+
+        <div class="drawer-section" id="drawer-schema-section" style="display: none;">
+            <div class="drawer-section-title">
+                <span>📋</span> Data Dictionary & Schema Specification
+            </div>
+            <div class="content-box" id="drawer-schema" style="overflow-x: auto;">
+                <!-- Schema tables will be injected -->
+            </div>
+        </div>
+
+        <div class="drawer-section">
+            <div class="drawer-section-title">
+                <span>✅</span> Production Engineering Acceptance Checklist
+            </div>
+            <div class="checklist-container" id="drawer-checklist">
+                <!-- Check items will be dynamically injected -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Detailed Data Store for each Stage
+    const stageDetails = {
+        ingestion: {
+            badge: "STAGE 1",
+            badgeColor: "#ec4899",
+            badgeBg: "#fdf2f8",
+            title: "數據擷取與契約適配 (Data Ingestion & Contracts)",
+            why: `
+                <ul>
+                    <li><strong>採用 <code>dlt</code> 引擎取代自寫 Python 腳本</strong>：外部電商 API（Shopify、客製 POS）經常隨意增減 JSON 欄位。自寫腳本易頻繁噴錯；<code>dlt</code> 具備自動型別推導與 <strong>Schema Evolution</strong>，確保擷取永不斷鏈。</li>
+                    <li><strong>強制使用 Canonical Schema Adapter 模式</strong>：透過 <code>PlatziStoreAdapter</code> 將異質來源統一映射為 <code>raw_orders</code>、<code>raw_customers</code> 等標準中繼表。未來改接真實 Shopify、91APP，下游 dbt 模型 <strong>100% 免重寫</strong>。</li>
+                    <li><strong>增量游標（Watermark）設計</strong>：依賴 <code>updated_at</code> 只拉異動資料，將網路傳輸量與雲端寫入成本降至最低。</li>
+                </ul>
+            `,
+            future: `
+                <ul>
+                    <li><strong>破壞性變更（Breaking Changes）防護</strong>：若上游「改變現有欄位型態」（例如字串變陣列），需在 Adapter 處加上反序列化容錯保護。</li>
+                    <li><strong>API 429 Rate Limit 與退避</strong>：外部 API 限制頻繁時，需在 Request 端實作具備隨機抖動的指數退避重試（Exponential Backoff with Jitter）。</li>
+                    <li><strong>時鐘偏差（Clock Drift）</strong>：增量拉取需設定 5~10 分鐘重疊視窗（Overlap Window），並由下游主鍵去重。</li>
+                </ul>
+            `,
+            checklist: [
+                "來源連線是否抽離為獨立 Adapter 類別，不與下游 SQL 轉換邏輯耦合？",
+                "增量拉取是否配置了可靠的游標時間窗（<code>updated_at</code>），避免漏抓？",
+                "寫入 Bronze 層是否為 Append-only 不可變歷史日誌？",
+                "所有 API 密鑰、連線字串是否由 Secret Manager 代管，無任何 Hardcode？"
+            ]
+        },
+        lakehouse: {
+            badge: "STAGE 2",
+            badgeColor: "#0891b2",
+            badgeBg: "#ecfeff",
+            title: "Medallion 資料湖倉與個資治理 (Storage & Governance)",
+            why: `
+                <ul>
+                    <li><strong>獎章架構（Bronze ➔ Silver ➔ Gold）</strong>：Bronze 保留原始髒資料；Silver 展平為 Kimball 星型模型；Gold 計算業務寬表。權責邊界分明，避免單一 SQL 膨脹為難以維護的泥球。</li>
+                    <li><strong>Staging 層 PII 加鹽雜湊（Salted Hashing）</strong>：顧客姓名、Email 在進入 Silver 前即經過 SHA-256 單向加鹽雜湊。分析師、BI 與 AI 顧問永久接觸不到原始個資，杜絕洩漏風險。</li>
+                    <li><strong>Kimball 星型模型（Dim / Fact）</strong>：事實與維度解耦，使客單價、顧客 LTV 等計算無需進行高成本的多表全量關聯。</li>
+                </ul>
+            `,
+            future: `
+                <ul>
+                    <li><strong>分區（Partitioning）與叢集（Clustering）</strong>：事實表數據量突破百萬時，必須在 BigQuery 依 <code>order_date</code> 分區，可削減 70%~90% 的查詢費用。</li>
+                    <li><strong>代理鍵（Surrogate Key）機制</strong>：跨來源合併易引發自然主鍵撞號，維度表應使用 MD5/SHA256 生成唯一代理鍵。</li>
+                    <li><strong>慢變維度（SCD Type 2）</strong>：若業務需要回溯商品歷史價格變更，需導入 dbt Snapshot 建立拉鍊快照表。</li>
+                </ul>
+            `,
+            checklist: [
+                "Bronze / Silver / Gold 三層結構具備明確的權限與存取隔離？",
+                "涉及個人身分識別資訊（PII）欄位是否皆在 Staging 完成密碼學加鹽雜湊？",
+                "核心大表（Fact Tables）是否已規劃好分區（Partition by Date）與叢集？",
+                "是否設定了原始日誌資料的生命週期原則（Lifecycle Policy），老舊日誌自動歸檔？"
+            ],
+            schemaHtml: `
+                <div style="font-size: 0.85rem;">
+                    <h5 style="color: #0891b2; font-weight: 800; margin: 8px 0 6px;">🥈 Silver: 星型維度模型與事實實體表 (Kimball Schema)</h5>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.82rem;">
+                        <tr style="background: #e0f2fe; color: #0369a1;"><th style="padding: 6px;">表名</th><th style="padding: 6px;">欄位結構 (Columns & Data Types)</th><th style="padding: 6px;">特性與測試</th></tr>
+                        <tr><td><code>dim_products</code></td><td><code>product_id (PK, INT)</code>, <code>title (STR)</code>, <code>price (FLT)</code>, <code>category_name (STR)</code></td><td>商品維度實體 (unique, not_null)</td></tr>
+                        <tr><td><code>dim_customers</code></td><td><code>customer_id (PK, INT)</code>, <code>email_hash (STR)</code>, <code>name_hash (STR)</code></td><td>🛡️ SHA-256 加鹽個資脫敏</td></tr>
+                        <tr><td><code>fct_orders</code></td><td><code>order_id (PK, INT)</code>, <code>customer_id (FK)</code>, <code>order_date (DATE)</code>, <code>status (STR)</code>, <code>net_amount (FLT)</code></td><td>依下單日期分區 (Partitioned)</td></tr>
+                        <tr><td><code>fct_order_items</code></td><td><code>item_id (PK, INT)</code>, <code>order_id (FK)</code>, <code>product_id (FK)</code>, <code>quantity (INT)</code>, <code>line_total (FLT)</code></td><td>明細級原子事實 (FK relationships)</td></tr>
+                    </table>
+
+                    <h5 style="color: #854d0e; font-weight: 800; margin: 14px 0 6px;">🥇 Gold: 商業 Marts 預聚合指標寬表 (Exposed Layer)</h5>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+                        <tr style="background: #fef9c3; color: #854d0e;"><th style="padding: 6px;">表名</th><th style="padding: 6px;">商業指標欄位清單 (Metrics)</th><th style="padding: 6px;">下游消費場景</th></tr>
+                        <tr><td><code>gold_daily_sales_kpi</code></td><td><code>order_date (PK)</code>, <code>gmv</code>, <code>net_revenue</code>, <code>completed_orders</code>, <code>cancelled_orders</code>, <code>refunded_orders</code>, <code>aov</code></td><td>財務 P&L、日營收大盤</td></tr>
+                        <tr><td><code>gold_customer_ltv</code></td><td><code>customer_id (PK)</code>, <code>first_order_date</code>, <code>latest_order_date</code>, <code>total_orders</code>, <code>total_net_spend</code>, <code>customer_tier</code></td><td>顧客價值矩陣 (RFM 分層)</td></tr>
+                        <tr><td><code>gold_product_performance</code></td><td><code>product_id (PK)</code>, <code>title</code>, <code>category_name</code>, <code>total_units_sold</code>, <code>total_revenue</code>, <code>return_rate</code></td><td>Pareto 80/20 熱銷品與退貨率</td></tr>
+                    </table>
+                </div>
+            `
+        },
+        orchestration: {
+            badge: "STAGE 3",
+            badgeColor: "#d97706",
+            badgeBg: "#fffbeb",
+            title: "無伺服器調度編排與品質閘門 ($0 Idle Orchestration)",
+            why: `
+                <ul>
+                    <li><strong>全面捨棄 Airflow 改採全無伺服器架構（極致 FinOps）</strong>：傳統 Cloud Composer 每月常駐成本 $300~$500 美元。改採 <strong>Cloud Scheduler + Cloud Workflows + Cloud Run Jobs</strong>，閒置期間 <strong>$0 費用</strong>，每月運算帳單僅數美元以內。</li>
+                    <li><strong>Cloud Workflows 原生 Visual DAG</strong>：解決單一容器黑盒子盲點。在 GCP Console 直接以流程圖檢視 Ingest ➔ Transform ➔ Test 各階段耗時，出錯在 3 秒內精準定位。</li>
+                    <li><strong>32 項 dbt test 作為品質閘門（Quality Gate）</strong>：貫徹 Write-Audit-Publish（寫入-審計-發布）。測試未通過立即中斷阻斷，杜絕髒數據流向下游。</li>
+                </ul>
+            `,
+            future: `
+                <ul>
+                    <li><strong>Cloud Run Job 逾時限制</strong>：單次執行上限預設為 60 分鐘。若計算量龐大，需拆分為更細粒度的 Job。</li>
+                    <li><strong>容器資源配置</strong>：需隨數據量在 Terraform 宣告適當的 CPU 與 RAM 配額。</li>
+                    <li><strong>跨管線 Sensor</strong>：等候外部數據抵達需配置 Polling Step 或 Eventarc 事件觸發。</li>
+                </ul>
+            `,
+            checklist: [
+                "管線調度是否已解耦為獨立 Step（Ingest / Transform / Test）並具備 Visual DAG？",
+                "排程是否配置自動容錯與重試機制（Retry with Backoff）？",
+                "所有雲端資源（Workflows, Jobs, Scheduler, IAM）是否皆由 Terraform (IaC) 管理？",
+                "Job 是否配置逾時上限（Timeout Limits），防止異常死鎖消耗預算？"
+            ]
+        },
+        observability: {
+            badge: "STAGE 4",
+            badgeColor: "#059669",
+            badgeBg: "#ecfdf5",
+            title: "數據可觀測性與雲端自動發布循環 (Observability & GCS Hosting)",
+            why: `
+                <ul>
+                    <li><strong>引入 Elementary Data 取代人工抽查</strong>：數據團隊最忌諱「業務比工程師先發現數字錯誤」。Elementary 自動在每次 <code>dbt test</code> 後採集元數據並產生互動式報告。</li>
+                    <li><strong>全鏈路互動式 Data Lineage</strong>：清晰掌握表與表之間的依賴關係，在事故發生時能即刻進行衝擊分析與根因溯源。</li>
+                    <li><strong>🚀 方案 1 雲端自動發布落地</strong>：每次排程跑完，<code>pipeline_runner.py</code> 自動調用 <code>edr report</code> 並直傳 Google Cloud Storage (GCS) Bucket，生成固定網址（<a href="https://storage.googleapis.com/de-consulting-508822_cloudbuild/elementary_report.html" target="_blank" style="color: #10b981; font-weight: 700; text-decoration: underline;">線上即時檢視報告</a>），永久自動維持最新時間戳記！</li>
+                </ul>
+            `,
+            future: `
+                <ul>
+                    <li><strong>告警分級與防疲勞（Alert Fatigue）</strong>：P1 阻斷級立即通報 PagerDuty / Slack；P3 警告級記錄在週報中定期審視。</li>
+                    <li><strong>SLA / SLO 數據契約化</strong>：與業務單位約定資料就緒時間與新鮮度（Freshness）標準。</li>
+                </ul>
+            `,
+            checklist: [
+                "是否具備全鏈路數據血緣追蹤工具，能一鍵完成上下游影響分析？",
+                "是否配置了資料「及時性（Freshness）」與「總筆數（Volume）」異常監控？",
+                "測試報告是否自動發布至 GCS 託管儲存桶，免除手動更新？",
+                "告警訊息是否包含失敗模型名稱與錯誤日誌深層連結？"
+            ]
+        },
+        serving: {
+            badge: "STAGE 5",
+            badgeColor: "#7c3aed",
+            badgeBg: "#f5f3ff",
+            title: "商業消費、語意層與防護欄 (Consumption & Serving)",
+            why: `
+                <ul>
+                    <li><strong>Gold 層唯讀暴露原則</strong>：BI 工具（Looker Studio）、Streamlit 與 AI 顧問僅能存取 Gold 商業聚合表，嚴禁查詢 Bronze 原始層，杜絕全表掃描並維護資安。</li>
+                    <li><strong>AI 顧問業務防護欄（Domain Relevance Guardrails）</strong>：透過 FastMCP 將資料管線開放給 LLM 呼叫時，過濾無關提問，防範 Prompt 注入與 Token 浪費。</li>
+                    <li><strong>預計算指標寬表（Pre-aggregation）</strong>：核心 KPI（淨營收、客單價、Pareto）提前算好，前端儀表板實現毫秒級響應。</li>
+                </ul>
+            `,
+            future: `
+                <ul>
+                    <li><strong>查詢防爆控制（Cost Capping）</strong>：在 BigQuery 限制單次查詢最大掃描字節數，防止分析師誤寫笛卡兒積造成高額帳單。</li>
+                    <li><strong>BI Engine In-Memory Cache加速</strong>：若儀表板並行訪問人數激增，可開啟 BigQuery BI Engine 提升載入速度。</li>
+                </ul>
+            `,
+            checklist: [
+                "下游分析工具與 AI 介面是否嚴格鎖定於 Gold 層，無權限存取底層原始表？",
+                "全公司所有商業指標（AOV, LTV, 淨營收）是否有且僅有一個官方計算口徑？",
+                "AI 查詢介面是否建置防護欄（Guardrails）過濾非商業範疇的無效請求？",
+                "資料庫連線帳號是否遵循最小權限原則（Least Privilege）？"
+            ]
+        }
+    };
+
+    // Pan & Zoom Logic
+    let scale = 1;
+    let pointX = 0;
+    let pointY = 0;
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+
+    const viewport = document.getElementById("viewport");
+    const canvas = document.getElementById("architecture-canvas");
+    const drawer = document.getElementById("drawer");
+    const tooltip = document.getElementById("hover-tooltip");
+
+    function updateTransform() {
+        canvas.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+    }
+
+    viewport.onmousedown = function(e) {
+        if (e.target.closest(".drawer-overlay") || e.target.closest(".top-navbar") || e.target.closest(".canvas-controls")) return;
+        isPanning = true;
+        startX = e.clientX - pointX;
+        startY = e.clientY - pointY;
+    };
+
+    window.onmousemove = function(e) {
+        // Move hover tooltip
+        if (tooltip.style.opacity === "1") {
+            tooltip.style.left = (e.clientX + 14) + "px";
+            tooltip.style.top = (e.clientY + 14) + "px";
+        }
+
+        if (!isPanning) return;
+        pointX = e.clientX - startX;
+        pointY = e.clientY - startY;
+        updateTransform();
+    };
+
+    window.onmouseup = function() {
+        isPanning = false;
+    };
+
+    viewport.onwheel = function(e) {
+        e.preventDefault();
+        const xs = (e.clientX - pointX) / scale;
+        const ys = (e.clientY - pointY) / scale;
+        const delta = -e.deltaY;
+        
+        if (delta > 0) {
+            scale *= 1.1;
+        } else {
+            scale /= 1.1;
+        }
+
+        scale = Math.min(Math.max(0.4, scale), 3);
+        pointX = e.clientX - xs * scale;
+        pointY = e.clientY - ys * scale;
+        updateTransform();
+    };
+
+    function zoom(delta) {
+        scale = Math.min(Math.max(0.4, scale + delta), 3);
+        updateTransform();
+    }
+
+    function resetView() {
+        scale = 0.95;
+        pointX = 0;
+        pointY = 0;
+        updateTransform();
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    }
+
+    // Tooltip functions
+    function showTooltip(e, text) {
+        tooltip.textContent = text + " (點擊查看工程決策與Checklist)";
+        tooltip.style.opacity = "1";
+        tooltip.style.left = (e.clientX + 14) + "px";
+        tooltip.style.top = (e.clientY + 14) + "px";
+    }
+
+    function hideTooltip() {
+        tooltip.style.opacity = "0";
+    }
+
+    // Drawer functions
+    function openStageDrawer(stageKey) {
+        const data = stageDetails[stageKey];
+        if (!data) return;
+
+        // Set active navbar button
+        document.querySelectorAll(".stage-nav-btn").forEach(btn => btn.classList.remove("active"));
+        const btnIndex = ['ingestion', 'lakehouse', 'orchestration', 'observability', 'serving'].indexOf(stageKey);
+        if (btnIndex >= 0) {
+            document.querySelectorAll(".stage-nav-btn")[btnIndex].classList.add("active");
+        }
+
+        // Populate drawer
+        const badge = document.getElementById("drawer-badge");
+        badge.textContent = data.badge;
+        badge.style.color = data.badgeColor;
+        badge.style.background = data.badgeBg;
+
+        document.getElementById("drawer-title").textContent = data.title;
+        document.getElementById("drawer-why").innerHTML = data.why;
+        document.getElementById("drawer-future").innerHTML = data.future;
+
+        // Populate checklist
+        const checklistContainer = document.getElementById("drawer-checklist");
+        checklistContainer.innerHTML = data.checklist.map((item, idx) => `
+            <label class="check-item">
+                <input type="checkbox" id="chk-${stageKey}-${idx}" checked>
+                <span>${item}</span>
+            </label>
+        `).join("");
+
+        // Populate Schema Dictionary if available
+        const schemaSection = document.getElementById("drawer-schema-section");
+        const schemaContent = document.getElementById("drawer-schema");
+        if (data.schemaHtml) {
+            schemaSection.style.display = "block";
+            schemaContent.innerHTML = data.schemaHtml;
+        } else {
+            schemaSection.style.display = "none";
+        }
+
+        drawer.classList.add("active");
+    }
+
+    function closeDrawer() {
+        drawer.classList.remove("active");
+        document.querySelectorAll(".stage-nav-btn").forEach(btn => btn.classList.remove("active"));
+    }
+
+    // Initial view tuning
+    window.onload = function() {
+        resetView();
+    };
+</script>
+
+</body>
+</html>

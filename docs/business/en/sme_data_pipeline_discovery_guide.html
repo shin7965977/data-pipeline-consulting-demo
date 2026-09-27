@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SME Data Operations Discovery & Diagnostic Workspace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --border-color: #cbd5e1;
+            --bg-main: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            font-size: 10pt;
+            padding-bottom: 80px;
+        }
+
+        /* Container */
+        .workspace-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 28px 36px;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        /* Top Bar Floating Controls */
+        .sticky-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(10px);
+            color: #ffffff;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .toolbar-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .save-indicator {
+            font-size: 0.8rem;
+            color: #34d399;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .toolbar-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-action {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.825rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-action:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .btn-primary-action {
+            background: #2563eb;
+            border-color: #3b82f6;
+        }
+
+        /* Header Area */
+        .doc-header {
+            border-bottom: 3px solid #1e3a8a;
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .doc-title-area h1 {
+            color: #0f172a;
+            font-size: 20pt;
+            margin: 0 0 6px 0;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .doc-title-area .subtitle {
+            color: #2563eb;
+            font-size: 11pt;
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 8pt;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #bfdbfe;
+            margin-bottom: 6px;
+        }
+
+        /* Interviewee Metadata Form */
+        .interview-meta-card {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        .meta-field label {
+            display: block;
+            font-size: 8pt;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .meta-field input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 9pt;
+            font-family: inherit;
+            background: #ffffff;
+            transition: border-color 0.2s;
+        }
+        .meta-field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        /* Executive Callout */
+        .exec-callout {
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 22px;
+            font-size: 9.5pt;
+            color: #1e3a8a;
+        }
+
+        /* Section Headings */
+        h2 {
+            color: #0f172a;
+            font-size: 13pt;
+            margin: 22px 0 12px 0;
+            padding-bottom: 5px;
+            border-bottom: 1.5px solid #e2e8f0;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Module Boxes */
+        .module-box {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            background: #ffffff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+            transition: border-color 0.2s;
+        }
+        .module-box:hover {
+            border-color: #94a3b8;
+        }
+        .module-header {
+            background: #f1f5f9;
+            padding: 10px 16px;
+            border-bottom: 1px solid #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .module-title {
+            font-size: 10.5pt;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .module-tech-badge {
+            font-size: 8pt;
+            font-weight: 700;
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1px solid #c7d2fe;
+        }
+        .module-body {
+            padding: 16px 18px;
+        }
+
+        /* Question Item */
+        .question-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+        .question-card:last-child {
+            margin-bottom: 0;
+        }
+        .question-card:focus-within {
+            background: #ffffff;
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+        }
+        .q-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .q-tag {
+            font-size: 7.5pt;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .tag-open { background: #dbeafe; color: #1e40af; }
+        .tag-deep { background: #fef3c7; color: #92400e; }
+        .tag-quant { background: #fee2e2; color: #991b1b; }
+
+        .severity-selector {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 8pt;
+            color: #64748b;
+        }
+        .star-rating {
+            display: flex;
+            gap: 2px;
+            cursor: pointer;
+        }
+        .star {
+            color: #cbd5e1;
+            font-size: 13pt;
+            transition: color 0.15s;
+        }
+        .star.active {
+            color: #f59e0b;
+        }
+
+        .q-text {
+            font-size: 9.5pt;
+            color: #0f172a;
+            font-weight: 700;
+            margin: 4px 0 3px 0;
+            line-height: 1.45;
+        }
+        .q-hint {
+            font-size: 8pt;
+            color: #64748b;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        /* Note Input Area */
+        .note-textarea {
+            width: 100%;
+            min-height: 52px;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 9pt;
+            font-family: inherit;
+            color: #1e293b;
+            background: #ffffff;
+            resize: vertical;
+            transition: border-color 0.2s;
+            line-height: 1.5;
+        }
+        .note-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #ffffff;
+        }
+        .note-textarea::placeholder {
+            color: #94a3b8;
+            font-size: 8.5pt;
+        }
+
+        .quant-input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 8.5pt;
+            color: #475569;
+        }
+        .quant-input {
+            padding: 4px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 8.5pt;
+            width: 130px;
+            background: #ffffff;
+        }
+
+        /* Diagnostic Live Summary */
+        .live-summary-card {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 24px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-metric {
+            text-align: center;
+        }
+        .metric-val {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #38bdf8;
+            line-height: 1;
+        }
+        .metric-lbl {
+            font-size: 8pt;
+            color: #94a3b8;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            margin: 12px 0 20px 0;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 700;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        /* Modal for Exporting */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-box {
+            background: #ffffff;
+            width: 90%;
+            max-width: 700px;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+        .modal-body textarea {
+            width: 100%;
+            height: 380px;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 9pt;
+            line-height: 1.4;
+            background: #f8fafc;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        /* Print Media Styling */
+        @media print {
+            .sticky-toolbar, .modal-overlay, .btn-action { display: none !important; }
+            body { background: #ffffff !important; font-size: 9pt !important; padding: 0 !important; }
+            .workspace-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+            }
+            .note-textarea {
+                border: 1px dashed #cbd5e1 !important;
+                min-height: 40px !important;
+                background: #ffffff !important;
+            }
+            .question-card {
+                page-break-inside: avoid;
+            }
+            .module-box {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- STICKY INTERACTIVE TOOLBAR -->
+    <div class="sticky-toolbar">
+        <div class="toolbar-title">
+            <span>📋 電商痛點診斷工作台</span>
+            <span class="save-indicator" id="saveStatus">● 已自動儲存至瀏覽器</span>
+        </div>
+        <div class="toolbar-actions">
+            <button class="btn-action" id="btnExportMarkdown">📤 匯出訪談紀錄 (Markdown)</button>
+            <button class="btn-action" id="btnPrint">🖨️ Print / Save as PDF</button>
+            <button class="btn-action btn-primary-action" id="btnSaveManual">💾 立即手動儲存</button>
+            <button class="btn-action" id="btnResetAll" style="background: rgba(239, 68, 68, 0.3);">🗑️ 清空重填</button>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="workspace-container">
+
+        <!-- HEADER -->
+        <div class="doc-header">
+            <div class="doc-title-area">
+                <span class="badge">MBB Consulting Interactive Discovery Tool</span>
+                <h1>SME Data Operations Discovery & Diagnostic Guide</h1>
+                <p class="subtitle">Interactive Typing · Auto-Save · Quantified Pain Severity · Instant Diagnostic Summary</p>
+            </div>
+        </div>
+
+        <!-- INTERVIEWEE METADATA -->
+        <div class="interview-meta-card">
+            <div class="meta-field">
+                <label>Company Name</label>
+                <input type="text" id="metaCompany" placeholder="e.g., MorningStar E-Commerce Ltd.">
+            </div>
+            <div class="meta-field">
+                <label>Interviewee Name / Title</label>
+                <input type="text" id="metaPerson" placeholder="e.g., Director of E-Commerce / General Manager">
+            </div>
+            <div class="meta-field">
+                <label>Interview Date</label>
+                <input type="date" id="metaDate">
+            </div>
+            <div class="meta-field">
+                <label>Lead Consultant / Scribe</label>
+                <input type="text" id="metaInterviewer" placeholder="Your Name">
+            </div>
+        </div>
+
+        <div class="exec-callout">
+            <strong>💡 Discovery Execution Guidelines (The Mom Test)</strong>:<br>
+            Record verbatim quotes and concrete metrics (e.g., 5 wasted hours/week, 8% refund rate) directly into the note areas. Click stars to rate pain severity; the top toolbar auto-saves continuously!
+        </div>
+
+        <!-- MODULE 1 -->
+        <h2>📂 Module 1: Data Silos & Manual Ingestion Friction</h2>
+        <div class="module-box">
+            <div class="module-header">
+                <span class="module-title">Module 1: Multi-Channel Data Silos & Manual Ingestion Friction</span>
+                <span class="module-tech-badge">Solution: Automated Incremental Ingestion via dlt (Bronze Ingest)</span>
+            </div>
+            <div class="module-body">
+                <!-- Q1.1 -->
+                <div class="question-card" data-qid="q1_1">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-open">Current State Opening</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q1_1_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">1.1 "Across which systems are your orders, products, and customer records currently stored (e-store, marketplaces, ERP/POS, payment/logistics gateways)?"</p>
+                    <p class="q-hint">Objective: Identify whether data silos exist and evaluate if a single source of truth is absent.</p>
+                    <textarea class="note-textarea" id="note_q1_1" placeholder="📝 Record verbatim notes (e.g., brand store on Shopify, Shopee flagship, offline custom POS, zero cross-channel connectivity...)"></textarea>
+                </div>
+
+                <!-- Q1.2 -->
+                <div class="question-card" data-qid="q1_2">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-deep">Root-Cause Probe</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q1_2_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">1.2 "To produce daily/weekly reports for executives, does your team manually log into multiple dashboards, export CSV/Excel sheets, and copy-paste them together?"</p>
+                    <p class="q-hint">Objective: Pinpoint high-friction, repetitive manual spreadsheet consolidation that automated pipelines easily eliminate.</p>
+                    <textarea class="note-textarea" id="note_q1_2" placeholder="📝 Record verbatim notes (e.g., junior analyst spends 1 hour every morning downloading 3 reports and pasting into master Excel...)"></textarea>
+                </div>
+
+                <!-- Q1.3 -->
+                <div class="question-card" data-qid="q1_3">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-quant">Commercial Impact Quant</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q1_3_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">1.3 "How many total hours per week does this download-paste-formula cycle consume? Have copy-paste errors ever caused reconciliation discrepancies or management distrust?"</p>
+                    <p class="q-hint">Quant Anchor: Weekly wasted FTE hours and frequency of manual errors.</p>
+                    <textarea class="note-textarea" id="note_q1_3" placeholder="📝 Record verbatim notes (e.g., 3-4 hours every Monday; formula shifted last month resulting in erroneous profit figures...)"></textarea>
+                    <div class="quant-input-row">
+                        <span>⏱️ Estimated Weekly Wasted Hours:</span>
+                        <input type="text" class="quant-input" id="quant_q1_3_hours" placeholder="e.g., 5 hrs/week">
+                        <span>💸 Estimated Monthly Labor Cost:</span>
+                        <input type="text" class="quant-input" id="quant_q1_3_cost" placeholder="e.g., $500 USD">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 2 -->
+        <h2>📂 Module 2: Data Cleaning & KPI Definition Governance</h2>
+        <div class="module-box">
+            <div class="module-header">
+                <span class="module-title">Module 2: Discrepant Metric Definitions & Profit Leakage</span>
+                <span class="module-tech-badge">Solution: Medallion Lakehouse Transformations with dbt & Automated Quality Gates</span>
+            </div>
+            <div class="module-body">
+                <!-- Q2.1 -->
+                <div class="question-card" data-qid="q2_1">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-open">Current State Opening</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q2_1_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">2.1 "During executive reviews, do Sales, Marketing, and Finance report identical numbers for Total Revenue and GMV, or do discrepancies frequently trigger debates?"</p>
+                    <p class="q-hint">Objective: Detect organizational friction and meeting friction caused by siloed, unaligned metric calculations.</p>
+                    <textarea class="note-textarea" id="note_q2_1" placeholder="📝 Record verbatim notes (e.g., rarely match; marketing reports gross GMV including cancellations, while finance recognizes settled cash...)"></textarea>
+                </div>
+
+                <!-- Q2.2 -->
+                <div class="question-card" data-qid="q2_2">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-deep">Root-Cause Probe</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q2_2_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">2.2 "When determining true net revenue, who manually deducts cancellations, returns/refunds, voucher discounts, and shipping subsidies—and at what frequency?"</p>
+                    <p class="q-hint">Objective: Determine whether leadership confuses gross GMV with net cash margin, masking underlying unit economic leakages.</p>
+                    <textarea class="note-textarea" id="note_q2_2" placeholder="📝 Record verbatim notes (e.g., accounting only reconciles returns at month-end; operational dashboards never reflect real-time net margin...)"></textarea>
+                </div>
+
+                <!-- Q2.3 -->
+                <div class="question-card" data-qid="q2_3">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-quant">Commercial Impact Quant</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q2_3_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">2.3 "Have promotional campaigns ever appeared wildly successful on gross order volume, only for month-end accounting to reveal net operating losses after returns and discounts?"</p>
+                    <p class="q-hint">Quant Anchor: Misallocated marketing spend and margin dilution masked by phantom GMV spikes.</p>
+                    <textarea class="note-textarea" id="note_q2_3" placeholder="📝 Record verbatim notes (e.g., flash sale yielded high gross orders, but a 14% return rate erased gross margin, resulting in a net loss...)"></textarea>
+                    <div class="quant-input-row">
+                        <span>📉 Estimated Typical Cancellation/Refund Rate:</span>
+                        <input type="text" class="quant-input" id="quant_q2_3_rate" placeholder="e.g., 8.5%">
+                        <span>💸 Estimated Monthly Margin Leakage:</span>
+                        <input type="text" class="quant-input" id="quant_q2_3_leakage" placeholder="e.g., $1,200 USD">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 3 -->
+        <h2>📂 Module 3: Reporting Latency & Self-Service BI Exploration</h2>
+        <div class="module-box">
+            <div class="module-header">
+                <span class="module-title">Module 3: Decision Latency & Ad-Hoc Analytics Flexibility</span>
+                <span class="module-tech-badge">Solution: Streamlit Executive Dashboard + Interactive BI Exploration Canvas (PyGWalker)</span>
+            </div>
+            <div class="module-body">
+                <!-- Q3.1 -->
+                <div class="question-card" data-qid="q3_1">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-open">Current State Opening</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q3_1_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">3.1 "How frequently can leadership review core metrics (GMV, AOV, LTV)? Are they accessible on-demand, or must executives wait for periodic weekly/monthly packs?"</p>
+                    <p class="q-hint">Objective: Measure latency in strategic decision feedback loops and identify operational blind spots.</p>
+                    <textarea class="note-textarea" id="note_q3_1" placeholder="📝 Record verbatim notes (e.g., weekly Excel digest sent every Monday; holiday breaks create two-week decision blackouts...)"></textarea>
+                </div>
+
+                <!-- Q3.2 -->
+                <div class="question-card" data-qid="q3_2">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-deep">Root-Cause Probe</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q3_2_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">3.2 "If leadership requests an urgent ad-hoc breakdown (e.g., return rate trends for premium customers in a specific category), how long does it take to produce?"</p>
+                    <p class="q-hint">Objective: Assess reporting agility and evaluate whether ad-hoc requirements overwhelm engineering or business analysts.</p>
+                    <textarea class="note-textarea" id="note_q3_2" placeholder="📝 Record verbatim notes (e.g., out-of-the-box system cannot pivot; requires an engineer to write custom queries, taking 2-3 days...)"></textarea>
+                </div>
+
+                <!-- Q3.3 -->
+                <div class="question-card" data-qid="q3_3">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-quant">Commercial Impact Quant</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q3_3_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">3.3 "Does the organization pay for expensive BI user licenses (e.g., Power BI Pro / Tableau) that suffer from low adoption due to steep learning curves?"</p>
+                    <p class="q-hint">Quant Anchor: Underutilized SaaS licenses vs. high technical barriers impeding company-wide adoption.</p>
+                    <textarea class="note-textarea" id="note_q3_3" placeholder="📝 Record verbatim notes (e.g., purchased 4 BI seats costing thousands annually, but users still default to asking for raw Excel exports...)"></textarea>
+                    <div class="quant-input-row">
+                        <span>💵 Current Annual Commercial BI License Spend:</span>
+                        <input type="text" class="quant-input" id="quant_q3_3_soft_cost" placeholder="e.g., $1,500 USD">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 4 -->
+        <h2>📂 Module 4: Root-Cause Attribution & AI-Powered Decision Support</h2>
+        <div class="module-box">
+            <div class="module-header">
+                <span class="module-title">Module 4: Anomaly Diagnostics & Proactive Commercial Interventions</span>
+                <span class="module-tech-badge">Solution: FastMCP Deep Diagnostics & Multi-Turn Gemini Consulting Copilot</span>
+            </div>
+            <div class="module-body">
+                <!-- Q4.1 -->
+                <div class="question-card" data-qid="q4_1">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-open">Current State Opening</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q4_1_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">4.1 "When weekly revenue drops 15% or returns spike unexpectedly, how does your team diagnose the root cause? How many cross-departmental alignment meetings are required?"</p>
+                    <p class="q-hint">Objective: Determine whether structured causal trees are absent, forcing teams into finger-pointing rather than data-driven resolution.</p>
+                    <textarea class="note-textarea" id="note_q4_1" placeholder="📝 Record verbatim notes (e.g., hours spent debating; marketing blames logistics delays while support blames sizing charts, leaving root cause unsolved...)"></textarea>
+                </div>
+
+                <!-- Q4.2 -->
+                <div class="question-card" data-qid="q4_2">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-deep">Root-Cause Probe</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q4_2_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">4.2 "Does your platform automatically trigger anomaly alerts alongside concrete recommendations, or does management only react after customer churn and stock pileups?"</p>
+                    <p class="q-hint">Objective: Quantify the value proposition of transitioning from passive backwards-looking charts to proactive tactical intervention engines.</p>
+                    <textarea class="note-textarea" id="note_q4_2" placeholder="📝 Record verbatim notes (e.g., no automated threshold alerts; issues only surface when reviews turn negative or warehouse reaches full capacity...)"></textarea>
+                </div>
+
+                <!-- Q4.3 -->
+                <div class="question-card" data-qid="q4_3">
+                    <div class="q-header-row">
+                        <span class="q-tag tag-quant">Commercial Impact Quant</span>
+                        <div class="severity-selector">
+                            Pain Severity:
+                            <div class="star-rating" data-for="q4_3_stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="q-text">4.3 "If an automated AI advisor generated daily SCQA diagnostics, 30-day tactical interventions, and high-converting VIP retention copy in seconds, what commercial value would that unlock?"</p>
+                    <p class="q-hint">Quant Anchor: Shrinking 3 days of cross-departmental investigative meetings to 30 seconds, reclaiming the critical 72-hour revenue recovery window.</p>
+                    <textarea class="note-textarea" id="note_q4_3" placeholder="📝 Record verbatim notes (e.g., automated cart-abandonment SMS and personalized discounts would recover 5-8% of dropped checkouts monthly...)"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE DIAGNOSTIC SCORECARD -->
+        <div class="live-summary-card">
+            <div>
+                <h3 style="color: #ffffff; font-size: 1.25rem; margin-bottom: 4px;">📊 訪談診斷即時打分與總結</h3>
+                <p style="color: #94a3b8; font-size: 0.85rem;">The diagnostic engine dynamically weights your 12-question star ratings into an overall pain index:</p>
+            </div>
+            <div style="display: flex; gap: 32px;">
+                <div class="summary-metric">
+                    <div class="metric-val" id="scoreOverall">0</div>
+                    <div class="metric-lbl">Overall Pain Index / 100</div>
+                </div>
+                <div class="summary-metric">
+                    <div class="metric-val" id="topPriorityModule" style="font-size: 1.2rem; color: #f59e0b; margin-top: 6px;">Module 1</div>
+                    <div class="metric-lbl">Recommended Strategic Anchor (P0)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VALUE MAPPING TABLE -->
+        <h2>🚀 Pain Point ➔ Architecture Solution Value Mapping</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Pain Dimension</th>
+                    <th style="width: 35%;">Customer Verbatim Symptom</th>
+                    <th style="width: 40%;">Architectural Capability & Commercial Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1. Manual Ingestion & Data Silos</strong></td>
+                    <td><em>"Every Monday our analyst spends half a day pulling reports across platforms; broken formatting constantly causes frustration."</em></td>
+                    <td><strong>Automated Incremental Ingestion via dlt</strong>: Scheduled sync to BigQuery lakehouse; dashboards ready on Monday morning, cutting manual effort by 90%.</td>
+                </tr>
+                <tr>
+                    <td><strong>2. Metric Discrepancies & Margin Dilution</strong></td>
+                    <td><em>"Marketing celebrates hitting GMV targets, but Finance reports an operational loss once refunds and returns are tallied."</em></td>
+                    <td><strong>Medallion Governance via dbt</strong>: Rigorous programmatic deduction of returns and discounts, isolating true net margins with zero ambiguity.</td>
+                </tr>
+                <tr>
+                    <td><strong>3. Reporting Latency & Rigid BI</strong></td>
+                    <td><em>"Leadership needs ad-hoc category breakdowns, but native portals cannot pivot and enterprise BI tools are exorbitantly priced."</em></td>
+                    <td><strong>Built-in Self-Service BI Canvas</strong>: Instant drag-and-drop and prompt-driven charting, eliminating thousands in recurring license fees.</td>
+                </tr>
+                <tr>
+                    <td><strong>4. Lack of Causal Attribution & Action</strong></td>
+                    <td><em>"When sales slip, departments spend all morning in meetings arguing over root causes without resolving which products broke."</em></td>
+                    <td><strong>FastMCP AI Advisory Engine</strong>: Delivers instant SCQA causal reports complete with ready-to-send customer win-back copy and a 30-day mitigation plan.</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+    <!-- EXPORT MODAL -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title">📄 Export Diagnostic Summary (Markdown / Formatted)</div>
+                <button class="modal-close" id="btnCloseModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="exportText" readonly></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-action" id="btnCopyExport" style="background: #2563eb;">📋 Copy to Clipboard</button>
+                <button class="btn-action" id="btnDownloadExport" style="background: #10b981;">💾 Download .md File</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const STORAGE_KEY = "sme_discovery_interview_v1";
+
+        // Collect all input IDs
+        const metaFields = ['metaCompany', 'metaPerson', 'metaDate', 'metaInterviewer'];
+        const questionIds = [
+            'q1_1', 'q1_2', 'q1_3',
+            'q2_1', 'q2_2', 'q2_3',
+            'q3_1', 'q3_2', 'q3_3',
+            'q4_1', 'q4_2', 'q4_3'
+        ];
+        const quantFields = ['quant_q1_3_hours', 'quant_q1_3_cost', 'quant_q2_3_rate', 'quant_q2_3_leakage', 'quant_q3_3_soft_cost'];
+
+        // Stars state: { q1_1: 4, ... }
+        let ratings = {};
+
+        // Star rating click events
+        document.querySelectorAll('.star-rating').forEach(ratingGroup => {
+            const forId = ratingGroup.getAttribute('data-for').replace('_stars', '');
+            const stars = ratingGroup.querySelectorAll('.star');
+            
+            stars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const val = parseInt(star.getAttribute('data-val'), 10);
+                    ratings[forId] = val;
+                    renderStars(ratingGroup, val);
+                    saveData();
+                    calculateSummary();
+                });
+            });
+        });
+
+        function renderStars(ratingGroup, val) {
+            const stars = ratingGroup.querySelectorAll('.star');
+            stars.forEach(s => {
+                const sVal = parseInt(s.getAttribute('data-val'), 10);
+                s.classList.toggle('active', sVal <= val);
+            });
+        }
+
+        // Auto-save logic
+        function saveData() {
+            const data = {
+                meta: {},
+                notes: {},
+                quants: {},
+                ratings: ratings
+            };
+
+            metaFields.forEach(f => {
+                const el = document.getElementById(f);
+                if (el) data.meta[f] = el.value;
+            });
+
+            questionIds.forEach(qid => {
+                const el = document.getElementById(`note_${qid}`);
+                if (el) data.notes[qid] = el.value;
+            });
+
+            quantFields.forEach(qf => {
+                const el = document.getElementById(qf);
+                if (el) data.quants[qf] = el.value;
+            });
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            showSaveIndicator();
+        }
+
+        function loadData() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) {
+                // Set today's date by default
+                const dateEl = document.getElementById('metaDate');
+                if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+                return;
+            }
+
+            try {
+                const data = JSON.parse(raw);
+
+                // Load meta
+                if (data.meta) {
+                    metaFields.forEach(f => {
+                        const el = document.getElementById(f);
+                        if (el && data.meta[f]) el.value = data.meta[f];
+                    });
+                }
+
+                // Load notes
+                if (data.notes) {
+                    questionIds.forEach(qid => {
+                        const el = document.getElementById(`note_${qid}`);
+                        if (el && data.notes[qid]) el.value = data.notes[qid];
+                    });
+                }
+
+                // Load quants
+                if (data.quants) {
+                    quantFields.forEach(qf => {
+                        const el = document.getElementById(qf);
+                        if (el && data.quants[qf]) el.value = data.quants[qf];
+                    });
+                }
+
+                // Load ratings
+                if (data.ratings) {
+                    ratings = data.ratings;
+                    document.querySelectorAll('.star-rating').forEach(ratingGroup => {
+                        const forId = ratingGroup.getAttribute('data-for').replace('_stars', '');
+                        if (ratings[forId]) {
+                            renderStars(ratingGroup, ratings[forId]);
+                        }
+                    });
+                }
+
+                calculateSummary();
+            } catch (err) {
+                console.error("Failed to load local data", err);
+            }
+        }
+
+        function showSaveIndicator() {
+            const el = document.getElementById('saveStatus');
+            if (el) {
+                el.textContent = "● Auto-saved (" + new Date().toLocaleTimeString() + ")";
+                el.style.color = "#34d399";
+            }
+        }
+
+        // Listen for input changes
+        document.querySelectorAll('input, textarea').forEach(el => {
+            el.addEventListener('input', () => {
+                saveData();
+                calculateSummary();
+            });
+        });
+
+        // Summary calculation
+        function calculateSummary() {
+            let totalStars = 0;
+            let count = 0;
+            const moduleTotals = { "Module 1": 0, "模組 2": 0, "模組 3": 0, "模組 4": 0 };
+
+            questionIds.forEach(qid => {
+                const starVal = ratings[qid] || 0;
+                totalStars += starVal;
+                count++;
+
+                if (qid.startsWith('q1')) moduleTotals["Module 1"] += starVal;
+                else if (qid.startsWith('q2')) moduleTotals["Module 2"] += starVal;
+                else if (qid.startsWith('q3')) moduleTotals["Module 3"] += starVal;
+                else if (qid.startsWith('q4')) moduleTotals["Module 4"] += starVal;
+            });
+
+            // Overall score out of 100 (max stars = 12 * 5 = 60)
+            const overallScore = Math.round((totalStars / 60) * 100);
+            const scoreEl = document.getElementById('scoreOverall');
+            if (scoreEl) scoreEl.textContent = overallScore;
+
+            // Find top module
+            let topModule = "Module 1";
+            let maxMScore = -1;
+            for (const [mName, mScore] of Object.entries(moduleTotals)) {
+                if (mScore > maxMScore) {
+                    maxMScore = mScore;
+                    topModule = mName;
+                }
+            }
+            const topEl = document.getElementById('topPriorityModule');
+            if (topEl) topEl.textContent = topModule;
+        }
+
+        // Print
+        document.getElementById('btnPrint').addEventListener('click', () => {
+            window.print();
+        });
+
+        // Save manual
+        document.getElementById('btnSaveManual').addEventListener('click', () => {
+            saveData();
+            alert('✅ Discovery notes successfully saved to browser local storage!');
+        });
+
+        // Reset
+        document.getElementById('btnResetAll').addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear all notes and ratings? (This cannot be undone)')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        });
+
+        // Export Markdown Modal
+        const exportModal = document.getElementById('exportModal');
+        const exportText = document.getElementById('exportText');
+        const btnExport = document.getElementById('btnExportMarkdown');
+        const btnCloseModal = document.getElementById('btnCloseModal');
+
+        btnExport.addEventListener('click', () => {
+            generateMarkdownSummary();
+            exportModal.style.display = 'flex';
+        });
+
+        btnCloseModal.addEventListener('click', () => {
+            exportModal.style.display = 'none';
+        });
+
+        function generateMarkdownSummary() {
+            const comp = document.getElementById('metaCompany').value || "Unspecified";
+            const person = document.getElementById('metaPerson').value || "Unspecified";
+            const date = document.getElementById('metaDate').value || new Date().toISOString().split('T')[0];
+            const interviewer = document.getElementById('metaInterviewer').value || "Consultant";
+            const score = document.getElementById('scoreOverall').textContent;
+            const topMod = document.getElementById('topPriorityModule').textContent;
+
+            let md = `# SME Data Operations Discovery & Diagnostic Summary
+
+`;
+            md += `* **Client Organization**: ${comp}
+`;
+            md += `* **Interviewee**: ${person}
+`;
+            md += `* **Interview Date**: ${date}
+`;
+            md += `* **Lead Consultant**: ${interviewer}
+`;
+            md += `* **Overall Pain Index**: ${score} / 100 (Recommended Starting Anchor: ${topMod})
+
+`;
+            md += `---
+
+`;
+
+            const sections = [
+                {
+                    title: "I. Module 1: Multi-Channel Data Silos & Manual Friction (dlt Ingestion)",
+                    qs: [
+                        { id: "q1_1", text: "1.1 Multi-channel data repository locations" },
+                        { id: "q1_2", text: "1.2 Manual export and copy-paste processes" },
+                        { id: "q1_3", text: "1.3 Weekly wasted hours & error rates" }
+                    ]
+                },
+                {
+                    title: "II. Module 2: Data Cleaning & KPI Definition Governance (dbt Lakehouse)",
+                    qs: [
+                        { id: "q2_1", text: "2.1 Cross-department revenue definition alignment" },
+                        { id: "q2_2", text: "2.2 Return, refund, and discount deduction workflows" },
+                        { id: "q2_3", text: "2.3 Phantom GMV spikes & margin dilution" }
+                    ]
+                },
+                {
+                    title: "III. Module 3: Reporting Latency & Self-Service BI (BI Canvas)",
+                    qs: [
+                        { id: "q3_1", text: "3.1 Review cadence & reporting latency" },
+                        { id: "q3_2", text: "3.2 Ad-hoc cross-dimensional query turnaround" },
+                        { id: "q3_3", text: "3.3 Commercial BI license spend & adoption" }
+                    ]
+                },
+                {
+                    title: "IV. Module 4: Anomaly Diagnostics & AI Advisory (FastMCP Copilot)",
+                    qs: [
+                        { id: "q4_1", text: "4.1 Revenue decline & return spike diagnostic meetings" },
+                        { id: "q4_2", text: "4.2 Automated anomaly alerting & proactive tactical playbooks" },
+                        { id: "q4_3", text: "4.3 AI customer retention copy & strategic intervention" }
+                    ]
+                }
+            ];
+
+            sections.forEach(sec => {
+                md += `### ${sec.title}
+`;
+                sec.qs.forEach(q => {
+                    const note = document.getElementById(`note_${q.id}`).value.trim() || "(No notes entered)";
+                    const stars = ratings[q.id] ? "⭐".repeat(ratings[q.id]) : "Unrated";
+                    md += `* **${q.text}** [Pain Rating: ${stars}]
+`;
+                    md += `  > Customer Quotes & Observations: ${note}
+
+`;
+                });
+            });
+
+            // Add quant summary
+            const q1_hours = document.getElementById('quant_q1_3_hours').value;
+            const q1_cost = document.getElementById('quant_q1_3_cost').value;
+            const q2_rate = document.getElementById('quant_q2_3_rate').value;
+            const q2_leakage = document.getElementById('quant_q2_3_leakage').value;
+            const q3_soft = document.getElementById('quant_q3_3_soft_cost').value;
+
+            md += `### V. Key Quantified Commercial Loss Summary
+`;
+            if (q1_hours) md += `* **Weekly Wasted Labor**: ${q1_hours}
+`;
+            if (q1_cost) md += `* **Monthly Labor Cost**: ${q1_cost}
+`;
+            if (q2_rate) md += `* **Normal Return/Refund Rate**: ${q2_rate}
+`;
+            if (q2_leakage) md += `* **Estimated Monthly Margin Leakage**: ${q2_leakage}
+`;
+            if (q3_soft) md += `* **Annual Commercial BI License Spend**: ${q3_soft}
+`;
+
+            md += `
+---
+*Generated automatically by the SME Data Operations Discovery & Diagnostic Workspace*`;
+
+            exportText.value = md;
+        }
+
+        document.getElementById('btnCopyExport').addEventListener('click', () => {
+            exportText.select();
+            navigator.clipboard.writeText(exportText.value).then(() => {
+                alert('📋 Diagnostic summary copied to clipboard! You can paste directly into Slack, Email, or Notion.');
+            });
+        });
+
+        document.getElementById('btnDownloadExport').addEventListener('click', () => {
+            const comp = document.getElementById('metaCompany').value || "client_discovery_summary";
+            const blob = new Blob([exportText.value], { type: 'text/markdown;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${comp}_diagnostic_summary.md`;
+            a.click();
+        });
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataOps Unified Portal | Platzi E-Commerce</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(99, 102, 241, 0.4);
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --cyan: #06b6d4;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-sub: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    /* Top Navigation */
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-text h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .nav-tabs {
+      display: flex;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      gap: 4px;
+    }
+
+    .nav-tab {
+      padding: 0.45rem 1rem;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .nav-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab.active {
+      color: #fff;
+      background: var(--primary);
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background-color: var(--emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Hub View (Default) */
+    .hub-view {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2.2rem 2.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .hero-banner::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.6rem;
+      background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 820px;
+      line-height: 1.6;
+    }
+
+    .meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 1.4rem;
+    }
+
+    .meta-tag {
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+
+    .meta-tag span {
+      color: var(--primary-light);
+      font-weight: 600;
+    }
+
+    /* Grid of Dashboards */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+      gap: 1.75rem;
+    }
+
+    .dash-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dash-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--card-hover-border);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.15);
+    }
+
+    .dash-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .dash-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .icon-elementary {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+
+    .icon-dbt {
+      background: rgba(255, 107, 53, 0.15);
+      border: 1px solid rgba(255, 107, 53, 0.3);
+      color: #ff6b35;
+    }
+
+    .dash-card-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+    }
+
+    .badge-elementary {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-dbt {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary-light);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .dash-card h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+
+    .dash-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      margin-bottom: 2rem;
+      flex: 1;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    .feature-item svg {
+      width: 16px;
+      height: 16px;
+      color: var(--emerald);
+      flex-shrink: 0;
+    }
+
+    .dash-card-actions {
+      display: flex;
+      gap: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 1.25rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.7rem 1.1rem;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: 1px solid transparent;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: #4f46e5;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* Embedded Frame View */
+    .frame-view {
+      display: none;
+      height: calc(100vh - 120px);
+      flex-direction: column;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      background: #000;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .frame-bar {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--card-border);
+      padding: 0.6rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .frame-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #cbd5e1;
+    }
+
+    .frame-btn {
+      padding: 0.35rem 0.85rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: background 0.2s;
+    }
+
+    .frame-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      background: rgba(10, 15, 28, 0.9);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">D</div>
+      <div class="brand-text">
+        <h1>DataOps Unified Portal</h1>
+        <p>Platzi E-Commerce Cloud Lakehouse Platform</p>
+      </div>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="switchView('hub')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Dashboard Hub Overview
+      </button>
+      <button class="nav-tab" onclick="switchView('elementary')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+        Elementary Quality Monitor
+      </button>
+      <button class="nav-tab" onclick="switchView('dbt')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        dbt Catalog & Lineage
+      </button>
+    </nav>
+
+    <div class="top-actions">
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        <span>PIPELINE HEALTHY</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Area -->
+  <main>
+    <!-- View 1: Hub Overview -->
+    <div id="view-hub" class="hub-view">
+      <div class="hero-banner">
+        <h2 class="hero-title">Enterprise Dual-Engine DataOps Control Center</h2>
+        <p class="hero-subtitle">
+          Combining <strong>Elementary Data</strong> (real-time test telemetry, anomaly detection, schema tracking) with <strong>dbt Docs</strong> (commercial data catalog, column dictionary, interactive end-to-end lineage), achieving a 100% Serverless Zero-Ops architecture.
+        </p>
+        <div class="meta-tags">
+          <div class="meta-tag">GCP Project: <span>de-consulting-508822</span></div>
+          <div class="meta-tag">Hosting: <span>Google Cloud Storage (Zero-Ops)</span></div>
+          <div class="meta-tag">Warehouse: <span>Google BigQuery</span></div>
+          <div class="meta-tag">Orchestration: <span>Cloud Workflows + Cloud Run</span></div>
+        </div>
+      </div>
+
+      <!-- Two Pillar Dashboards -->
+      <div class="dashboard-grid">
+        
+        <!-- Card 1: Elementary Observability -->
+        <div class="dash-card">
+          <div>
+            <div class="dash-card-header">
+              <div class="dash-card-icon icon-elementary">🩺</div>
+              <span class="dash-card-badge badge-elementary">Data Observability</span>
+            </div>
+            <h2>Elementary Data Quality & Anomaly Detection</h2>
+            <p>
+              Pipeline quality gatekeeper built for Analytics Engineers, capturing test failures, metric anomalies, and schema drifts during dbt executions.
+            </p>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Real-time Test Tracking</strong>: Captures Unique, Not Null, and Accepted Values violations</span>
+              </li>
+              <li class="feature-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Statistical Anomaly Detection</strong>: Monitors volume anomalies and freshness delays</span>
+              </li>
+              <li class="feature-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Execution Time Profiling</strong>: Analyzes BigQuery runtime for models and tests</span>
+              </li>
+            </ul>
+          </div>
+          <div class="dash-card-actions">
+            <button class="btn btn-primary" onclick="switchView('elementary')">
+              <span>Open Embedded View</span>
+            </button>
+            <a class="btn btn-secondary" href="elementary_report.html" target="_blank">
+              <span>Open New Tab ↗</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 2: dbt Enterprise Catalog -->
+        <div class="dash-card">
+          <div>
+            <div class="dash-card-header">
+              <div class="dash-card-icon icon-dbt">📚</div>
+              <span class="dash-card-badge badge-dbt">Data Catalog & Lineage</span>
+            </div>
+            <h2>dbt Enterprise Data Catalog & End-to-End Lineage</h2>
+            <p>
+              Official native data dictionary and lineage hub, exposing 40+ models and column definitions across Silver clean layers and Gold data marts.
+            </p>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Comprehensive Data Catalog</strong>: Live BigQuery schema types and business metadata descriptions</span>
+              </li>
+              <li class="feature-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Interactive Lineage DAG</strong>: Traceability from Bronze raw ingest to Silver cleaned and Gold marts</span>
+              </li>
+              <li class="feature-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Instant Global Search</strong>: Query models, tags, and column definitions in milliseconds</span>
+              </li>
+            </ul>
+          </div>
+          <div class="dash-card-actions">
+            <button class="btn btn-primary" onclick="switchView('dbt')">
+              <span>Open Embedded View</span>
+            </button>
+            <a class="btn btn-secondary" href="dbt_docs.html" target="_blank">
+              <span>Open New Tab ↗</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- View 2: Elementary Embedded Frame -->
+    <div id="view-elementary" class="frame-view">
+      <div class="frame-bar">
+        <div class="frame-title">
+          <span>🩺 Elementary Data Quality & Anomaly Detection儀表板</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="frame-btn" onclick="reloadIframe('frame-elem')">🔄 Refresh</button>
+          <a class="frame-btn" href="elementary_report.html" target="_blank">Open Fullscreen ↗</a>
+        </div>
+      </div>
+      <iframe id="frame-elem" src="about:blank" data-src="elementary_report.html"></iframe>
+    </div>
+
+    <!-- View 3: dbt Docs Embedded Frame -->
+    <div id="view-dbt" class="frame-view">
+      <div class="frame-bar">
+        <div class="frame-title">
+          <span>📚 dbt Enterprise Data Catalog & Lineage Explorer</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="frame-btn" onclick="reloadIframe('frame-dbt')">🔄 Refresh</button>
+          <a class="frame-btn" href="dbt_docs.html" target="_blank">Open Fullscreen ↗</a>
+        </div>
+      </div>
+      <iframe id="frame-dbt" src="about:blank" data-src="dbt_docs.html"></iframe>
+    </div>
+  </main>
+
+  <footer>
+    <p>Platzi E-Commerce Data Pipeline Consulting Demo | Automated DataOps Powered by GCP Serverless, dbt Core & Elementary Data</p>
+  </footer>
+
+  <script>
+    function switchView(viewName) {
+      // Hide all views
+      document.getElementById('view-hub').style.display = 'none';
+      document.getElementById('view-elementary').style.display = 'none';
+      document.getElementById('view-dbt').style.display = 'none';
+
+      // Update Nav Tabs
+      const tabs = document.querySelectorAll('.nav-tab');
+      tabs.forEach(t => t.classList.remove('active'));
+
+      if (viewName === 'hub') {
+        document.getElementById('view-hub').style.display = 'flex';
+        tabs[0].classList.add('active');
+      } else if (viewName === 'elementary') {
+        const elemView = document.getElementById('view-elementary');
+        elemView.style.display = 'flex';
+        tabs[1].classList.add('active');
+        const frame = document.getElementById('frame-elem');
+        if (frame.src === 'about:blank' || !frame.src) {
+          frame.src = frame.getAttribute('data-src');
+        }
+      } else if (viewName === 'dbt') {
+        const dbtView = document.getElementById('view-dbt');
+        dbtView.style.display = 'flex';
+        tabs[2].classList.add('active');
+        const frame = document.getElementById('frame-dbt');
+        if (frame.src === 'about:blank' || !frame.src) {
+          frame.src = frame.getAttribute('data-src');
+        }
+      }
+    }
+
+    function reloadIframe(frameId) {
+      const frame = document.getElementById(frameId);
+      if (frame) {
+        frame.src = frame.getAttribute('data-src') + '?t=' + new Date().getTime();
+      }
+    }
+  </script>
+</body>
+</html>

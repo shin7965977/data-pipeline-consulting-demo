@@ -252,12 +252,15 @@ def generate_and_publish_dbt_docs(
 
 
 def publish_unified_portal(
-    portal_source: str = "docs/portal.html",
+    portal_source: str = "docs/technical/zh/portal.html",
     gcs_bucket: str | None = None,
 ) -> str | None:
     """Upload Unified DataOps Portal (portal.html and index.html) to GCS."""
     print("-" * 60)
     print("[Portal] Publishing Unified DataOps Portal...")
+    if not os.path.exists(portal_source) and os.path.exists("docs/portal.html"):
+        portal_source = "docs/portal.html"
+
     bucket_name = gcs_bucket or os.getenv(
         "ELEMENTARY_REPORT_BUCKET", "de-consulting-508822_cloudbuild"
     )
