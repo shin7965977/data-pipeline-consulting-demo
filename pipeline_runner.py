@@ -120,15 +120,21 @@ def run_transformation_step(
     return 0
 
 
-def upload_file_to_gcs(local_file: str, bucket_name: str, target_name: str | None = None) -> str | None:
+def upload_file_to_gcs(
+    local_file: str, bucket_name: str, target_name: str | None = None
+) -> str | None:
     """Helper to upload a local HTML file to GCS with no-cache headers."""
     if not (bucket_name and os.path.exists(local_file)):
         return None
     try:
         from google.cloud import storage
 
-        if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ and os.path.exists("gcp-key.json"):
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.abspath("gcp-key.json")
+        if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ and os.path.exists(
+            "gcp-key.json"
+        ):
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.abspath(
+                "gcp-key.json"
+            )
 
         client = storage.Client()
         bucket = client.bucket(bucket_name)
@@ -137,7 +143,7 @@ def upload_file_to_gcs(local_file: str, bucket_name: str, target_name: str | Non
         blob.cache_control = "no-cache, max-age=0"
         blob.upload_from_filename(local_file, content_type="text/html")
         return f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[Storage] Warning: Failed to upload {local_file} to GCS: {e}")
         return None
 
@@ -155,8 +161,14 @@ def generate_and_publish_elementary_report(
         "ELEMENTARY_REPORT_BUCKET", "de-consulting-508822_cloudbuild"
     )
 
-    edr_bin = shutil.which("edr") or os.path.join(os.path.dirname(sys.executable), "edr")
-    if sys.platform == "win32" and not edr_bin.endswith(".exe") and os.path.exists(edr_bin + ".exe"):
+    edr_bin = shutil.which("edr") or os.path.join(
+        os.path.dirname(sys.executable), "edr"
+    )
+    if (
+        sys.platform == "win32"
+        and not edr_bin.endswith(".exe")
+        and os.path.exists(edr_bin + ".exe")
+    ):
         edr_bin += ".exe"
 
     cmd_edr = [
@@ -175,7 +187,7 @@ def generate_and_publish_elementary_report(
             print(f"[Elementary] edr report exited with returncode {res.returncode}")
         else:
             print(f"[Elementary] Report successfully generated at: {report_file}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[Elementary] Warning: Failed to execute edr report: {e}")
         return None
 
@@ -215,7 +227,9 @@ def generate_and_publish_dbt_docs(
     try:
         res = subprocess.run(cmd_docs, check=False)
         if res.returncode != 0:
-            print(f"[dbt Docs] Warning: docs generate exited with code {res.returncode}")
+            print(
+                f"[dbt Docs] Warning: docs generate exited with code {res.returncode}"
+            )
             return None
 
         # Bundle index.html + manifest.json + catalog.json into standalone HTML
@@ -224,7 +238,11 @@ def generate_and_publish_dbt_docs(
         manifest_path = os.path.join(target_dir, "manifest.json")
         catalog_path = os.path.join(target_dir, "catalog.json")
 
-        if os.path.exists(index_path) and os.path.exists(manifest_path) and os.path.exists(catalog_path):
+        if (
+            os.path.exists(index_path)
+            and os.path.exists(manifest_path)
+            and os.path.exists(catalog_path)
+        ):
             with open(index_path, "r", encoding="utf-8") as f:
                 html = f.read()
             with open(manifest_path, "r", encoding="utf-8") as f:
@@ -244,7 +262,7 @@ def generate_and_publish_dbt_docs(
                 if public_url:
                     print(f"[dbt Docs] Live Catalog: {public_url}")
                     return public_url
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[dbt Docs] Warning: Failed to bundle dbt docs: {e}")
         return None
 
