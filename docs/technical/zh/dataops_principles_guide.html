@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataOps 核心原則與工程實務權威指南 | Modern Data Stack Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(99, 102, 241, 0.45);
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.2);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.2);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.2);
+      --rose: #f43f5e;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-sub: #6b7280;
+      --code-bg: #0d1117;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+      line-height: 1.6;
+    }
+
+    /* Sticky Navigation */
+    header {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.85rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px var(--primary-glow);
+    }
+
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+      fill: white;
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .nav-link:hover {
+      color: var(--primary-light);
+    }
+
+    .nav-link.active {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .lang-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .lang-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--primary);
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 3rem 2rem 6rem;
+      flex: 1;
+    }
+
+    /* Hero Banner */
+    .hero {
+      text-align: center;
+      margin-bottom: 4rem;
+      padding: 2.5rem 1.5rem;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--primary-light);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 1.2rem;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 30%, #cbd5e1 70%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 820px;
+      margin: 0 auto 2rem;
+    }
+
+    .hero-metrics-strip {
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .metric-badge {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .metric-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary-light);
+    }
+
+    .metric-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-align: left;
+      line-height: 1.2;
+    }
+
+    /* Section Styles */
+    section {
+      margin-bottom: 5rem;
+      scroll-margin-top: 5rem;
+    }
+
+    .section-header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .section-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .section-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .icon-indigo { background: rgba(99, 102, 241, 0.15); color: var(--primary-light); }
+    .icon-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); }
+    .icon-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); }
+    .icon-cyan { background: rgba(6, 182, 212, 0.15); color: var(--cyan); }
+
+    .section-title {
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Cards & Layout */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      backdrop-filter: blur(12px);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: var(--card-hover-border);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .card-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-primary { background: rgba(99, 102, 241, 0.15); color: var(--primary-light); border: 1px solid rgba(99, 102, 241, 0.3); }
+    .badge-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-cyan { background: rgba(6, 182, 212, 0.15); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
+    .badge-rose { background: rgba(244, 63, 94, 0.15); color: var(--rose); border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    .card h3 {
+      font-size: 1.18rem;
+      font-weight: 700;
+      margin-bottom: 0.65rem;
+      color: var(--text-main);
+    }
+
+    .card p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .spec-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .spec-tag {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--cyan);
+      font-size: 0.78rem;
+      background: rgba(6, 182, 212, 0.08);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .spec-val {
+      color: #cbd5e1;
+      font-size: 0.85rem;
+    }
+
+    /* Manifesto Filter & Search */
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--primary);
+      color: var(--text-main);
+    }
+
+    .search-box {
+      margin-left: auto;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.45rem 0.85rem;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      outline: none;
+      min-width: 240px;
+    }
+
+    .search-box:focus {
+      border-color: var(--primary-light);
+    }
+
+    /* Deep Code / Callout Block */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.84rem;
+      color: #e2e8f0;
+      overflow-x: auto;
+      margin: 1rem 0;
+      line-height: 1.5;
+    }
+
+    .code-comment { color: #64748b; }
+    .code-keyword { color: #f43f5e; font-weight: 600; }
+    .code-str { color: #10b981; }
+    .code-fn { color: #38bdf8; }
+
+    /* Comparison Table */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      margin-top: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 1rem 1.25rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--card-border);
+      text-transform: uppercase;
+      font-size: 0.76rem;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Highlight Banner */
+    .callout {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.08));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+
+    .callout-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+
+    .callout-content h4 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+    }
+
+    .callout-content p {
+      color: var(--text-muted);
+      font-size: 0.94rem;
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--card-border);
+      background: rgba(10, 15, 26, 0.9);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .footer-links a {
+      color: var(--text-main);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--primary-light);
+    }
+
+    /* Animations & Responsive */
+    @media (max-width: 768px) {
+      header {
+        padding: 0.85rem 1rem;
+      }
+      .nav-links {
+        display: none;
+      }
+      .hero h1 {
+        font-size: 2.1rem;
+      }
+      main {
+        padding: 2rem 1rem 4rem;
+      }
+      .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header>
+    <a href="../portal.html" class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
+        <div class="brand-title">DataOps Blueprint</div>
+        <div class="brand-subtitle">Platzi E-Commerce Data Pipeline</div>
+      </div>
+    </a>
+    <nav class="nav-links">
+      <a href="#manifesto" class="nav-link">18 條核心宣言</a>
+      <a href="#pillars" class="nav-link">4 大支柱與基石</a>
+      <a href="#ci-gates" class="nav-link">CI 5 大黃金守則</a>
+      <a href="#metrics" class="nav-link">DataOps 4 大指標</a>
+      <a href="../portal.html" class="nav-link">回控制台 ↗</a>
+    </nav>
+    <a href="../../technical/en/dataops_principles_guide.html" class="lang-btn">
+      🌐 Switch to English
+    </a>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- Hero Section -->
+    <div class="hero">
+      <div class="hero-badge">DATAOPS & MODERN DATA STACK ENGINEERING GUIDE</div>
+      <h1>從敏捷哲學到生產落地<br>DataOps 全景實務指南</h1>
+      <p>
+        深入解析正統《DataOps 宣言》18 條原則、現代資料棧（MDS）4 大工程支柱與數學基石（Idempotency / Reproducibility）、GitHub Actions CI 5 大守則、以及衡量管線效能的 4 大核心量化指標。
+      </p>
+
+      <div class="hero-metrics-strip">
+        <div class="metric-badge">
+          <div class="metric-num">18</div>
+          <div class="metric-label">DataOps 宣言<br>指導原則</div>
+        </div>
+        <div class="metric-badge">
+          <div class="metric-num">4+2</div>
+          <div class="metric-label">MDS 工程支柱<br>與底層數學公理</div>
+        </div>
+        <div class="metric-badge">
+          <div class="metric-num">5</div>
+          <div class="metric-label">CI/CD Pipeline<br>自動化品質門禁</div>
+        </div>
+        <div class="metric-badge">
+          <div class="metric-num">4</div>
+          <div class="metric-label">管線可持續性<br>效能衡量指標</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 1: 18 PRINCIPLES OF DATAOPS MANIFESTO -->
+    <section id="manifesto">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <div class="section-icon icon-indigo">📜</div>
+            <h2 class="section-title">一、DataOps 宣言 18 個核心原則</h2>
+          </div>
+          <p class="section-desc">2017 年由 DataKitchen 團隊倡議，借鏡敏捷（Agile）與精實製造（Lean），徹底消除「靠英雄熬夜救火」的負面循環。</p>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterManifesto('all')">全部原則 (18)</button>
+        <button class="filter-btn" onclick="filterManifesto('customer')">客戶價值與交付</button>
+        <button class="filter-btn" onclick="filterManifesto('code')">分析即代碼與環境</button>
+        <button class="filter-btn" onclick="filterManifesto('quality')">品質與可觀測性</button>
+        <button class="filter-btn" onclick="filterManifesto('culture')">團隊文化與精實</button>
+        <input type="text" id="manifestoSearch" class="search-box" placeholder="搜尋原則關鍵字 (如：reproducibility)..." oninput="searchManifesto()">
+      </div>
+
+      <!-- 18 Principles Grid -->
+      <div class="grid-3" id="manifestoGrid">
+        
+        <!-- P1 -->
+        <div class="card manifesto-item" data-cat="customer">
+          <div class="card-top">
+            <span class="card-badge badge-primary">Principle 01</span>
+            <span style="font-size: 1.2rem;">🎯</span>
+          </div>
+          <h3>持續滿足客戶需求 (Continual Customer Satisfaction)</h3>
+          <p>我們的最高優先事項，是透過頻繁、可靠地交付從幾分鐘到幾天內產出有價值的洞察，持續滿足商業利益相關者。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">dbt Core + 每日增量更新 (Incremental)</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">將月度報表改為小時級增量管線，縮短回饋延遲。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P2 -->
+        <div class="card manifesto-item" data-cat="code">
+          <div class="card-top">
+            <span class="card-badge badge-primary">Principle 02</span>
+            <span style="font-size: 1.2rem;">💻</span>
+          </div>
+          <h3>分析即代碼 (Analytics is Code)</h3>
+          <p>數據分析資產是可被編程的代碼（SQL、Python、組態），必須享有與一般軟體工程同等的版本控制、自動審查與發布標準。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">Git, dbt SQL, SQLFluff, Ruff</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">禁止在資料庫手打 DDL/DML，所有變更以 Pull Request 形式審查。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P3 -->
+        <div class="card manifesto-item" data-cat="culture">
+          <div class="card-top">
+            <span class="card-badge badge-primary">Principle 03</span>
+            <span style="font-size: 1.2rem;">🤝</span>
+          </div>
+          <h3>分析是團隊運動 (Analytics is a Team Sport)</h3>
+          <p>分析團隊具備多元背景（資料工程師、科學家、分析師與商務專家），高效協作的關鍵在於破除孤島與共用共同詞彙表。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">Semantic Layer (Cube / dbt Semantic)</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">將 GMV、活躍用戶定義統一寫入模型，避免跨部門定義打架。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P4 -->
+        <div class="card manifesto-item" data-cat="code">
+          <div class="card-top">
+            <span class="card-badge badge-emerald">Principle 04</span>
+            <span style="font-size: 1.2rem;">🔁</span>
+          </div>
+          <h3>可重現性 (Reproducibility)</h3>
+          <p>歷史上任何特定時間點所產出的數字、模型或圖表，都必須能夠在給定相同版本代碼與數據輸入下，100% 完美復刻重現。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">Git SHA 鎖定, dbt Snapshot, Iceberg/Delta Lake</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">利用資料湖時光旅行（Time Travel）追蹤特定日期的歷史結算。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P5 -->
+        <div class="card manifesto-item" data-cat="code">
+          <div class="card-top">
+            <span class="card-badge badge-emerald">Principle 05</span>
+            <span style="font-size: 1.2rem;">📦</span>
+          </div>
+          <h3>拋棄式隔離環境 (Disposable Environments)</h3>
+          <p>工程師不能在共用的生產庫上直接改動。每個開發者與 CI 產線必須擁有低成本、隨建隨拆、相互隔離的沙箱環境。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">DuckDB 內存庫, Snowflake Zero-Copy Clone</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">PR 觸發時動態建立 <code>pr_123_schema</code>，測試完畢自動銷毀。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P6 -->
+        <div class="card manifesto-item" data-cat="customer">
+          <div class="card-top">
+            <span class="card-badge badge-primary">Principle 06</span>
+            <span style="font-size: 1.2rem;">⚡</span>
+          </div>
+          <h3>敏捷反映需求 (Reflect Customer Needs)</h3>
+          <p>業務環境瞬息萬變，數據管線架構必須具備彈性，能迅速適應變更，而不是以「架構僵化」為由拒絕業務演進。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">dbt Modular Staging / Marts 階層架構</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">Staging 隔離來源變動，Marts 提供穩健商業模型。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P7 -->
+        <div class="card manifesto-item" data-cat="culture">
+          <div class="card-top">
+            <span class="card-badge badge-amber">Principle 07</span>
+            <span style="font-size: 1.2rem;">🧘</span>
+          </div>
+          <h3>極簡主義 (Simplicity)</h3>
+          <p>極簡是一門最大化「未被做的工作量」的藝術。避免過早進行過度工程化，專注於解決當下最高優先級的業務瓶頸。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">DuckDB + dbt (輕量無伺服器架構)</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">在數據量未達百萬級前，不盲目導入 Spark 或巨大叢集。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P8 -->
+        <div class="card manifesto-item" data-cat="code">
+          <div class="card-top">
+            <span class="card-badge badge-primary">Principle 08</span>
+            <span style="font-size: 1.2rem;">🎼</span>
+          </div>
+          <h3>管線編排自動化 (Pipeline Orchestration)</h3>
+          <p>數據的抽取、載入、轉換、測試與發布應該是自動編排的有向無環圖（DAG），杜絕人工登入主機手動執行排程腳本。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">Apache Airflow, Dagster, Prefect</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">以代碼定義依賴 DAG，自動重試與告警，實現零人工干預。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P9 -->
+        <div class="card manifesto-item" data-cat="quality">
+          <div class="card-top">
+            <span class="card-badge badge-rose">Principle 09</span>
+            <span style="font-size: 1.2rem;">🛡️</span>
+          </div>
+          <h3>品質至上 (Quality is Paramount)</h3>
+          <p>沒有品質的數據比沒有數據更危險。品質驗證必須內嵌於管線的每一道工序，而不是在儀表板被老闆指出錯誤時才去修正。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">dbt test, Great Expectations, Soda Core</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">在資料寫入 Marts 之前，對 Primary Key、外鍵與值域全面檢查。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P10 -->
+        <div class="card manifesto-item" data-cat="quality">
+          <div class="card-top">
+            <span class="card-badge badge-rose">Principle 10</span>
+            <span style="font-size: 1.2rem;">📡</span>
+          </div>
+          <h3>即時監控營運指標 (Monitor Quality & Ops)</h3>
+          <p>持續監控管線的資料鮮度（Freshness）、行數異常、欄位漂移與任務延遲，在業務察覺前主動發出警報。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">Elementary Data, Monte Carlo, dbt source freshness</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">每日比對訂單量波動標準差，超過 3σ 即向 Slack 發送預警。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P11 -->
+        <div class="card manifesto-item" data-cat="culture">
+          <div class="card-top">
+            <span class="card-badge badge-amber">Principle 11</span>
+            <span style="font-size: 1.2rem;">🔄</span>
+          </div>
+          <h3>代碼與模組重用 (Reuse)</h3>
+          <p>避免在各個報表裡複製貼上相同的複雜 SQL 邏輯。將常用邏輯抽象為模組或巨集（Macros），維護單一真理來源。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">dbt Macros, Jinja 模板, dbt Packages</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">將時區轉換或退款狀態歸類封裝為統一 Jinja macro 重複調用。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P12 -->
+        <div class="card manifesto-item" data-cat="culture">
+          <div class="card-top">
+            <span class="card-badge badge-amber">Principle 12</span>
+            <span style="font-size: 1.2rem;">📈</span>
+          </div>
+          <h3>持續改進 (Continuous Improvement)</h3>
+          <p>數據團隊應建立事後覆盤（Post-mortem）與指標追蹤文化，從每次失敗中學習並迭代管線可靠度。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">GitHub Issues, Incident Post-mortems</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">發生線上故障時，必須新增一條回歸測試（Regression Test）。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P13 -->
+        <div class="card manifesto-item" data-cat="culture">
+          <div class="card-top">
+            <span class="card-badge badge-amber">Principle 13</span>
+            <span style="font-size: 1.2rem;">♻️</span>
+          </div>
+          <h3>消除浪費 (Eliminate Waste)</h3>
+          <p>遵循精實原則，消弭多餘的手動複製貼上、等待審批的瓶頸時間、以及算力重疊浪費。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">dbt Slim CI (state:modified+)</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">CI 僅編譯與測試被修改的模型及其下游，節省 80% 算力與等待時間。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P14 -->
+        <div class="card manifesto-item" data-cat="culture">
+          <div class="card-top">
+            <span class="card-badge badge-cyan">Principle 14</span>
+            <span style="font-size: 1.2rem;">🏛️</span>
+          </div>
+          <h3>DataOps 是一場文化運動 (Cultural Movement)</h3>
+          <p>工具是輔助，文化才是靈魂。打造鼓勵透明度、心理安全感與跨職能當責的數據文化。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">Blameless Post-Mortem 流程規範</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">以檢視「流程防線哪裡有漏洞」取代指責特定工程師寫錯代碼。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P15 -->
+        <div class="card manifesto-item" data-cat="culture">
+          <div class="card-top">
+            <span class="card-badge badge-cyan">Principle 15</span>
+            <span style="font-size: 1.2rem;">🧩</span>
+          </div>
+          <h3>跨職能擁有權 (Cross-functional Ownership)</h3>
+          <p>數據產品由跨職能小組共同持有，從資料源頭系統的工程師、資料工程師到商務端共同維護數據生命週期。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">Data Contracts (數據契約協作機制)</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">業務系統改 Schema 時，需在合約中通知下游並通過 CI 模擬檢驗。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P16 -->
+        <div class="card manifesto-item" data-cat="culture">
+          <div class="card-top">
+            <span class="card-badge badge-rose">Principle 16</span>
+            <span style="font-size: 1.2rem;">🦸‍♂️❌</span>
+          </div>
+          <h3>消除英雄主義 (Reduce Heroism)</h3>
+          <p>健康的團隊不依靠某位大師半夜肉身救火。系統應該具備自癒、可觀測與自動化防護，讓人人都能從容運維。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">自動化 CI 門禁 + 詳盡 Markdown Runbook</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">將專家大腦裡的救火經驗轉化為 CI Rule 與自動化恢復腳本。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P17 -->
+        <div class="card manifesto-item" data-cat="customer">
+          <div class="card-top">
+            <span class="card-badge badge-primary">Principle 17</span>
+            <span style="font-size: 1.2rem;">🚀</span>
+          </div>
+          <h3>持續交付 (Continuous Deployment)</h3>
+          <p>將分析變更拆解為小批次，頻繁、安全、增量地推進至生產環境，降低每次大版本發布的爆炸半徑。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">GitHub Actions 自動化部署流程</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">PR 一旦 Merge 通過測試，自動觸發生產環境藍綠部署（Blue-Green）。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- P18 -->
+        <div class="card manifesto-item" data-cat="customer">
+          <div class="card-top">
+            <span class="card-badge badge-primary">Principle 18</span>
+            <span style="font-size: 1.2rem;">🔁</span>
+          </div>
+          <h3>雙向反饋迴圈 (Feedback Loops)</h3>
+          <p>建立消費者與生產者之間的快速反饋機制，及時評估數據資產的使用率與業務實質影響力。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">落地工具</span>
+              <span class="spec-val">Metabase / Looker Studio 存取日誌分析</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">工程實踐</span>
+              <span class="spec-val">定期識別並下線 90 天內無人查詢的幽靈模型（Zombie Tables）。</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 2: 4 PILLARS & FOUNDATIONAL AXIOMS -->
+    <section id="pillars">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <div class="section-icon icon-emerald">🏛️</div>
+            <h2 class="section-title">二、現代資料棧（MDS）4 大工程支柱與 2 大基石</h2>
+          </div>
+          <p class="section-desc">從文化綱領收斂為工程架構：為什麼 MDS 能徹底終結傳統 ETL 惡夢？剖析其底層數學公理與架構支柱。</p>
+        </div>
+      </div>
+
+      <!-- Axioms Callout -->
+      <div class="callout">
+        <div class="callout-icon">🧬</div>
+        <div class="callout-content">
+          <h4>核心架構認知：為什麼 Idempotency 與 Reproducibility 是「基石」而非普通支柱？</h4>
+          <p>
+            在傳統 ETL 時代（Informatica, SSIS），由於大量使用過程導向的 <code>INSERT INTO</code>，一旦斷線重跑就會產生重複數據，團隊每天需要把「冪等」掛在嘴邊提醒；而在現代資料棧中，<strong>Idempotency 與 Reproducibility 是所有支柱成立的物理定律</strong>。如果一個管線跑兩次會產生兩份重複數據，它根本沒有資格進入 Everything as Code 與 CI/CD 的討論！
+          </p>
+        </div>
+      </div>
+
+      <!-- 2 Foundational Axioms -->
+      <h3 style="margin-bottom: 1.25rem; font-size: 1.3rem;">基石公理（The Two Foundational Axioms）</h3>
+      <div class="grid-2" style="margin-bottom: 2.5rem;">
+        
+        <div class="card" style="border-left: 4px solid var(--emerald);">
+          <div class="card-top">
+            <span class="card-badge badge-emerald">Axiom 1: 數學公理</span>
+            <span style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--emerald);">f(f(x)) = f(x)</span>
+          </div>
+          <h3>冪等性 (Idempotency)</h3>
+          <p>
+            <strong>定義：</strong>無論一條管線在相同輸入下執行 1 次、10 次、還是中途失敗手動重試，產生的最終資料庫狀態與副作用完全相同，絕對不會產生重複數據或髒數據。
+          </p>
+          <div class="code-block">
+<span class="code-comment">-- MDS dbt 宣告式範式：天生保證冪等性</span>
+<span class="code-comment">-- 底層編譯為 CREATE OR REPLACE TABLE 或基於唯一鍵的 MERGE INTO</span>
+<span class="code-keyword">SELECT</span> 
+    order_id, 
+    customer_id, 
+    order_date,
+    amount
+<span class="code-keyword">FROM</span> {{ ref(<span class="code-str">'stg_orders'</span>) }}
+<span class="code-keyword">WHERE</span> status = <span class="code-str">'completed'</span>
+          </div>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">傳統痛點</span>
+              <span class="spec-val">手寫 INSERT INTO，重跑一次訂單金額翻倍，需連夜手動 DELETE 清庫。</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">MDS 解法</span>
+              <span class="spec-val">宣告式 SELECT（純函數式轉換）+ 數據倉儲 Atomic Swap / Merge 機制。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="border-left: 4px solid var(--cyan);">
+          <div class="card-top">
+            <span class="card-badge badge-cyan">Axiom 2: 歷史追溯公理</span>
+            <span style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--cyan);">Immutable & Time-Travel</span>
+          </div>
+          <h3>可重現性 (Reproducibility)</h3>
+          <p>
+            <strong>定義：</strong>任何歷史時間點、任何審計階段，系統都能精準復刻出當時看見的數字與報表。這需要依賴「代碼版本鎖定」與「數據版本快照」的雙重保障。
+          </p>
+          <div class="code-block">
+<span class="code-comment"># Git Commit SHA + 數據版本快照 = 100% 完美重現</span>
+git checkout 631f107c
+dbt snapshot --select snapshot_customer_tier
+<span class="code-comment">-- 支援查詢「去年 5 月 1 日下午 2 點」這筆訂單當下的客戶會員等級</span>
+          </div>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">傳統痛點</span>
+              <span class="spec-val">客戶修改地址直接覆蓋資料庫（SCD Type 1），無法追溯歷史帳務報表。</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">MDS 解法</span>
+              <span class="spec-val">dbt Snapshot (SCD Type 2) + Git Commit + 湖倉時光旅行 (Time Travel)。</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 4 Engineering Pillars -->
+      <h3 style="margin-bottom: 1.25rem; font-size: 1.3rem;">現代資料棧 4 大工程支柱（The 4 Operational Pillars）</h3>
+      <div class="grid-4">
+
+        <!-- Pillar 1 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-badge badge-primary">Pillar 01</span>
+            <span style="font-size: 1.3rem;">📝</span>
+          </div>
+          <h3>萬物皆代碼 (Everything as Code)</h3>
+          <p>管線中的每一個元素：數據轉換、測試規則、文檔定義、基礎架構與調度流程，全部以純文字代碼定義並納入 Git 託管。</p>
+          <div class="card-footer">
+            <div class="spec-item"><span class="spec-tag">涵蓋範圍</span><span class="spec-val">SQL, YAML, Python, Terraform</span></div>
+            <div class="spec-item"><span class="spec-tag">核心價值</span><span class="spec-val">變更透明、同儕審查（Peer Review）、防篡改。</span></div>
+          </div>
+        </div>
+
+        <!-- Pillar 2 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-badge badge-emerald">Pillar 02</span>
+            <span style="font-size: 1.3rem;">⚡</span>
+          </div>
+          <h3>隔離式 CI/CD (Isolated CI/CD)</h3>
+          <p>拋棄在共享開發庫測試的舊習慣。每一次 PR 自動拉起獨立的免洗環境（Disposable Schema），透過 Slim CI 進行精準增量測試。</p>
+          <div class="card-footer">
+            <div class="spec-item"><span class="spec-tag">關鍵技術</span><span class="spec-val">dbt Slim CI (state:modified+)</span></div>
+            <div class="spec-item"><span class="spec-tag">核心價值</span><span class="spec-val">零成本環境隔離、算力節省 80%、無痛回滾。</span></div>
+          </div>
+        </div>
+
+        <!-- Pillar 3 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-badge badge-amber">Pillar 03</span>
+            <span style="font-size: 1.3rem;">📡</span>
+          </div>
+          <h3>數據可觀測性與血緣 (Observability & Lineage)</h3>
+          <p>管線運行不該是黑盒子。具備自動化全鏈路血緣感知，主動監控資料鮮度、分佈異常、行數跳變，在下游投訴前發出告警。</p>
+          <div class="card-footer">
+            <div class="spec-item"><span class="spec-tag">關鍵技術</span><span class="spec-val">Elementary, Monte Carlo, dbt Docs</span></div>
+            <div class="spec-item"><span class="spec-tag">核心價值</span><span class="spec-val">精準評估異動破壞半徑（Blast Radius）。</span></div>
+          </div>
+        </div>
+
+        <!-- Pillar 4 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-badge badge-cyan">Pillar 04</span>
+            <span style="font-size: 1.3rem;">📜</span>
+          </div>
+          <h3>數據契約與語意治理 (Contracts & Governance)</h3>
+          <p>在生產端（Producer）與消費端（Consumer）之間建立強型別綱要約束與語意層定義，防止上游隨意欄位更名造成下游報表雪崩。</p>
+          <div class="card-footer">
+            <div class="spec-item"><span class="spec-tag">關鍵技術</span><span class="spec-val">dbt model contracts, Semantic Layer</span></div>
+            <div class="spec-item"><span class="spec-tag">核心價值</span><span class="spec-val">跨系統溝通有保障、建立不可妥協的數據信任。</span></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 3: 5 CI/CD GATE PRINCIPLES -->
+    <section id="ci-gates">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <div class="section-icon icon-amber">🛡️</div>
+            <h2 class="section-title">三、CI/CD 落地實務的「5 大黃金守則」</h2>
+          </div>
+          <p class="section-desc">本專案於 GitHub Actions 產線上 100% 驗證通過的品質閘門，拆解現代數據管線的自動化攔截防線。</p>
+        </div>
+      </div>
+
+      <!-- Workflow Timeline / Process Flow -->
+      <div class="table-container" style="margin-bottom: 2rem;">
+        <table>
+          <thead>
+            <tr>
+              <th>防禦關卡</th>
+              <th>守則名稱</th>
+              <th>檢驗工具</th>
+              <th>攔截目標與具體威脅</th>
+              <th>本專案通過狀態</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="card-badge badge-rose">Gate 1</span></td>
+              <td><strong>Principle 4: 安全與憑證零外洩</strong><br><small style="color: var(--text-sub);">Secret Scanning</small></td>
+              <td><code>TruffleHog OSS</code></td>
+              <td>防止工程師誤將 GCP Service Account Key、DuckDB 憑證或 API Token 推上 Git 倉庫。深度掃描全 Commit 歷史。</td>
+              <td><span style="color: var(--emerald); font-weight: 600;">✅ Passed</span></td>
+            </tr>
+            <tr>
+              <td><span class="card-badge badge-primary">Gate 2</span></td>
+              <td><strong>Principle 1: 代碼風格與語法防護</strong><br><small style="color: var(--text-sub);">Code Style & Syntax</small></td>
+              <td><code>Ruff</code> (Python)<br><code>SQLFluff</code> (dbt SQL)</td>
+              <td>消滅低階語法錯誤、格式分歧與未標註理由的盲目例外捕捉 (如 <code>BLE001</code>)。維持代碼最高可維護性。</td>
+              <td><span style="color: var(--emerald); font-weight: 600;">✅ Passed</span></td>
+            </tr>
+            <tr>
+              <td><span class="card-badge badge-amber">Gate 3</span></td>
+              <td><strong>Principle 3: 下游防中斷閘門</strong><br><small style="color: var(--text-sub);">Breaking Changes & DAG</small></td>
+              <td><code>dbt parse</code> / <code>compile</code></td>
+              <td>編譯整個模型 DAG 血緣拓撲，檢查 <code>ref()</code> 與 <code>source()</code> 是否斷鏈，防止刪除/更名欄位破壞下游 BI。</td>
+              <td><span style="color: var(--emerald); font-weight: 600;">✅ Passed</span></td>
+            </tr>
+            <tr>
+              <td><span class="card-badge badge-emerald">Gate 4</span></td>
+              <td><strong>Principle 2: 商業邏輯不變量驗證</strong><br><small style="color: var(--text-sub);">Business Logic Invariants</small></td>
+              <td><code>pytest</code></td>
+              <td>測試邊界商業算式：退款率必須介於 0 與 1 之間、GMV 為正數、金流拆帳總額平衡等不可妥協的核心業務邏輯。</td>
+              <td><span style="color: var(--emerald); font-weight: 600;">✅ Passed</span></td>
+            </tr>
+            <tr>
+              <td><span class="card-badge badge-cyan">Gate 5</span></td>
+              <td><strong>Principle 5: 數據契約與綱要防線</strong><br><small style="color: var(--text-sub);">Data Contract Checkpoint</small></td>
+              <td><code>dbt test</code><br><code>dbt-expectations</code></td>
+              <td>在測試沙盒中驗證數據模型：主鍵 <code>unique</code>、欄位 <code>not_null</code>、枚舉 <code>accepted_values</code>，確保數據品質無虞。</td>
+              <td><span style="color: var(--emerald); font-weight: 600;">✅ Passed</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Real GitHub Actions Code Snippet -->
+      <h3 style="margin-bottom: 0.75rem; font-size: 1.15rem;">本專案完整 CI 定義範本（.github/workflows/ci.yml）</h3>
+      <div class="code-block">
+<span class="code-comment"># GitHub Actions: 5 大 DataOps 原則實裝範本</span>
+<span class="code-keyword">jobs:</span>
+  <span class="code-keyword">quality-checks:</span>
+    <span class="code-keyword">runs-on:</span> ubuntu-latest
+    <span class="code-keyword">steps:</span>
+      - <span class="code-keyword">uses:</span> actions/checkout@v4
+        <span class="code-keyword">with:</span> { fetch-depth: 0 } <span class="code-comment"># 取得完整 Commit 歷史</span>
+
+      <span class="code-comment"># Gate 1: 安全掃描 (Principle 4)</span>
+      - <span class="code-keyword">name:</span> Principle 4: Secret Scanning (TruffleHog)
+        <span class="code-keyword">uses:</span> trufflesecurity/trufflehog@main
+        <span class="code-keyword">with:</span> { extra_args: --only-verified }
+
+      <span class="code-comment"># Gate 2: 代碼風格 (Principle 1)</span>
+      - <span class="code-keyword">name:</span> Principle 1: Code Style - Python (Ruff) & dbt SQL (SQLFluff)
+        <span class="code-keyword">run:</span> |
+          ruff check .
+          ruff format --check .
+          sqlfluff lint transform_dbt/models/
+
+      <span class="code-comment"># Gate 3: 下游 DAG 與血緣解析 (Principle 3)</span>
+      - <span class="code-keyword">name:</span> Principle 3: Schema DAG & Breaking Changes Check (dbt parse)
+        <span class="code-keyword">run:</span> dbt parse --profiles-dir . --project-dir transform_dbt
+
+      <span class="code-comment"># Gate 4 & 5: 商業邏輯不變量與數據契約 (Principle 2 & 5)</span>
+      - <span class="code-keyword">name:</span> Principle 2 & 5: Business Logic Invariants & Data Contracts
+        <span class="code-keyword">run:</span> |
+          pytest tests/ -v
+          dbt test --profiles-dir . --project-dir transform_dbt
+      </div>
+    </section>
+
+    <!-- SECTION 4: DATAOPS METRICS -->
+    <section id="metrics">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <div class="section-icon icon-cyan">📊</div>
+            <h2 class="section-title">四、DataOps 評估管線的「四大維度指標」（DataOps Metrics）</h2>
+          </div>
+          <p class="section-desc">結合 DevOps DORA 精神與現代資料可靠性工程（Data Reliability Engineering），全面衡量管線的敏捷度、可靠度與成本效率。</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+
+        <!-- Metric 1: Velocity -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-badge badge-primary">維度一：交付速度 (Velocity)</span>
+            <span style="font-size: 1.3rem;">⚡</span>
+          </div>
+          <h3>交付速度與流通量 (Delivery Velocity & Throughput)</h3>
+          <p>衡量團隊將「商業分析需求或模型代碼變更」轉化為「生產可用數據產品」的迭代反應速度。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">Lead Time for Changes</span>
+              <span class="spec-val">從 Pull Request 發起、通過 CI 測試到生產環境部署生效的時間（<strong>目標：&lt; 2 小時</strong>）。</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">Deployment Frequency</span>
+              <span class="spec-val">生產環境模型與管線每週發布頻率（<strong>優秀指標：每日多次持續交付</strong>）。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 2: Reliability & Downtime -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-badge badge-rose">維度二：穩定性 (Reliability)</span>
+            <span style="font-size: 1.3rem;">🛑</span>
+          </div>
+          <h3>數據停機時間與恢復能力 (Data Downtime & MTTR)</h3>
+          <p>衡量管線故障對業務端造成的衝擊大小。核心目標是讓「數據停機時間（Data Downtime）」降至最低。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">Data Downtime 公式</span>
+              <span class="spec-val"><code>Downtime = 事故數 × (平均檢測時間 MTTD + 平均修復時間 MTTR)</code></span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">MTTD (Mean Time to Detect)</span>
+              <span class="spec-val">從數據異常產生到被自動化系統告警的時間（<strong>目標：&lt; 15 分鐘</strong>，杜絕業務主動向工程師反映）。</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">MTTR (Mean Time to Restore)</span>
+              <span class="spec-val">收到告警後透過回滾或修復補回數據的時間（<strong>目標：&lt; 1 小時</strong>）。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 3: Quality & Contract -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-badge badge-emerald">維度三：數據品質 (Quality)</span>
+            <span style="font-size: 1.3rem;">💎</span>
+          </div>
+          <h3>數據品質與契約達成率 (Quality & SLA Attainment)</h3>
+          <p>衡量數據資產的可信賴程度，包含資料時效性（Freshness）與未被攔截的髒數據比例。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">Freshness SLA Attainment</span>
+              <span class="spec-val">數據在約定時限內更新完成的比例（如：每日晨會 9:00 前數據到位率，<strong>目標：&gt; 99.5%</strong>）。</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">Silent Failure Rate</span>
+              <span class="spec-val">未觸發管線報錯、但資料內容失真（如欄位全部變成 NULL）的靜默故障率（<strong>目標：0%</strong>）。</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">Change Failure Rate (CFR)</span>
+              <span class="spec-val">新版本部署至生產環境後引發線上故障的比例（<strong>目標：&lt; 5%</strong>）。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 4: Efficiency & Cost -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-badge badge-amber">維度四：成本效率 (Efficiency)</span>
+            <span style="font-size: 1.3rem;">💰</span>
+          </div>
+          <h3>運算成本與資源效率 (Compute & Operational Cost)</h3>
+          <p>衡量數據管線在雲端倉儲（BigQuery/Snowflake）的資源利用效率，避免因不良 SQL 導致費用失控。</p>
+          <div class="card-footer">
+            <div class="spec-item">
+              <span class="spec-tag">Cost per Pipeline Run</span>
+              <span class="spec-val">單次管線執行消耗的雲端算力成本（透過 dbt Incremental 模型減少掃描量）。</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-tag">Slim CI Speedup Ratio</span>
+              <span class="spec-val">相比全量編譯，Slim CI 增量建置節省的執行時間與運算費用（<strong>本專案達到 70%+ 算力節約</strong>）。</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- How to Implement Metrics -->
+      <div class="callout" style="margin-top: 2rem;">
+        <div class="callout-icon">💡</div>
+        <div class="callout-content">
+          <h4>如何落實與自動化採集 DataOps 指標？</h4>
+          <p>
+            1. <strong>日誌入庫</strong>：利用 dbt 每次執行的 <code>run_results.json</code> 與 <code>manifest.json</code>，將執行時長、測試成功率、模型變更數量自動寫入元數據庫。<br>
+            2. <strong>告警對齊</strong>：透過 Elementary Data 或 Monte Carlo 自動採集異常檢測時間（MTTD）與修復時間（MTTR），直接串接 PagerDuty / Slack Webhook。<br>
+            3. <strong>建立儀表板</strong>：在 Looker Studio 或 Metabase 開闢「DataOps Health Dashboard」，提供工程負責人每週檢視 4 大維度趨勢。
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-links">
+      <a href="../portal.html">數據控制台 (Unified Portal)</a>
+      <a href="pipeline_architecture.html">管線架構藍圖 (Pipeline Architecture)</a>
+      <a href="looker_studio_guide.html">BI 指南 (Looker Studio Guide)</a>
+      <a href="https://dataopsmanifesto.org" target="_blank" rel="noopener">官方 DataOps 宣言 ↗</a>
+    </div>
+    <p>© 2026 Platzi E-Commerce Data Pipeline Consulting Project | Engineered with MBB Consulting Rigor & DataOps Standards</p>
+  </footer>
+
+  <script>
+    // Manifesto Filter Function
+    function filterManifesto(category) {
+      const items = document.querySelectorAll('.manifesto-item');
+      const buttons = document.querySelectorAll('.filter-btn');
+
+      buttons.forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      items.forEach(item => {
+        if (category === 'all' || item.getAttribute('data-cat') === category) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
+    // Manifesto Search Function
+    function searchManifesto() {
+      const query = document.getElementById('manifestoSearch').value.toLowerCase();
+      const items = document.querySelectorAll('.manifesto-item');
+
+      items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        if (text.includes(query)) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
