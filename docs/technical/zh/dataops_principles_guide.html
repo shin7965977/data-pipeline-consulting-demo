@@ -1507,12 +1507,13 @@ dbt snapshot --select snapshot_customer_tier
       </div>
 
       <!-- Before vs After Real-World Scorecard -->
-      <h3 style="margin-bottom: 1rem; font-size: 1.25rem;">大型跨國電商導入 DataOps 前後量化評估報告（Before vs. After ROI）</h3>
+      <h3 style="margin-bottom: 1rem; font-size: 1.25rem;">大型跨國電商導入 DataOps 前後量化評估報告（四大維度 1:1 實務對照）</h3>
       <div class="table-container" style="margin-bottom: 2.5rem;">
         <table>
           <thead>
             <tr>
-              <th>衡量指標 (Metric)</th>
+              <th>所屬評估維度</th>
+              <th>具體應用衡量指標 (Applied Metric)</th>
               <th>傳統維運時代（Before DataOps）</th>
               <th>MDS 工程實務落地（After DataOps）</th>
               <th>量化改善成效 (ROI Impact)</th>
@@ -1520,37 +1521,50 @@ dbt snapshot --select snapshot_customer_tier
           </thead>
           <tbody>
             <tr>
-              <td><strong>變更交付前置時間 (Lead Time)</strong></td>
+              <td><span class="card-badge badge-primary">維度一：交付速度</span></td>
+              <td><strong>變更交付前置時間 (Lead Time for Changes)</strong></td>
               <td>14 天（提單等待開會、手動測試）</td>
               <td><strong>45 分鐘</strong>（自動化 CI 門禁與拋棄式沙盒）</td>
               <td><span style="color: var(--emerald); font-weight: 700;">🚀 交付提速 99.8%</span></td>
             </tr>
             <tr>
-              <td><strong>發布頻率 (Deployment Frequency)</strong></td>
+              <td><span class="card-badge badge-primary">維度一：交付速度</span></td>
+              <td><strong>模型部署發布頻率 (Deployment Frequency)</strong></td>
               <td>每月 1 次（大版本夜間全體加班）</td>
               <td><strong>每日 4~6 次</strong>（增量微小發布，隨發隨測）</td>
               <td><span style="color: var(--emerald); font-weight: 700;">📈 發布頻率提升 100 倍</span></td>
             </tr>
             <tr>
-              <td><strong>平均故障檢測時間 (MTTD)</strong></td>
+              <td><span class="card-badge badge-rose">維度二：穩定程度</span></td>
+              <td><strong>平均故障檢測時間 (MTTD, Mean Time to Detect)</strong></td>
               <td>72 小時（直到業務或客戶打電話抱怨）</td>
               <td><strong>8 分鐘</strong>（Elementary 自動 3σ 告警）</td>
               <td><span style="color: var(--emerald); font-weight: 700;">⚡ 異常發現提早 500 倍</span></td>
             </tr>
             <tr>
-              <td><strong>平均故障復原時間 (MTTR)</strong></td>
+              <td><span class="card-badge badge-rose">維度二：穩定程度</span></td>
+              <td><strong>平均故障復原時間 (MTTR, Mean Time to Restore)</strong></td>
               <td>8 小時（翻查幾千行 Log 找救火隊員）</td>
               <td><strong>15 分鐘</strong>（Git revert 或一鍵回滾）</td>
               <td><span style="color: var(--emerald); font-weight: 700;">🛡️ 業務衝擊降低 96%</span></td>
             </tr>
             <tr>
-              <td><strong>每月數據停機時間 (Data Downtime)</strong></td>
+              <td><span class="card-badge badge-rose">維度二：穩定程度</span></td>
+              <td><strong>每月數據停機時間 (Monthly Data Downtime)</strong></td>
               <td>80 小時 / 月（各種管線斷鏈、髒數據）</td>
               <td><strong>&lt; 0.5 小時 / 月</strong>（極致穩定運維）</td>
-              <td><span style="color: var(--emerald); font-weight: 700;">💎 數據可靠度達 99.9%</span></td>
+              <td><span style="color: var(--emerald); font-weight: 700;">💎 數據可用度達 99.9%</span></td>
             </tr>
             <tr>
-              <td><strong>CI 每次運行雲端算力成本</strong></td>
+              <td><span class="card-badge badge-emerald">維度三：數據品質</span></td>
+              <td><strong>晨會報表及時到位率 (Freshness SLA Attainment)</strong></td>
+              <td>88.5%（經常因上游延遲導致晨會無數據）</td>
+              <td><strong>99.8%</strong>（Airflow Sensor + 增量抽換保證）</td>
+              <td><span style="color: var(--emerald); font-weight: 700;">🎯 數據信任度極大化</span></td>
+            </tr>
+            <tr>
+              <td><span class="card-badge badge-amber">維度四：成本效率</span></td>
+              <td><strong>CI 每次運行雲端算力成本 (Cost per Run)</strong></td>
               <td>$15.00 美元（全量重建 300 張表）</td>
               <td><strong>$0.40 美元</strong>（dbt Slim CI 增量建置）</td>
               <td><span style="color: var(--emerald); font-weight: 700;">💰 運算費用直降 97%</span></td>

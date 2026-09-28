@@ -1507,12 +1507,13 @@ dbt snapshot --select snapshot_customer_tier
       </div>
 
       <!-- Before vs After Real-World Scorecard -->
-      <h3 style="margin-bottom: 1rem; font-size: 1.25rem;">Enterprise E-Commerce DataOps Adoption Scorecard (Before vs. After ROI)</h3>
+      <h3 style="margin-bottom: 1rem; font-size: 1.25rem;">Enterprise E-Commerce DataOps Adoption Scorecard (The 4 Dimensions in Action)</h3>
       <div class="table-container" style="margin-bottom: 2.5rem;">
         <table>
           <thead>
             <tr>
-              <th>Performance Metric</th>
+              <th>Evaluation Dimension</th>
+              <th>Applied Engineering Metric</th>
               <th>Legacy Maintenance (Before DataOps)</th>
               <th>MDS Engineering Practice (After DataOps)</th>
               <th>Quantified ROI Impact</th>
@@ -1520,36 +1521,49 @@ dbt snapshot --select snapshot_customer_tier
           </thead>
           <tbody>
             <tr>
+              <td><span class="card-badge badge-primary">Dimension 1: Velocity</span></td>
               <td><strong>Lead Time for Changes</strong></td>
               <td>14 days (Ticketing, meetings, manual runs)</td>
               <td><strong>45 minutes</strong> (Automated CI gates & sandboxes)</td>
               <td><span style="color: var(--emerald); font-weight: 700;">🚀 99.8% Faster Delivery</span></td>
             </tr>
             <tr>
+              <td><span class="card-badge badge-primary">Dimension 1: Velocity</span></td>
               <td><strong>Deployment Frequency</strong></td>
               <td>1 per month (Stressful nocturnal releases)</td>
               <td><strong>4–6 per day</strong> (Trunk-based incremental releases)</td>
               <td><span style="color: var(--emerald); font-weight: 700;">📈 100x Release Agility</span></td>
             </tr>
             <tr>
+              <td><span class="card-badge badge-rose">Dimension 2: Reliability</span></td>
               <td><strong>Mean Time to Detect (MTTD)</strong></td>
               <td>72 hours (Discovered after customer complaints)</td>
               <td><strong>8 minutes</strong> (Elementary automated 3σ anomaly alerts)</td>
               <td><span style="color: var(--emerald); font-weight: 700;">⚡ 500x Faster Detection</span></td>
             </tr>
             <tr>
+              <td><span class="card-badge badge-rose">Dimension 2: Reliability</span></td>
               <td><strong>Mean Time to Restore (MTTR)</strong></td>
               <td>8 hours (Trawling raw log files)</td>
               <td><strong>15 minutes</strong> (Instant git revert or retry)</td>
               <td><span style="color: var(--emerald); font-weight: 700;">🛡️ 96% Downtime Reduction</span></td>
             </tr>
             <tr>
+              <td><span class="card-badge badge-rose">Dimension 2: Reliability</span></td>
               <td><strong>Monthly Data Downtime</strong></td>
               <td>80 hours / month (Outages, dirty data)</td>
               <td><strong>&lt; 0.5 hours / month</strong> (High availability)</td>
               <td><span style="color: var(--emerald); font-weight: 700;">💎 99.9% Pipeline Reliability</span></td>
             </tr>
             <tr>
+              <td><span class="card-badge badge-emerald">Dimension 3: Quality</span></td>
+              <td><strong>Freshness SLA Attainment</strong></td>
+              <td>88.5% (Morning meetings delayed by raw ingestion lag)</td>
+              <td><strong>99.8%</strong> (Airflow Sensor + incremental guarantees)</td>
+              <td><span style="color: var(--emerald); font-weight: 700;">🎯 Maximum Stakeholder Trust</span></td>
+            </tr>
+            <tr>
+              <td><span class="card-badge badge-amber">Dimension 4: Efficiency</span></td>
               <td><strong>Compute Cost per CI Run</strong></td>
               <td>$15.00 (Rebuilding full 300 tables)</td>
               <td><strong>$0.40</strong> (dbt Slim CI state-aware run)</td>
