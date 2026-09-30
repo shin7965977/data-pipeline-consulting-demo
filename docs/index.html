@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataOps Unified Portal | Platzi E-Commerce Cloud Lakehouse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(99, 102, 241, 0.4);
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --cyan: #06b6d4;
+      --purple: #a855f7;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-sub: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    /* Top Navigation */
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-text h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand-text p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .lang-toggle {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .lang-btn {
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background-color: var(--emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 2.5rem 2rem 4rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2.5rem 2.8rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-banner::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: var(--primary-light);
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .hero-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.8rem;
+      background: linear-gradient(135deg, #ffffff 30%, #c7d2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 860px;
+      line-height: 1.65;
+    }
+
+    .meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 1.6rem;
+    }
+
+    .meta-tag {
+      font-size: 0.78rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+
+    .meta-tag span {
+      color: var(--primary-light);
+      font-weight: 600;
+    }
+
+    /* Section Headers */
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: #fff;
+    }
+
+    /* Grid of Dashboards */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 1.75rem;
+    }
+
+    .dash-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dash-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--card-hover-border);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.15);
+    }
+
+    .dash-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .dash-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .icon-interactive {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #818cf8;
+    }
+
+    .icon-guide {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .icon-business {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+
+    .icon-pitch {
+      background: rgba(236, 72, 153, 0.15);
+      border: 1px solid rgba(236, 72, 153, 0.3);
+      color: #f472b6;
+    }
+
+    .dash-card-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+    }
+
+    .badge-primary {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary-light);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .badge-emerald {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-pink {
+      background: rgba(236, 72, 153, 0.15);
+      color: #f472b6;
+      border: 1px solid rgba(236, 72, 153, 0.3);
+    }
+
+    .dash-card h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+
+    .dash-card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      margin-bottom: 2rem;
+      flex: 1;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    .feature-item svg {
+      width: 16px;
+      height: 16px;
+      color: var(--emerald);
+      flex-shrink: 0;
+    }
+
+    .dash-card-actions {
+      display: flex;
+      gap: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 1.25rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.75rem 1.1rem;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: 1px solid transparent;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: #4f46e5;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 1.75rem 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      background: rgba(10, 15, 28, 0.9);
+      margin-top: auto;
+    }
+
+    footer a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">D</div>
+      <div class="brand-text">
+        <h1>DataOps Consulting Unified Portal</h1>
+        <p>Platzi E-Commerce Cloud Lakehouse Platform</p>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <!-- Language Switcher -->
+      <div class="lang-toggle">
+        <a href="index.html" class="lang-btn active">English</a>
+        <a href="portal.html" class="lang-btn">繁體中文</a>
+      </div>
+
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        <span>PIPELINE HEALTHY</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Area -->
+  <main>
+    <div class="hero-banner">
+      <div class="hero-badge">ENTERPRISE CLOUD DATA PLATFORM</div>
+      <h2 class="hero-title">Engineering Architecture & Business Intelligence Suite</h2>
+      <p class="hero-subtitle">
+        An end-to-end, serverless Modern Data Stack built on Google Cloud Platform (BigQuery, Cloud Workflows, Cloud Run Jobs), dbt Core, dlt Hub, and FastMCP AI Copilot. Fully engineered with DataOps standards and MBB consulting rigor.
+      </p>
+      <div class="meta-tags">
+        <div class="meta-tag">GCP Project: <span>de-consulting-508822</span></div>
+        <div class="meta-tag">Cloud Warehouse: <span>Google BigQuery</span></div>
+        <div class="meta-tag">Architecture: <span>Medallion Star Schema</span></div>
+        <div class="meta-tag">Orchestration: <span>Serverless Workflows ($0 Idle Cost)</span></div>
+        <div class="meta-tag">Data Quality: <span>Elementary + dbt Test Gates</span></div>
+      </div>
+    </div>
+
+    <!-- Technical Engineering Section -->
+    <div class="section-title">
+      <span>🛠️ Technical Architecture & DataOps Engineering</span>
+    </div>
+    
+    <div class="dashboard-grid">
+      <!-- Card 1: Interactive Canvas -->
+      <div class="dash-card">
+        <div>
+          <div class="dash-card-header">
+            <div class="dash-card-icon icon-interactive">🎨</div>
+            <span class="dash-card-badge badge-primary">Interactive Canvas</span>
+          </div>
+          <h2>Interactive Architecture Playbook</h2>
+          <p>
+            Full-screen interactive visual canvas detailing all 5 Medallion stages with clickable engineering decision drawers, schema specs, and trade-off checklists.
+          </p>
+          <ul class="feature-list">
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>5 Architectural Stages</strong>: Ingestion, Lakehouse, Workflows, Observability, AI Serving</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Interactive Decision Drawer</strong>: Click any stage to inspect Kimbal star schema & PII masking</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Pan & Zoom Navigation</strong>: Smooth SVG canvas controls with high-density inspection</span>
+            </li>
+          </ul>
+        </div>
+        <div class="dash-card-actions">
+          <a class="btn btn-primary" href="technical/en/pipeline_architecture.html">
+            <span>Launch Canvas (EN) ↗</span>
+          </a>
+          <a class="btn btn-secondary" href="technical/zh/pipeline_architecture.html">
+            <span>繁體中文 ↗</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 2: DataOps Principles Guide -->
+      <div class="dash-card">
+        <div>
+          <div class="dash-card-header">
+            <div class="dash-card-icon icon-guide">📘</div>
+            <span class="dash-card-badge badge-emerald">DataOps Standards</span>
+          </div>
+          <h2>DataOps Manifesto & Engineering Guide</h2>
+          <p>
+            Complete handbook detailing the 5 CI/CD Golden Gates, 4 DataOps operational metrics, circuit breaker design, and schema breaking change guardrails.
+          </p>
+          <ul class="feature-list">
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>5 CI Golden Gates</strong>: Ruff, SQLFluff, dbt parse DAG, Pytest invariants, TruffleHog</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>4 Operational Metrics</strong>: Lead Time, Deploy Frequency, MTTD/MTTR, SLA Reliability</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Circuit Breaker Pattern</strong>: Automated rollback and error blast radius mitigation</span>
+            </li>
+          </ul>
+        </div>
+        <div class="dash-card-actions">
+          <a class="btn btn-primary" href="technical/en/dataops_principles_guide.html">
+            <span>Read Guide (EN) ↗</span>
+          </a>
+          <a class="btn btn-secondary" href="technical/zh/dataops_principles_guide.html">
+            <span>繁體中文 ↗</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 3: Looker Studio BI Guide -->
+      <div class="dash-card">
+        <div>
+          <div class="dash-card-header">
+            <div class="dash-card-icon icon-business">📊</div>
+            <span class="dash-card-badge badge-amber">BI & Analytics</span>
+          </div>
+          <h2>Looker Studio Dashboard Guide</h2>
+          <p>
+            Step-by-step connection guide from BigQuery Gold dimensional models to C-level executive KPI dashboards, cohort retention heatmaps, and Pareto analysis.
+          </p>
+          <ul class="feature-list">
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Gold Mart Mapping</strong>: Direct connection to gold_daily_sales & gold_customer_cohorts</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Executive Visuals</strong>: P&L revenue vs discount leakage, customer lifetime value (LTV)</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Calculated Metrics</strong>: Return-on-Ad-Spend (ROAS) and Gross Margin formulas</span>
+            </li>
+          </ul>
+        </div>
+        <div class="dash-card-actions">
+          <a class="btn btn-primary" href="technical/en/looker_studio_guide.html">
+            <span>Read Guide (EN) ↗</span>
+          </a>
+          <a class="btn btn-secondary" href="technical/zh/looker_studio_guide.html">
+            <span>繁體中文 ↗</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Business & Commercial Consulting Section -->
+    <div class="section-title">
+      <span>💼 Business Consulting & Executive Deliverables</span>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Card 4: Executive Pitch Deck -->
+      <div class="dash-card">
+        <div>
+          <div class="dash-card-header">
+            <div class="dash-card-icon icon-pitch">🎯</div>
+            <span class="dash-card-badge badge-pink">C-Level Deck</span>
+          </div>
+          <h2>E-Commerce Executive Pitch Deck</h2>
+          <p>
+            Slide deck formatted to MBB standards addressing C-suite leadership: SCQA narrative structure, unit economics turnaround, and 30-60-90 day tactical interventions.
+          </p>
+          <ul class="feature-list">
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>SCQA Storyline</strong>: Quantified GMV revenue leakage and margin decay diagnosis</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>MECE Issue Tree</strong>: Deconstructed conversion funnel, cancellations, and return costs</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Interactive Deck View</strong>: Built-in presentation mode with keyboard shortcuts</span>
+            </li>
+          </ul>
+        </div>
+        <div class="dash-card-actions">
+          <a class="btn btn-primary" href="business/en/ecommerce_owner_pitch_deck.html">
+            <span>Open Deck (EN) ↗</span>
+          </a>
+          <a class="btn btn-secondary" href="business/zh/ecommerce_owner_pitch_deck.html">
+            <span>繁體中文 ↗</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 5: SME Discovery Guide -->
+      <div class="dash-card">
+        <div>
+          <div class="dash-card-header">
+            <div class="dash-card-icon icon-business">🧭</div>
+            <span class="dash-card-badge badge-amber">Discovery Guide</span>
+          </div>
+          <h2>SME Data Pipeline Discovery Guide</h2>
+          <p>
+            Diagnostic framework designed for retail founders to assess data maturity, identify inventory stockout risks, and calculate ROI of moving to cloud lakehouse.
+          </p>
+          <ul class="feature-list">
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>TCO Comparison</strong>: Managed Airflow ($300+/mo) vs Serverless Workflows ($0/mo)</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Readiness Checklist</strong>: 4-stage data maturity assessment for e-commerce growth</span>
+            </li>
+            <li class="feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>FastMCP Agent AI</strong>: Integrating LLMs directly on verified Gold mart tables</span>
+            </li>
+          </ul>
+        </div>
+        <div class="dash-card-actions">
+          <a class="btn btn-primary" href="business/en/sme_data_pipeline_discovery_guide.html">
+            <span>Open Guide (EN) ↗</span>
+          </a>
+          <a class="btn btn-secondary" href="business/zh/sme_data_pipeline_discovery_guide.html">
+            <span>繁體中文 ↗</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2026 Platzi E-Commerce Cloud Lakehouse Platform | Source code available on <a href="https://github.com/shin7965977/data-pipeline-consulting-demo" target="_blank" rel="noopener">GitHub</a></p>
+  </footer>
+
+</body>
+</html>
