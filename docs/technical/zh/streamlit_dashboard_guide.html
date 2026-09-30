@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streamlit 商業決策駕駛艙導覽 | Platzi E-Commerce</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(255, 75, 75, 0.45);
+      --primary: #ff4b4b;
+      --primary-light: #ff7878;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --cyan: #06b6d4;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-sub: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(255, 75, 75, 0.12) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+      line-height: 1.6;
+    }
+
+    header {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #ff4b4b, #e11d48);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .brand-text h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .top-actions a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+
+    .top-actions a:hover {
+      color: #fff;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3rem 2rem 5rem;
+      width: 100%;
+      flex: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      background: rgba(255, 75, 75, 0.15);
+      border: 1px solid rgba(255, 75, 75, 0.3);
+      color: #ff7878;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 0.8rem;
+      background: linear-gradient(135deg, #ffffff 40%, #fca5a5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .card h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.75rem;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--cyan);
+      margin: 1.5rem 0 0.75rem;
+    }
+
+    ul, ol {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+      color: #cbd5e1;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    pre {
+      background: #0d1117;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      color: #7dd3fc;
+      margin: 1rem 0;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88em;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      color: #ff7878;
+    }
+
+    .grid-tabs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .tab-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .tab-box h4 {
+      font-size: 0.95rem;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+
+    .tab-box p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      background: rgba(10, 15, 28, 0.9);
+      margin-top: auto;
+    }
+
+    footer a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🛒</div>
+      <div class="brand-text">
+        <h1>Streamlit 商業決策駕駛艙</h1>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <a href="portal.html">🩺 雙核心品質門戶</a>
+      <a href="../../portal.html">🏠 雲端總首頁</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero-badge">互動式數據分析與 AI 副駕駛</div>
+    <h1>Streamlit 商業決策駕駛艙導覽</h1>
+    <p class="subtitle">
+      由 <code>dashboard.py</code> 驅動，為管理階層提供即時損益模擬、商品 SKU Pareto 80/20 排行、顧客 RFM 分群，以及結合 FastMCP 與 Google Gemini 的 AI 決策副駕駛。
+    </p>
+
+    <!-- Architecture & Tabs -->
+    <div class="card">
+      <h2>1. 📱 <code>dashboard.py</code> 四大核心決策面版</h2>
+      <div class="grid-tabs">
+        <div class="tab-box">
+          <h4>📊 1. 損益與營收分析</h4>
+          <p>即時追蹤 GMV、實收淨營收、平均客單價（AOV）與訂單取消率漏斗損耗。</p>
+        </div>
+        <div class="tab-box">
+          <h4>📦 2. 商品 Pareto 80/20</h4>
+          <p>累積營收曲線將商品分類為主力帶貨商品（前 20%）、成長型商品與呆滯庫存商品。</p>
+        </div>
+        <div class="tab-box">
+          <h4>👥 3. 顧客 RFM 分群與 LTV</h4>
+          <p>依據最近購買、購買頻率與消費金額分群，精準鎖定 VIP 忠實客與流失預警名單。</p>
+        </div>
+        <div class="tab-box">
+          <h4>🤖 4. FastMCP AI 決策中樞</h4>
+          <p>整合 Google Gemini Flash 工具呼叫，提供 MBB 顧問等級的根本原因診斷與自然語言圖表生成。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- How to Run Locally -->
+    <div class="card">
+      <h2>2. 🚀 本地快速啟動方式</h2>
+      <p style="color: #cbd5e1; margin-bottom: 0.75rem;">
+        複製本專案後，只需兩行指令即可在本地電腦啟動互動儀表板：
+      </p>
+      <pre># 1. 安裝必要套件
+pip install -r requirements.txt
+
+# 2. 啟動互動式 Streamlit 應用程式
+streamlit run dashboard.py</pre>
+      <p style="color: var(--text-muted); font-size: 0.88rem;">
+        終端機將自動為您開啟瀏覽器頁面 <code>http://localhost:8501</code>，完整支援 DuckDB 與 Google BigQuery 混合模式。
+      </p>
+    </div>
+
+    <!-- Cloud Run Architecture -->
+    <div class="card">
+      <h2>3. ☁️ Google Cloud 零維運無伺服器架構</h2>
+      <ul>
+        <li><strong>近 $0/月 閒置成本</strong>：包裝為輕量容器，由 Cloud Workflows 與 Cloud Run 按需喚醒執行。</li>
+        <li><strong>零數據搬遷</strong>：直接以 SQL 下推查詢 Google BigQuery Gold 層市集（<code>platzi_gold</code>）。</li>
+        <li><strong>FastMCP 防護欄</strong>：嚴格限制 Agent 僅能查詢經核准之指標，防範幻覺與越權操作。</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2026 Platzi E-Commerce Data Pipeline Consulting Demo | 原始碼託管於 <a href="https://github.com/shin7965977/data-pipeline-consulting-demo" target="_blank" rel="noopener">GitHub</a></p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streamlit Executive Strategy Cockpit Guide | Platzi E-Commerce</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(255, 75, 75, 0.45);
+      --primary: #ff4b4b;
+      --primary-light: #ff7878;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --cyan: #06b6d4;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-sub: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(255, 75, 75, 0.12) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+      line-height: 1.6;
+    }
+
+    header {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #ff4b4b, #e11d48);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .brand-text h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .top-actions a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+
+    .top-actions a:hover {
+      color: #fff;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3rem 2rem 5rem;
+      width: 100%;
+      flex: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      background: rgba(255, 75, 75, 0.15);
+      border: 1px solid rgba(255, 75, 75, 0.3);
+      color: #ff7878;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 0.8rem;
+      background: linear-gradient(135deg, #ffffff 40%, #fca5a5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .card h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.75rem;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--cyan);
+      margin: 1.5rem 0 0.75rem;
+    }
+
+    ul, ol {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+      color: #cbd5e1;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    pre {
+      background: #0d1117;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      color: #7dd3fc;
+      margin: 1rem 0;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88em;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      color: #ff7878;
+    }
+
+    .grid-tabs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .tab-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .tab-box h4 {
+      font-size: 0.95rem;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+
+    .tab-box p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      background: rgba(10, 15, 28, 0.9);
+      margin-top: auto;
+    }
+
+    footer a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🛒</div>
+      <div class="brand-text">
+        <h1>Streamlit Executive Cockpit</h1>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <a href="portal.html">🩺 Observability Portal</a>
+      <a href="../../index.html">🏠 Cloud Home</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero-badge">INTERACTIVE ANALYTICS & COPILOT</div>
+    <h1>Streamlit Executive Strategy Cockpit</h1>
+    <p class="subtitle">
+      Powered by <code>dashboard.py</code>, providing C-suite leadership with interactive P&L simulations, SKU Pareto 80/20 optimization, customer RFM segmentation, and an autonomous FastMCP Gemini AI Decision Copilot.
+    </p>
+
+    <!-- Architecture & Tabs -->
+    <div class="card">
+      <h2>1. 📱 4-Pillar Decision Modules in <code>dashboard.py</code></h2>
+      <div class="grid-tabs">
+        <div class="tab-box">
+          <h4>📊 1. Sales & P&L Analysis</h4>
+          <p>Real-time GMV, Net Realized Cash, Average Order Value (AOV), and cancellation rate waterfall leakage breakdowns.</p>
+        </div>
+        <div class="tab-box">
+          <h4>📦 2. SKU Pareto 80/20</h4>
+          <p>Cumulative revenue curves classifying inventory into Core Drivers (Top 20%), Growth, and Long-Tail Dead Stock.</p>
+        </div>
+        <div class="tab-box">
+          <h4>👥 3. Customer RFM & LTV</h4>
+          <p>Recency, Frequency, Monetary clustering identifying Champions, Loyalists, and At-Risk customer retention cohorts.</p>
+        </div>
+        <div class="tab-box">
+          <h4>🤖 4. FastMCP AI Decision Hub</h4>
+          <p>Google Gemini Flash 2.5/3.6 tool calling delivering MBB-grade root cause diagnostics and natural language chart generation.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- How to Run Locally -->
+    <div class="card">
+      <h2>2. 🚀 Running the Cockpit Locally</h2>
+      <p style="color: #cbd5e1; margin-bottom: 0.75rem;">
+        Clone the repository and launch the application in your local environment in 2 steps:
+      </p>
+      <pre># 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Run the interactive Streamlit app
+streamlit run dashboard.py</pre>
+      <p style="color: var(--text-muted); font-size: 0.88rem;">
+        The app will automatically open in your default browser at <code>http://localhost:8501</code> with full DuckDB / BigQuery data connection support.
+      </p>
+    </div>
+
+    <!-- Cloud Run Architecture -->
+    <div class="card">
+      <h2>3. ☁️ Google Cloud Serverless Architecture</h2>
+      <ul>
+        <li><strong>Near-$0/Month Idle Cost</strong>: Packaged as a lightweight container orchestrated via Cloud Run Jobs and Cloud Workflows.</li>
+        <li><strong>Zero Data Movement</strong>: Direct SQL pushdown to Google BigQuery Gold tables (<code>platzi_gold</code>) with in-memory caching.</li>
+        <li><strong>FastMCP Agent Guardrails</strong>: Strict input sanitization defending against off-topic injection and hallucination.</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2026 Platzi E-Commerce Cloud Lakehouse Platform | Source code available on <a href="https://github.com/shin7965977/data-pipeline-consulting-demo" target="_blank" rel="noopener">GitHub</a></p>
+  </footer>
+
+</body>
+</html>

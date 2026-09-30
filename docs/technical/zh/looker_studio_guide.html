@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Looker Studio BI 商業儀表板建置指南 | Platzi E-Commerce</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(99, 102, 241, 0.45);
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --cyan: #06b6d4;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-sub: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    header {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .brand-text h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .lang-toggle {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .lang-btn {
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    .lang-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3rem 2rem 5rem;
+      width: 100%;
+      flex: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 0.8rem;
+      background: linear-gradient(135deg, #ffffff 40%, #fed7aa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .card h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.75rem;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--cyan);
+      margin: 1.5rem 0 0.75rem;
+    }
+
+    ul, ol {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+      color: #cbd5e1;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      color: var(--primary-light);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.4rem;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      font-weight: 600;
+      border-radius: 8px;
+      text-decoration: none;
+      margin-top: 1rem;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+      transition: transform 0.2s;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      background: rgba(10, 15, 28, 0.9);
+      margin-top: auto;
+    }
+
+    footer a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">📊</div>
+      <div class="brand-text">
+        <h1>Google Looker Studio BI 指南</h1>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <div class="lang-toggle">
+        <a href="../../technical/en/looker_studio_guide.html" class="lang-btn">English</a>
+        <a href="looker_studio_guide.html" class="lang-btn active">繁體中文</a>
+      </div>
+      <a href="../../portal.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.85rem;">🏠 首頁</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero-badge">C-LEVEL BI & 企業營收監控</div>
+    <h1>Google Looker Studio BI 商業儀表板建置指南</h1>
+    <p class="subtitle">
+      連線 BigQuery Gold 商業資料市集，打造企業級、零伺服器授權費用的現代電商營收監控儀表板。
+    </p>
+
+    <!-- Step 1 -->
+    <div class="card">
+      <h2>1. 🔌 在 Looker Studio 中連線 BigQuery 資料源</h2>
+      <p style="color: #cbd5e1; margin-bottom: 1rem;">
+        透過以下步驟將 Google Looker Studio 直連至 BigQuery 伺服器無伺服器架構之 Gold 層商業市集：
+      </p>
+      <ol>
+        <li>前往 <a href="https://lookerstudio.google.com/" target="_blank" rel="noopener" style="color: #60a5fa;">Google Looker Studio ↗</a>，點擊 <strong>建立 (Create)</strong> ➔ <strong>資料來源 (Data Source)</strong>。</li>
+        <li>選擇 <strong>BigQuery</strong> 原生連接器：
+          <ul style="margin-top: 0.5rem;">
+            <li><strong>專案 (Project)</strong>：選擇您的 GCP Project ID（<code>de-consulting-508822</code>）。</li>
+            <li><strong>資料集 (Dataset)</strong>：選擇 <code>platzi_gold</code>。</li>
+            <li><strong>建議連線的三張商業市集表</strong>：
+              <ul>
+                <li><code>gold_daily_sales_kpi</code> — 核心營收與訂單轉換指標（GMV、淨營收、AOV）。</li>
+                <li><code>gold_customer_ltv</code> — 顧客終身價值與會員等級分群（RFM 分類）。</li>
+                <li><code>gold_product_performance</code> — 商品銷量、銷售利潤與退貨率排行榜。</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ol>
+      <a class="action-btn" href="https://lookerstudio.google.com/" target="_blank" rel="noopener">前往 Google Looker Studio ↗</a>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="card">
+      <h2>2. 🎨 儀表板頁面視覺化藍圖（3 大頁面）</h2>
+
+      <h3>第一頁：高階管理層營收與訂單趨勢 (Executive Revenue & Order Trends)</h3>
+      <ul>
+        <li><strong>頂部 KPI 摘要卡 (Scorecards)</strong>：
+          <code>GMV</code>（總交易額）、<code>Net Revenue</code>（淨營收，僅計入 Completed 訂單）、<code>AOV</code>（平均客單價）、<code>Completed Orders</code> vs. <code>Cancellation Rate (%)</code>。
+        </li>
+        <li><strong>核心雙軸時間序列圖 (Time-Series Dual Axis)</strong>：
+          <ul>
+            <li><strong>時間維度</strong>：<code>order_date</code>（訂單日期）</li>
+            <li><strong>柱狀圖指標 (Bars)</strong>：<code>gmv</code>（淺藍色）</li>
+            <li><strong>折線圖指標 (Line)</strong>：<code>net_revenue</code>（深藍 / 翠綠色）</li>
+            <li><strong>日期篩選器</strong>：預設過去 30 / 60 / 90 天切換。</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>第二頁：顧客分群與終身價值 (Customer Cohorts & LTV)</h3>
+      <ul>
+        <li><strong>顧客等級分佈環形圖 (Donut Chart)</strong>：
+          <ul>
+            <li><strong>分群維度</strong>：<code>customer_tier</code>（<code>Platinum</code>, <code>Gold</code>, <code>Silver</code>, <code>Bronze</code>）</li>
+            <li><strong>數值指標</strong>：顧客數 (Record Count) 與 <code>lifetime_net_revenue</code>（各級貢獻營收）。</li>
+          </ul>
+        </li>
+        <li><strong>高價值 VIP 顧客排行榜 (Table)</strong>：
+          <ul>
+            <li><strong>維度</strong>：<code>customer_id</code>, <code>customer_name</code>, <code>customer_tier</code>, <code>first_order_date</code>, <code>last_order_date</code>。</li>
+            <li><strong>指標</strong>：<code>completed_orders</code>, <code>lifetime_net_revenue</code>。</li>
+            <li><em>(注意：電話、Email 等敏感個資已在 Silver 層完成去識別化與遮罩)</em>。</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>第三頁：商品品類與退貨率分析 (Merchandising & Product Performance)</h3>
+      <ul>
+        <li><strong>熱銷商品排行柱狀圖 (Bar Chart)</strong>：
+          <ul>
+            <li><strong>維度</strong>：<code>product_title</code></li>
+            <li><strong>指標</strong>：<code>completed_sales_amount</code>（降冪排序）。</li>
+          </ul>
+        </li>
+        <li><strong>商品類別矩形樹狀圖 (Treemap)</strong>：
+          <ul>
+            <li><strong>維度</strong>：<code>category_name</code> | <strong>指標</strong>：<code>units_sold</code>（總銷售件數）。</li>
+          </ul>
+        </li>
+        <li><strong>高退貨率警戒表 (Table)</strong>：
+          <ul>
+            <li>標示 <code>refunded_units</code> 與退款率異常偏高的商品，作為供應鏈與品管預警指標。</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="card">
+      <h2>3. ⚡ FinOps 與查詢效能最佳化</h2>
+      <ul>
+        <li><strong>零 Slot 成本加速</strong>：針對 <code>platzi_gold</code> 的查詢均受益於 dbt 預聚合模型，單次儀表板刷新僅掃描數十 KB 數據。</li>
+        <li><strong>BI Engine 記憶體快取</strong>：啟動 BigQuery BI Engine 快取記憶體最佳化執行計畫，實現毫秒級互動過濾。</li>
+        <li><strong>分區裁剪 (Partition Pruning)</strong>：透過 <code>order_date</code> 分區下推減少 70%~90% 的原始資料掃描。</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2026 Platzi E-Commerce Data Pipeline Consulting Demo | 原始碼託管於 <a href="https://github.com/shin7965977/data-pipeline-consulting-demo" target="_blank" rel="noopener">GitHub</a></p>
+  </footer>
+
+</body>
+</html>
