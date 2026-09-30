@@ -4,22 +4,22 @@ Date: 2026-09-16
 Status: accepted
 
 ## Context
-本專案為面向中小企業的商業原型（Prototype）。為達成「未來接案可直接抽換客戶數據來源」並兼顧大數據量下的運算成本控制與資安合規，必須在架構層面解耦資料來源、確立增量處理機制，並界定 AI 查詢工具的安全範疇。
+This project is an enterprise-grade commercial prototype designed for consulting engagements with SMEs. To ensure that client data sources can be swapped out seamlessly in future engagements while maintaining strict computational cost controls and data security compliance as data scales, the architecture must decouple source systems, establish automated incremental processing, and strictly enforce security perimeters for AI query interfaces.
 
 ## Decision
-1. **可抽換資料來源架構（Pluggable Source Adapter）**：
-   - 資料擷取層抽像化為獨立來源適配器（`ingestion/sources/`）。
-   - 適配器統一產出規範化中繼標準（Canonical Schema：`raw_orders`, `raw_customers`, `raw_products`）。更換客戶資料源時，只需新增適配器，下游 dbt 模型完全複用。
-2. **端到端增量處理（Incremental ELT）**：
-   - `dlt` 以 `updated_at` 時間戳記為 Watermark 游標，僅擷取增量變更。
-   - `dbt` 在 Silver 與 Gold 層採用 `materialized='incremental'`，以 `order_id` 為主鍵進行 Merge/Upsert，大幅縮短運算時間與 BigQuery 掃描費用。
-3. **AI 查詢安全邊界（FastMCP Scope & Governance）**：
-   - AI 工具僅開放對 `Gold` 層（去識別化商業聚合寬表）的唯讀權限。
-   - 嚴格隔離 PII 個資（姓名、Email 等僅保留於 Bronze/Silver 且不外露給 AI）。
-   - FastMCP 內建單次查詢 byte 上限防護，杜絕雲端費用失控。
+1. **Pluggable Source Adapter Architecture**:
+   - The data extraction layer is abstracted into modular source adapters (`ingestion/sources/`).
+   - Adapters normalize heterogeneous source payloads into unified Canonical Schemas (`raw_orders`, `raw_customers`, `raw_products`). When onboarding new client systems (e.g., Shopify, POS), engineers only implement a new adapter; downstream dbt models remain 100% reusable without modification.
+2. **End-to-End Incremental Processing (Incremental ELT)**:
+   - `dlt` tracks watermark cursors via `updated_at` timestamps, extracting only mutated and new records.
+   - `dbt` implements `materialized='incremental'` in both Silver and Gold layers using `order_id` as the primary key for Merge/Upsert operations, drastically reducing warehouse runtimes and BigQuery byte scanning costs.
+3. **AI Query Security Boundary (FastMCP Scope & Governance)**:
+   - AI tools and LLM agents are granted read-only access exclusively to the `Gold` tier (anonymized, pre-aggregated business marts).
+   - Sensitive PII (names, emails) is strictly confined to Bronze/Silver layers with salted cryptographic hashing, never exposed to AI models.
+   - FastMCP enforces maximum byte scan quotas per query, preventing runaway cloud costs from exploratory prompts.
 
 ## Consequences
-- **優點**：
-  - 極高的顧問專案複用率，大幅縮短商業交付週期。
-  - 運算與儲存費用隨時間累積依然保持平穩。
-  - 符合企業個資合規要求，消除中小企業對 AI 存取資料庫的安全疑慮。
+- **Advantages**:
+  - High asset reusability across consulting client engagements, compressing time-to-delivery from months to days.
+  - Compute and storage costs remain predictable and low even as historical volumes grow.
+  - Fully compliant with data privacy regulations (GDPR/CCPA standards), eliminating client security concerns regarding AI database access.

@@ -733,70 +733,70 @@
             badge: "STAGE 1",
             badgeColor: "#ec4899",
             badgeBg: "#fdf2f8",
-            title: "數據擷取與契約適配 (Data Ingestion & Contracts)",
+            title: "Data Ingestion & Contract Adaptation (Data Ingestion & Contracts)",
             why: `
                 <ul>
-                    <li><strong>採用 <code>dlt</code> 引擎取代自寫 Python 腳本</strong>：外部電商 API（Shopify、客製 POS）經常隨意增減 JSON 欄位。自寫腳本易頻繁噴錯；<code>dlt</code> 具備自動型別推導與 <strong>Schema Evolution</strong>，確保擷取永不斷鏈。</li>
-                    <li><strong>強制使用 Canonical Schema Adapter 模式</strong>：透過 <code>PlatziStoreAdapter</code> 將異質來源統一映射為 <code>raw_orders</code>、<code>raw_customers</code> 等標準中繼表。未來改接真實 Shopify、91APP，下游 dbt 模型 <strong>100% 免重寫</strong>。</li>
-                    <li><strong>增量游標（Watermark）設計</strong>：依賴 <code>updated_at</code> 只拉異動資料，將網路傳輸量與雲端寫入成本降至最低。</li>
+                    <li><strong>Adopt <code>dlt</code> engine over hand-rolled Python scripts</strong>: External e-commerce APIs (Shopify, custom POS) frequently add or drop JSON fields without warning. Custom scripts break easily; <code>dlt</code> provides automated type inference and <strong>Schema Evolution</strong>, ensuring ingestion pipelines never crash unexpectedly.</li>
+                    <li><strong>Enforce Canonical Schema Adapter pattern</strong>: Standardize heterogeneous payloads into unified intermediate tables like <code>raw_orders</code> and <code>raw_customers</code> via <code>PlatziStoreAdapter</code>. Swapping to production Shopify or 91APP in the future requires <strong>zero changes</strong> to downstream dbt models.</li>
+                    <li><strong>Watermark incremental cursor design</strong>: Extracts only mutated records based on <code>updated_at</code> timestamps, minimizing network bandwidth and cloud warehouse write costs.</li>
                 </ul>
             `,
             future: `
                 <ul>
-                    <li><strong>破壞性變更（Breaking Changes）防護</strong>：若上游「改變現有欄位型態」（例如字串變陣列），需在 Adapter 處加上反序列化容錯保護。</li>
-                    <li><strong>API 429 Rate Limit 與退避</strong>：外部 API 限制頻繁時，需在 Request 端實作具備隨機抖動的指數退避重試（Exponential Backoff with Jitter）。</li>
-                    <li><strong>時鐘偏差（Clock Drift）</strong>：增量拉取需設定 5~10 分鐘重疊視窗（Overlap Window），並由下游主鍵去重。</li>
+                    <li><strong>Breaking changes defense</strong>: If upstream alters existing field types (e.g., string to array), implement deserialization fallback handling and schema guardrails at the adapter boundary.</li>
+                    <li><strong>API 429 rate limiting & backoff</strong>: When external APIs throttle requests, implement exponential backoff with randomized jitter on the client request layer.</li>
+                    <li><strong>Clock drift mitigation</strong>: Configure a 5–10 minute overlap window for incremental extraction cursors, relying on downstream primary keys for deduplication.</li>
                 </ul>
             `,
             checklist: [
-                "來源連線是否抽離為獨立 Adapter 類別，不與下游 SQL 轉換邏輯耦合？",
-                "增量拉取是否配置了可靠的游標時間窗（<code>updated_at</code>），避免漏抓？",
-                "寫入 Bronze 層是否為 Append-only 不可變歷史日誌？",
-                "所有 API 密鑰、連線字串是否由 Secret Manager 代管，無任何 Hardcode？"
+                "Are source connections decoupled into standalone Adapter classes without leaking into downstream SQL transformations?",
+                "Is incremental extraction configured with a dependable watermark cursor (<code>updated_at</code>) to prevent missing late-arriving events?",
+                "Does the Bronze tier write as an append-only immutable historical audit log?",
+                "Are all API keys, access tokens, and connection strings managed securely in Secret Manager with zero hardcoded values?"
             ]
         },
         lakehouse: {
             badge: "STAGE 2",
             badgeColor: "#0891b2",
             badgeBg: "#ecfeff",
-            title: "Medallion 資料湖倉與個資治理 (Storage & Governance)",
+            title: "Medallion Lakehouse & Data Privacy Governance (Storage & Governance)",
             why: `
                 <ul>
-                    <li><strong>獎章架構（Bronze ➔ Silver ➔ Gold）</strong>：Bronze 保留原始髒資料；Silver 展平為 Kimball 星型模型；Gold 計算業務寬表。權責邊界分明，避免單一 SQL 膨脹為難以維護的泥球。</li>
-                    <li><strong>Staging 層 PII 加鹽雜湊（Salted Hashing）</strong>：顧客姓名、Email 在進入 Silver 前即經過 SHA-256 單向加鹽雜湊。分析師、BI 與 AI 顧問永久接觸不到原始個資，杜絕洩漏風險。</li>
-                    <li><strong>Kimball 星型模型（Dim / Fact）</strong>：事實與維度解耦，使客單價、顧客 LTV 等計算無需進行高成本的多表全量關聯。</li>
+                    <li><strong>Medallion Architecture (Bronze ➔ Silver ➔ Gold)</strong>: Bronze retains raw unmodified payloads; Silver normalizes into Kimball dimensional star schemas; Gold pre-aggregates business marts. Clear boundary separation prevents single SQL queries from bloating into unmaintainable complexity.</li>
+                    <li><strong>Staging Layer Salted PII Hashing</strong>: Customer names and emails undergo one-way cryptographic SHA-256 salted hashing before landing in Silver. Analysts, BI tools, and AI agents never access raw PII, completely eliminating leakage risks.</li>
+                    <li><strong>Kimball Star Schema (Dim / Fact)</strong>: Decouples facts from dimensions, allowing AOV, customer LTV, and cohort analytics to run without costly multi-table full scans.</li>
                 </ul>
             `,
             future: `
                 <ul>
-                    <li><strong>分區（Partitioning）與叢集（Clustering）</strong>：事實表數據量突破百萬時，必須在 BigQuery 依 <code>order_date</code> 分區，可削減 70%~90% 的查詢費用。</li>
-                    <li><strong>代理鍵（Surrogate Key）機制</strong>：跨來源合併易引發自然主鍵撞號，維度表應使用 MD5/SHA256 生成唯一代理鍵。</li>
-                    <li><strong>慢變維度（SCD Type 2）</strong>：若業務需要回溯商品歷史價格變更，需導入 dbt Snapshot 建立拉鍊快照表。</li>
+                    <li><strong>Partitioning & Clustering</strong>: When fact tables surpass millions of rows, partition BigQuery tables by <code>order_date</code> to slash query scanning costs by 70%–90%.</li>
+                    <li><strong>Surrogate Key generation</strong>: Merging data across disparate sources causes natural key collisions; dimension tables should compute deterministic surrogate keys using MD5/SHA-256.</li>
+                    <li><strong>Slowly Changing Dimensions (SCD Type 2)</strong>: When business users require tracking historical product price changes over time, implement dbt Snapshots to build validity-window tables.</li>
                 </ul>
             `,
             checklist: [
-                "Bronze / Silver / Gold 三層結構具備明確的權限與存取隔離？",
-                "涉及個人身分識別資訊（PII）欄位是否皆在 Staging 完成密碼學加鹽雜湊？",
-                "核心大表（Fact Tables）是否已規劃好分區（Partition by Date）與叢集？",
-                "是否設定了原始日誌資料的生命週期原則（Lifecycle Policy），老舊日誌自動歸檔？"
+                "Do Bronze, Silver, and Gold tiers maintain strict IAM access controls and storage isolation?",
+                "Are all Personally Identifiable Information (PII) attributes cryptographically salted and hashed at the staging layer?",
+                "Have high-volume fact tables been configured with optimal date partitioning and clustering keys?",
+                "Are lifecycle policies enabled on raw log storage buckets to automatically archive aged historical objects?"
             ],
             schemaHtml: `
                 <div style="font-size: 0.85rem;">
-                    <h5 style="color: #0891b2; font-weight: 800; margin: 8px 0 6px;">🥈 Silver: 星型維度模型與事實實體表 (Kimball Schema)</h5>
+                    <h5 style="color: #0891b2; font-weight: 800; margin: 8px 0 6px;">🥈 Silver: Kimball Star Schema Entities & Fact Tables</h5>
                     <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.82rem;">
-                        <tr style="background: #e0f2fe; color: #0369a1;"><th style="padding: 6px;">表名</th><th style="padding: 6px;">欄位結構 (Columns & Data Types)</th><th style="padding: 6px;">特性與測試</th></tr>
-                        <tr><td><code>dim_products</code></td><td><code>product_id (PK, INT)</code>, <code>title (STR)</code>, <code>price (FLT)</code>, <code>category_name (STR)</code></td><td>商品維度實體 (unique, not_null)</td></tr>
-                        <tr><td><code>dim_customers</code></td><td><code>customer_id (PK, INT)</code>, <code>email_hash (STR)</code>, <code>name_hash (STR)</code></td><td>🛡️ SHA-256 加鹽個資脫敏</td></tr>
-                        <tr><td><code>fct_orders</code></td><td><code>order_id (PK, INT)</code>, <code>customer_id (FK)</code>, <code>order_date (DATE)</code>, <code>status (STR)</code>, <code>net_amount (FLT)</code></td><td>依下單日期分區 (Partitioned)</td></tr>
-                        <tr><td><code>fct_order_items</code></td><td><code>item_id (PK, INT)</code>, <code>order_id (FK)</code>, <code>product_id (FK)</code>, <code>quantity (INT)</code>, <code>line_total (FLT)</code></td><td>明細級原子事實 (FK relationships)</td></tr>
+                        <tr style="background: #e0f2fe; color: #0369a1;"><th style="padding: 6px;">Table</th><th style="padding: 6px;">Columns & Data Types</th><th style="padding: 6px;">Properties & Tests</th></tr>
+                        <tr><td><code>dim_products</code></td><td><code>product_id (PK, INT)</code>, <code>title (STR)</code>, <code>price (FLT)</code>, <code>category_name (STR)</code></td><td>Product dimension entity (unique, not_null)</td></tr>
+                        <tr><td><code>dim_customers</code></td><td><code>customer_id (PK, INT)</code>, <code>email_hash (STR)</code>, <code>name_hash (STR)</code></td><td>🛡️ SHA-256 Salted PII Anonymization</td></tr>
+                        <tr><td><code>fct_orders</code></td><td><code>order_id (PK, INT)</code>, <code>customer_id (FK)</code>, <code>order_date (DATE)</code>, <code>status (STR)</code>, <code>net_amount (FLT)</code></td><td>Partitioned by order date</td></tr>
+                        <tr><td><code>fct_order_items</code></td><td><code>item_id (PK, INT)</code>, <code>order_id (FK)</code>, <code>product_id (FK)</code>, <code>quantity (INT)</code>, <code>line_total (FLT)</code></td><td>Line-item atomic facts (FK relationships)</td></tr>
                     </table>
 
-                    <h5 style="color: #854d0e; font-weight: 800; margin: 14px 0 6px;">🥇 Gold: 商業 Marts 預聚合指標寬表 (Exposed Layer)</h5>
+                    <h5 style="color: #854d0e; font-weight: 800; margin: 14px 0 6px;">🥇 Gold: Pre-Aggregated Commercial KPI Marts (Exposed Layer)</h5>
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
-                        <tr style="background: #fef9c3; color: #854d0e;"><th style="padding: 6px;">表名</th><th style="padding: 6px;">商業指標欄位清單 (Metrics)</th><th style="padding: 6px;">下游消費場景</th></tr>
-                        <tr><td><code>gold_daily_sales_kpi</code></td><td><code>order_date (PK)</code>, <code>gmv</code>, <code>net_revenue</code>, <code>completed_orders</code>, <code>cancelled_orders</code>, <code>refunded_orders</code>, <code>aov</code></td><td>財務 P&L、日營收大盤</td></tr>
-                        <tr><td><code>gold_customer_ltv</code></td><td><code>customer_id (PK)</code>, <code>first_order_date</code>, <code>latest_order_date</code>, <code>total_orders</code>, <code>total_net_spend</code>, <code>customer_tier</code></td><td>顧客價值矩陣 (RFM 分層)</td></tr>
-                        <tr><td><code>gold_product_performance</code></td><td><code>product_id (PK)</code>, <code>title</code>, <code>category_name</code>, <code>total_units_sold</code>, <code>total_revenue</code>, <code>return_rate</code></td><td>Pareto 80/20 熱銷品與退貨率</td></tr>
+                        <tr style="background: #fef9c3; color: #854d0e;"><th style="padding: 6px;">Table</th><th style="padding: 6px;">Commercial Metrics List</th><th style="padding: 6px;">Downstream Consumption</th></tr>
+                        <tr><td><code>gold_daily_sales_kpi</code></td><td><code>order_date (PK)</code>, <code>gmv</code>, <code>net_revenue</code>, <code>completed_orders</code>, <code>cancelled_orders</code>, <code>refunded_orders</code>, <code>aov</code></td><td>Financial P&L, Daily Executive Pulse</td></tr>
+                        <tr><td><code>gold_customer_ltv</code></td><td><code>customer_id (PK)</code>, <code>first_order_date</code>, <code>latest_order_date</code>, <code>total_orders</code>, <code>total_net_spend</code>, <code>customer_tier</code></td><td>Customer Value Matrix (RFM Tiers)</td></tr>
+                        <tr><td><code>gold_product_performance</code></td><td><code>product_id (PK)</code>, <code>title</code>, <code>category_name</code>, <code>total_units_sold</code>, <code>total_revenue</code>, <code>return_rate</code></td><td>Pareto 80/20 Top Sellers & Return Rates</td></tr>
                     </table>
                 </div>
             `
@@ -805,76 +805,76 @@
             badge: "STAGE 3",
             badgeColor: "#d97706",
             badgeBg: "#fffbeb",
-            title: "無伺服器調度編排與品質閘門 ($0 Idle Orchestration)",
+            title: "Serverless Visual DAG Orchestration & Quality Gates ($0 Idle Orchestration)",
             why: `
                 <ul>
-                    <li><strong>全面捨棄 Airflow 改採全無伺服器架構（極致 FinOps）</strong>：傳統 Cloud Composer 每月常駐成本 $300~$500 美元。改採 <strong>Cloud Scheduler + Cloud Workflows + Cloud Run Jobs</strong>，閒置期間 <strong>$0 費用</strong>，每月運算帳單僅數美元以內。</li>
-                    <li><strong>Cloud Workflows 原生 Visual DAG</strong>：解決單一容器黑盒子盲點。在 GCP Console 直接以流程圖檢視 Ingest ➔ Transform ➔ Test 各階段耗時，出錯在 3 秒內精準定位。</li>
-                    <li><strong>32 項 dbt test 作為品質閘門（Quality Gate）</strong>：貫徹 Write-Audit-Publish（寫入-審計-發布）。測試未通過立即中斷阻斷，杜絕髒數據流向下游。</li>
+                    <li><strong>Complete departure from Airflow for extreme FinOps</strong>: Managed Airflow (Cloud Composer) costs $300–$500/month idle. Switching to <strong>Cloud Scheduler + Cloud Workflows + Cloud Run Jobs</strong> delivers <strong>$0 idle cost</strong>, incurring only pennies for actual execution minutes.</li>
+                    <li><strong>Cloud Workflows Native Visual DAG</strong>: Eliminates single-container black boxes. Provides step-by-step graphical progress across Ingest ➔ Transform ➔ Test in GCP Console, identifying failure points within 3 seconds.</li>
+                    <li><strong>32 dbt tests serving as automated Quality Gates</strong>: Enforces Write-Audit-Publish (WAP). Failed assertions halt the pipeline immediately, preventing dirty data from polluting downstream dashboards.</li>
                 </ul>
             `,
             future: `
                 <ul>
-                    <li><strong>Cloud Run Job 逾時限制</strong>：單次執行上限預設為 60 分鐘。若計算量龐大，需拆分為更細粒度的 Job。</li>
-                    <li><strong>容器資源配置</strong>：需隨數據量在 Terraform 宣告適當的 CPU 與 RAM 配額。</li>
-                    <li><strong>跨管線 Sensor</strong>：等候外部數據抵達需配置 Polling Step 或 Eventarc 事件觸發。</li>
+                    <li><strong>Cloud Run Job timeout quotas</strong>: Default single-run execution limit is 60 minutes. As workloads scale, partition into granular sub-jobs.</li>
+                    <li><strong>Container resource sizing</strong>: Dynamically adjust CPU and RAM allocations via Terraform as data volumes scale.</li>
+                    <li><strong>Cross-pipeline event sensors</strong>: Listen for external data arrivals using Cloud Storage Eventarc triggers or polling steps.</li>
                 </ul>
             `,
             checklist: [
-                "管線調度是否已解耦為獨立 Step（Ingest / Transform / Test）並具備 Visual DAG？",
-                "排程是否配置自動容錯與重試機制（Retry with Backoff）？",
-                "所有雲端資源（Workflows, Jobs, Scheduler, IAM）是否皆由 Terraform (IaC) 管理？",
-                "Job 是否配置逾時上限（Timeout Limits），防止異常死鎖消耗預算？"
+                "Is pipeline orchestration decoupled into discrete stages (Ingest / Transform / Test) with a visual DAG?",
+                "Are retry policies configured with automated exponential backoff for transient network hiccups?",
+                "Are all cloud resources (Workflows, Jobs, Scheduler, IAM) managed reproducibly via Terraform (IaC)?",
+                "Are hard timeout limits configured on Cloud Run Jobs to prevent hung containers from burning budget?"
             ]
         },
         observability: {
             badge: "STAGE 4",
             badgeColor: "#059669",
             badgeBg: "#ecfdf5",
-            title: "數據可觀測性與雲端自動發布循環 (Observability & GCS Hosting)",
+            title: "Data Observability & Continuous Cloud Publishing (Observability & GCS Hosting)",
             why: `
                 <ul>
-                    <li><strong>引入 Elementary Data 取代人工抽查</strong>：數據團隊最忌諱「業務比工程師先發現數字錯誤」。Elementary 自動在每次 <code>dbt test</code> 後採集元數據並產生互動式報告。</li>
-                    <li><strong>全鏈路互動式 Data Lineage</strong>：清晰掌握表與表之間的依賴關係，在事故發生時能即刻進行衝擊分析與根因溯源。</li>
-                    <li><strong>🚀 方案 1 雲端自動發布落地</strong>：每次排程跑完，<code>pipeline_runner.py</code> 自動調用 <code>edr report</code> 並直傳 Google Cloud Storage (GCS) Bucket，生成固定網址（<a href="https://storage.googleapis.com/de-consulting-508822_cloudbuild/elementary_report.html" target="_blank" style="color: #10b981; font-weight: 700; text-decoration: underline;">線上即時檢視報告</a>），永久自動維持最新時間戳記！</li>
+                    <li><strong>Elementary Data replaces manual data checks</strong>: The biggest risk for data teams is business users catching data bugs first. Elementary automatically collects test metadata and compiles interactive reports after every <code>dbt test</code> run.</li>
+                    <li><strong>Full-lineage interactive graphs</strong>: Track table-to-table dependencies clearly to perform immediate blast-radius and root-cause analysis during incidents.</li>
+                    <li><strong>Continuous automated cloud publishing</strong>: Following each scheduled run, <code>pipeline_runner.py</code> compiles <code>edr report</code> and uploads it directly to Google Cloud Storage (GCS) at a persistent URL (<a href="https://storage.googleapis.com/de-consulting-508822_cloudbuild/elementary_report.html" target="_blank" style="color: #10b981; font-weight: 700; text-decoration: underline;">view live report online</a>), maintaining up-to-date timestamps automatically!</li>
                 </ul>
             `,
             future: `
                 <ul>
-                    <li><strong>告警分級與防疲勞（Alert Fatigue）</strong>：P1 阻斷級立即通報 PagerDuty / Slack；P3 警告級記錄在週報中定期審視。</li>
-                    <li><strong>SLA / SLO 數據契約化</strong>：與業務單位約定資料就緒時間與新鮮度（Freshness）標準。</li>
+                    <li><strong>Alert tiering to prevent alert fatigue</strong>: P1 breaking issues dispatch immediate PagerDuty/Slack pages; P3 warnings roll up into weekly review digests.</li>
+                    <li><strong>Data contract SLAs / SLOs</strong>: Codify formal data freshness and delivery cutoff agreements with business stakeholders.</li>
                 </ul>
             `,
             checklist: [
-                "是否具備全鏈路數據血緣追蹤工具，能一鍵完成上下游影響分析？",
-                "是否配置了資料「及時性（Freshness）」與「總筆數（Volume）」異常監控？",
-                "測試報告是否自動發布至 GCS 託管儲存桶，免除手動更新？",
-                "告警訊息是否包含失敗模型名稱與錯誤日誌深層連結？"
+                "Is an automated lineage tracing tool available for instant upstream/downstream impact analysis?",
+                "Are anomaly detection checks configured for data freshness and volume spikes/plunges?",
+                "Is the test report automatically published to a secure cloud bucket without manual intervention?",
+                "Do alert notifications provide direct deep links to failing models and debug stack traces?"
             ]
         },
         serving: {
             badge: "STAGE 5",
             badgeColor: "#7c3aed",
             badgeBg: "#f5f3ff",
-            title: "商業消費、語意層與防護欄 (Consumption & Serving)",
+            title: "Business Consumption, Semantic Layer & Guardrails (Consumption & Serving)",
             why: `
                 <ul>
-                    <li><strong>Gold 層唯讀暴露原則</strong>：BI 工具（Looker Studio）、Streamlit 與 AI 顧問僅能存取 Gold 商業聚合表，嚴禁查詢 Bronze 原始層，杜絕全表掃描並維護資安。</li>
-                    <li><strong>AI 顧問業務防護欄（Domain Relevance Guardrails）</strong>：透過 FastMCP 將資料管線開放給 LLM 呼叫時，過濾無關提問，防範 Prompt 注入與 Token 浪費。</li>
-                    <li><strong>預計算指標寬表（Pre-aggregation）</strong>：核心 KPI（淨營收、客單價、Pareto）提前算好，前端儀表板實現毫秒級響應。</li>
+                    <li><strong>Read-only Gold exposure principle</strong>: Downstream BI tools (Looker Studio), Streamlit apps, and AI agents only access pre-aggregated Gold marts. Direct queries against raw Bronze tables are blocked, avoiding full-table scans and data leaks.</li>
+                    <li><strong>AI consultant domain relevance guardrails</strong>: When exposing pipelines to LLMs via FastMCP, domain-validation filters reject off-topic questions, preventing prompt injection and token waste.</li>
+                    <li><strong>Pre-aggregated business marts</strong>: Core KPIs (Net Revenue, AOV, Pareto distribution) are pre-calculated, delivering sub-second response times in analytical dashboards.</li>
                 </ul>
             `,
             future: `
                 <ul>
-                    <li><strong>查詢防爆控制（Cost Capping）</strong>：在 BigQuery 限制單次查詢最大掃描字節數，防止分析師誤寫笛卡兒積造成高額帳單。</li>
-                    <li><strong>BI Engine In-Memory Cache加速</strong>：若儀表板並行訪問人數激增，可開啟 BigQuery BI Engine 提升載入速度。</li>
+                    <li><strong>Cost-capping guardrails</strong>: Enforce maximum bytes billed per query in BigQuery to prevent analysts from accidentally running Cartesian join queries.</li>
+                    <li><strong>BI Engine in-memory acceleration</strong>: Enable BigQuery BI Engine memory reservations as concurrent dashboard query volume grows.</li>
                 </ul>
             `,
             checklist: [
-                "下游分析工具與 AI 介面是否嚴格鎖定於 Gold 層，無權限存取底層原始表？",
-                "全公司所有商業指標（AOV, LTV, 淨營收）是否有且僅有一個官方計算口徑？",
-                "AI 查詢介面是否建置防護欄（Guardrails）過濾非商業範疇的無效請求？",
-                "資料庫連線帳號是否遵循最小權限原則（Least Privilege）？"
+                "Are downstream analytical tools and AI interfaces restricted exclusively to Gold marts with zero raw table access?",
+                "Is there a strictly enforced Single Source of Truth for core metrics (AOV, LTV, Net Revenue) across the organization?",
+                "Do AI query interfaces implement domain guardrails to filter non-business, malicious, or out-of-scope prompts?",
+                "Do database connection credentials strictly follow the Principle of Least Privilege?"
             ]
         }
     };
@@ -962,7 +962,7 @@
 
     // Tooltip functions
     function showTooltip(e, text) {
-        tooltip.textContent = text + " (點擊查看工程決策與Checklist)";
+        tooltip.textContent = text + " (Click to inspect engineering decisions & checklist)";
         tooltip.style.opacity = "1";
         tooltip.style.left = (e.clientX + 14) + "px";
         tooltip.style.top = (e.clientY + 14) + "px";
