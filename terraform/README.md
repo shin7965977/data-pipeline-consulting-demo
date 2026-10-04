@@ -3,13 +3,17 @@
 This module provisions the core GCP cloud foundation for the Platzi E-Commerce Data Pipeline.
 
 ## Resources Provisioned
-1. **Google APIs**: Automatically enables `bigquery.googleapis.com`, `artifactregistry.googleapis.com`, `run.googleapis.com`, `cloudscheduler.googleapis.com`, and `iam.googleapis.com`.
+1. **Google APIs**: Automatically enables `bigquery.googleapis.com`, `artifactregistry.googleapis.com`, `run.googleapis.com`, `cloudscheduler.googleapis.com`, `workflows.googleapis.com`, `storage.googleapis.com`, and `iam.googleapis.com`.
 2. **BigQuery Medallion Datasets**:
    - `platzi_bronze`: Raw ingested JSON data (managed by `dlt`).
    - `platzi_silver`: Cleaned and normalized Star Schema dimension/fact tables (managed by `dbt`).
    - `platzi_gold`: Business metrics and KPI analytical marts (for Looker Studio & FastMCP).
 3. **Artifact Registry**: Docker repository (`platzi-pipeline-repo`) for pipeline container images.
-4. **Service Account**: Dedicated runner identity (`platzi-pipeline-sa`) with least-privilege roles (`BigQuery Data Editor`, `BigQuery Job User`, `Artifact Registry Writer`).
+4. **Service Account**: Dedicated runner identity (`platzi-pipeline-sa`) with least-privilege roles (`BigQuery Data Editor`, `BigQuery Job User`, `Artifact Registry Writer`, `Workflows Invoker`, `Cloud Run Developer`).
+5. **Cloud Workflows DAG**: Serverless state machine (`platzi-pipeline-orchestrator`) driving the sequential execution (`ingest -> transform -> test`).
+6. **Cloud Scheduler Job**: Daily cron trigger (`platzi-daily-pipeline-schedule`, `0 2 * * *` UTC) dispatching execution calls to Cloud Workflows.
+7. **Cloud Run Jobs**: Serverless container execution unit (`platzi-pipeline-runner-job`) scaling to zero with $0 idle compute.
+8. **Cloud Storage**: Dedicated bucket (`${project_id}-elementary-reports`) with static web hosting for automated Elementary observability HTML reports.
 
 ---
 

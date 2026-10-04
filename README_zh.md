@@ -99,12 +99,12 @@ flowchart TD
 | **數據轉換與建模** | `dbt-core` + DuckDB / BigQuery | 執行金牌湖倉轉換、星型模型（Star Schema）建立與商業指標聚合 |
 | **數據可觀測性與拓撲驗證** | `elementary-data` + dbt tests + `archify` | 自動化資料品質斷言、異常告警檢驗、代碼溯源與 Archify 互動式全景拓撲驗證 |
 | **無伺服器 DAG 調度** | Cloud Scheduler + Cloud Workflows + Cloud Run | 以視覺化 DAG 串聯（Ingest ➔ Transform ➔ Test），零閒置固定伺服器月費 |
-| **戰略決策儀表板** | Streamlit + Plotly | 提供即時互動指標監控、損益實現率、商品 80/20 集中度與 RFM 客群分層 |
+| **戰略決策儀表板** | Streamlit + Plotly + `pygwalker` | 提供即時互動指標監控、損益實現率、商品 80/20 集中度、RFM 客群分層與類 Power BI 拖曳畫布 |
 | **AI 自然語言圖表生成** | Google GenAI SDK (Gemini Flash) | Text-to-Chart 引擎，將自然語言即時編譯為專業 Plotly 圖表，附帶領域防護欄 |
 | **AI 策略營運顧問** | FastMCP + MBB Consultant Skill | 鎖定 BigQuery Gold 層進行工具調用（Tool Calling），提供結構化診斷報告 |
 | **容器化交付** | Docker (Multi-stage) | 精簡化映像檔，預載 dbt 依賴與 Python 執行環境 |
 | **商業智慧 (BI)** | Google Looker Studio | 針對高階主管打造的直覺式銷售趨勢看板與客戶同屬群分析報表 |
-| **CI / CD 品質守門員** | GitHub Actions + Ruff + SQLFluff | 自動化 Python 程式碼靜態分析、SQL 語法規範檢查與全自動單元測試 |
+| **CI / CD 品質守門員** | GitHub Actions + Ruff + SQLFluff + TruffleHog + Pytest | 5 道自動化品質閘門：代碼規範、SQL 語法、憑證防洩漏、合約斷言與單元測試 |
 
 ---
 

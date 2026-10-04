@@ -1,7 +1,7 @@
 # 1. Serverless Orchestration via Cloud Scheduler and Cloud Run Jobs
 
 Date: 2026-09-16
-Status: accepted
+Status: superseded by ADR 0003
 
 ## Context
 This project serves as an enterprise-grade commercial data pipeline prototype and consulting demonstration tailored for small and medium-sized enterprises (SMEs). Traditional enterprises often deploy Apache Airflow as their orchestration center; however, Airflow requires long-running dedicated virtual machines or managed clusters (such as Cloud Composer), imposing high monthly maintenance costs ($300–$500+/month) and demanding dedicated operations staff to monitor underlying PostgreSQL metadata databases and host OS health. In contrast, typical SME data operations center around scheduled daily batch updates and occasional manual on-demand triggers.

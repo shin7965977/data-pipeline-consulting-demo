@@ -153,8 +153,8 @@ flowchart TD
   * *原因*：全公司只能有一種「淨營收（Net Revenue）」與「GMV」計算方式，扣除取消與退款的邏輯全部封裝在 `fct_orders.sql`，前端分析師不需在各自的 BI 工具內手寫 `CASE WHEN`。
 
 #### 2. 未來工程決策需注意事項
-* **增量模型（Incremental Models）轉換時機**：
-  * 目前展示規模可每次 `table` 全量重刷（Full Refresh）；但當事實表日增長達 10 萬筆以上時，必須將 `fct_*` 改為 `materialized='incremental'`，並搭配 `is_incremental()` 巨集只處理增量數據。
+* **增量模型（Incremental Models）維護**：
+  * 本專案已將核心事實表（`fct_orders`, `fct_order_items`）實作完成 `materialized='incremental'` 與 `merge` 增量策略，搭配 `is_incremental()` 游標過濾。未來需注意上游回溯補資料（Backfill）時需使用 `--full-refresh` 旗標以重新校準歷史。
 * **測試執行時間控制**：
   * 隨著資料膨脹，若每次都對數千萬筆資料做 `unique` 測試會導致計算成本暴增。未來應改為「每日增量測試」或引入 Elementary 的取樣/異常統計測試。
 

@@ -77,7 +77,7 @@ The repository will be structured as a unified monorepo with strict separation o
 ### 3. BigQuery Medallion Lakehouse Strategy
 - **Bronze (`platzi_bronze`)**: Raw append-only datasets managed by dlt. Preserves nested structures and ingestion metadata (`_dlt_load_id`, `_dlt_id`).
 - **Silver (`platzi_silver`)**: Cleaned, deduplicated, and flattened Star Schema managed by dbt.
-  - Dimensions: `dim_customers` (PII masked or pseudonymous), `dim_products`, `dim_categories`.
+  - Dimensions: `dim_customers` (PII masked or pseudonymous), `dim_products` (denormalized with category attributes).
   - Facts: `fct_orders`, `fct_order_items` materialized as `incremental` with `unique_key='order_id'` and `merge` strategy.
 - **Gold (`platzi_gold`)**: High-performance business aggregation marts optimized for analytical querying.
   - `gold_daily_sales_kpi`: Aggregated by date, reporting daily GMV, completed order count, Net Revenue, AOV, cancellation rate, refund amount.

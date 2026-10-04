@@ -99,12 +99,12 @@ flowchart TD
 | **Data Transformation** | `dbt-core` + DuckDB / BigQuery | Medallion staging, Star Schema dimensional modeling & Gold marts |
 | **Data Observability & Topology** | `elementary-data` + dbt tests + `archify` | Automated schema tests, statistical anomaly detection & source-backed interactive architecture topology |
 | **Orchestration & DAG** | Cloud Scheduler + Cloud Workflows + Cloud Run | Serverless visual DAG (`Ingest -> Transform -> Test`) with $0 idle cost |
-| **Executive Cockpit** | Streamlit + Plotly | Interactive analytics dashboard with P&L, Pareto SKU, and RFM tiers |
+| **Executive Cockpit** | Streamlit + Plotly + `pygwalker` | Interactive analytics dashboard with P&L, Pareto SKU, RFM tiers & Power BI-style canvas |
 | **AI Chart Generation** | Google GenAI SDK (Gemini Flash) | Text-to-Chart engine with instant Plotly rendering & domain guardrail |
 | **AI Strategy Consulting** | FastMCP + MBB Consultant Skill | Tool calling over BigQuery Gold marts with structured strategic advisory |
 | **Containerization** | Docker (Multi-stage) | Lean, reproducible image pre-baked with dbt packages and dependencies |
 | **BI & Analytics** | Google Looker Studio | Executive dashboards, KPI monitoring & customer cohort retention |
-| **CI / CD Quality Gates** | GitHub Actions + Ruff + SQLFluff | Automated static analysis, SQL linting, and full test suite enforcement |
+| **CI / CD Quality Gates** | GitHub Actions + Ruff + SQLFluff + TruffleHog + Pytest | 5 automated gates: code style, SQL lint, secret leak prevention & contract tests |
 
 ---
 
