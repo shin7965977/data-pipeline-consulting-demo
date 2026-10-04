@@ -10,8 +10,28 @@
     "repository": {
       "url": "https://github.com/shin7965977/data-pipeline-consulting-demo",
       "provider": "github",
-      "revision": "babec5e37d49f74a4920332eae64121f63284095"
-    }
+      "revision": "aeb4d4120012cebc767b524d4fca69f613d5e246"
+    },
+    "views": [
+      {
+        "id": "view_contract_tests",
+        "label": "Gates 2-3: 數據合約與不變量測試",
+        "focus": ["gate2_dbt_pytest"],
+        "note": "驗證 32 項 dbt 數據合約（唯一性/非空/外鍵/枚舉值）以及本地 DuckDB 端到端業務不變量。"
+      },
+      {
+        "id": "view_secret_scan",
+        "label": "Gate 4: 零信任機密洩漏防護",
+        "focus": ["gate4_trufflehog"],
+        "note": "TruffleHog 深度掃描 Git Commit 歷史，防止 GCP 服務帳號金鑰或 API Token 意外洩漏。"
+      },
+      {
+        "id": "view_runtime_edr",
+        "label": "Gate 5: 運行期觀測與斷路器",
+        "focus": ["gate5_elementary_edr", "circuit_breaker"],
+        "note": "Elementary 監控資料新鮮度與異常分佈，觸發 Circuit Breaker 阻斷受損資料污染 Gold Mart。"
+      }
+    ]
   },
   "lanes": [
     { "id": "developer", "label": "Developer & Git Trigger" },
@@ -32,7 +52,7 @@
   "nodes": [
     { "id": "pr_push", "lane": "developer", "col": 0, "type": "frontend", "label": "Git PR / Push", "sublabel": "feature branch", "width": 132, "sources": [{ "path": ".github/workflows/ci.yml", "line": 1, "label": "CI workflow trigger" }] },
     { "id": "gate1_lint", "lane": "ci_pipeline", "col": 1, "type": "security", "label": "Gate 1: Linting", "sublabel": "Ruff & SQLFluff", "tag": "style & syntax", "width": 132, "sources": [{ "path": ".github/workflows/ci.yml", "line": 36, "label": "linting job" }, { "path": ".sqlfluff", "line": 1, "label": "SQL rules" }] },
-    { "id": "gate2_dbt_pytest", "lane": "ci_pipeline", "col": 2, "type": "backend", "label": "Gates 2-3: Tests", "sublabel": "dbt Parse & Pytest", "tag": "invariants & DAG", "width": 132, "sources": [{ "path": ".github/workflows/ci.yml", "line": 45, "label": "test job" }, { "path": "tests/test_dbt_end_to_end.py", "line": 1, "label": "e2e test" }] },
+    { "id": "gate2_dbt_pytest", "lane": "ci_pipeline", "col": 2, "type": "backend", "label": "Gates 2-3: Tests", "sublabel": "dbt Parse & Pytest", "tag": "invariants & DAG", "width": 132, "sources": [{ "path": "transform_dbt/models/schema.yml", "line": 9, "label": "32項 dbt 合約 (PK/FK/枚舉)" }, { "path": "tests/test_dbt_end_to_end.py", "line": 9, "label": "DuckDB E2E 業務不變量" }, { "path": ".github/workflows/ci.yml", "line": 45, "label": "dbt parse & CI runner" }] },
     { "id": "gate4_trufflehog", "lane": "ci_pipeline", "col": 3, "type": "security", "label": "Gate 4: Secrets", "sublabel": "TruffleHog Credentials", "tag": "leak prevention", "width": 132, "sources": [{ "path": ".github/workflows/ci.yml", "line": 20, "label": "secret scanner" }] },
     { "id": "cloud_build_deploy", "lane": "cd_delivery", "col": 4, "type": "cloud", "label": "Cloud Build CD", "sublabel": "Artifact Registry push", "tag": "immutable image", "width": 132, "sources": [{ "path": "Dockerfile", "line": 1, "label": "runner container" }, { "path": "terraform/cloud_run.tf", "line": 1, "label": "Cloud Run IaC" }] },
     { "id": "gate5_elementary_edr", "lane": "observability", "col": 4, "type": "security", "label": "Gate 5: Elementary", "sublabel": "Anomaly & Freshness", "tag": "runtime telemetry", "width": 132, "sources": [{ "path": "pipeline_runner.py", "line": 151, "label": "edr report runner" }] },
@@ -53,9 +73,9 @@
       "dot": "emerald",
       "title": "Shift-Left Quality Assurance",
       "items": [
-        "Pre-commit and GitHub Actions catch 95% of syntax and schema errors before cloud deployment",
-        "SQLFluff enforces enterprise SQL formatting and Kimball naming conventions across all models",
-        "Pytest validates data invariants without spinning up costly cloud warehouse compute"
+        "dbt parse 靜態檢查 DAG 模型依賴，攔截循環相依與破壞性 Schema 變更",
+        "32 項 dbt 合約測試全面檢驗主鍵唯一性、非空約束、外鍵參照與訂單狀態枚舉值",
+        "Pytest + 本地 DuckDB 零成本驗證端到端管線與 GMV 財務拆解業務不變量"
       ]
     },
     {
