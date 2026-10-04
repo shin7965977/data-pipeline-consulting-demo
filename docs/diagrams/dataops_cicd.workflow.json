@@ -6,7 +6,12 @@
     "animation": "trace",
     "visual_preset": "signal-flow",
     "quality_profile": "showcase",
-    "output": "docs/technical/zh/dataops_cicd_pipeline.html"
+    "output": "docs/technical/zh/dataops_cicd_pipeline.html",
+    "repository": {
+      "url": "https://github.com/shin7965977/data-pipeline-consulting-demo",
+      "provider": "github",
+      "revision": "babec5e37d49f74a4920332eae64121f63284095"
+    }
   },
   "lanes": [
     { "id": "developer", "label": "Developer & Git Trigger" },
@@ -25,14 +30,14 @@
   ],
   "mainPath": ["pr_push", "gate1_lint", "gate2_dbt_pytest", "gate4_trufflehog", "cloud_build_deploy", "gate5_elementary_edr", "prod_lakehouse"],
   "nodes": [
-    { "id": "pr_push", "lane": "developer", "col": 0, "type": "frontend", "label": "Git PR / Push", "sublabel": "feature branch", "width": 132 },
-    { "id": "gate1_lint", "lane": "ci_pipeline", "col": 1, "type": "security", "label": "Gate 1: Linting", "sublabel": "Ruff & SQLFluff", "tag": "style & syntax", "width": 132 },
-    { "id": "gate2_dbt_pytest", "lane": "ci_pipeline", "col": 2, "type": "backend", "label": "Gates 2-3: Tests", "sublabel": "dbt Parse & Pytest", "tag": "invariants & DAG", "width": 132 },
-    { "id": "gate4_trufflehog", "lane": "ci_pipeline", "col": 3, "type": "security", "label": "Gate 4: Secrets", "sublabel": "TruffleHog Credentials", "tag": "leak prevention", "width": 132 },
-    { "id": "cloud_build_deploy", "lane": "cd_delivery", "col": 4, "type": "cloud", "label": "Cloud Build CD", "sublabel": "Artifact Registry push", "tag": "immutable image", "width": 132 },
-    { "id": "gate5_elementary_edr", "lane": "observability", "col": 4, "type": "security", "label": "Gate 5: Elementary", "sublabel": "Anomaly & Freshness", "tag": "runtime telemetry", "width": 132 },
-    { "id": "prod_lakehouse", "lane": "cd_delivery", "col": 5, "type": "database", "label": "Prod Lakehouse", "sublabel": "BigQuery Gold Verified", "tag": "SLO guaranteed", "width": 132 },
-    { "id": "circuit_breaker", "lane": "observability", "col": 5, "type": "security", "label": "Circuit Breaker", "sublabel": "Rollback & Alert Webhook", "tag": "contain blast radius", "width": 132 }
+    { "id": "pr_push", "lane": "developer", "col": 0, "type": "frontend", "label": "Git PR / Push", "sublabel": "feature branch", "width": 132, "sources": [{ "path": ".github/workflows/ci.yml", "line": 1, "label": "CI workflow trigger" }] },
+    { "id": "gate1_lint", "lane": "ci_pipeline", "col": 1, "type": "security", "label": "Gate 1: Linting", "sublabel": "Ruff & SQLFluff", "tag": "style & syntax", "width": 132, "sources": [{ "path": ".github/workflows/ci.yml", "line": 36, "label": "linting job" }, { "path": ".sqlfluff", "line": 1, "label": "SQL rules" }] },
+    { "id": "gate2_dbt_pytest", "lane": "ci_pipeline", "col": 2, "type": "backend", "label": "Gates 2-3: Tests", "sublabel": "dbt Parse & Pytest", "tag": "invariants & DAG", "width": 132, "sources": [{ "path": ".github/workflows/ci.yml", "line": 45, "label": "test job" }, { "path": "tests/test_dbt_end_to_end.py", "line": 1, "label": "e2e test" }] },
+    { "id": "gate4_trufflehog", "lane": "ci_pipeline", "col": 3, "type": "security", "label": "Gate 4: Secrets", "sublabel": "TruffleHog Credentials", "tag": "leak prevention", "width": 132, "sources": [{ "path": ".github/workflows/ci.yml", "line": 20, "label": "secret scanner" }] },
+    { "id": "cloud_build_deploy", "lane": "cd_delivery", "col": 4, "type": "cloud", "label": "Cloud Build CD", "sublabel": "Artifact Registry push", "tag": "immutable image", "width": 132, "sources": [{ "path": "Dockerfile", "line": 1, "label": "runner container" }, { "path": "terraform/cloud_run.tf", "line": 1, "label": "Cloud Run IaC" }] },
+    { "id": "gate5_elementary_edr", "lane": "observability", "col": 4, "type": "security", "label": "Gate 5: Elementary", "sublabel": "Anomaly & Freshness", "tag": "runtime telemetry", "width": 132, "sources": [{ "path": "pipeline_runner.py", "line": 151, "label": "edr report runner" }] },
+    { "id": "prod_lakehouse", "lane": "cd_delivery", "col": 5, "type": "database", "label": "Prod Lakehouse", "sublabel": "BigQuery Gold Verified", "tag": "SLO guaranteed", "width": 132, "sources": [{ "path": "transform_dbt/models/marts/gold_daily_sales_kpi.sql", "line": 1, "label": "gold KPI mart" }] },
+    { "id": "circuit_breaker", "lane": "observability", "col": 5, "type": "security", "label": "Circuit Breaker", "sublabel": "Rollback & Alert Webhook", "tag": "contain blast radius", "width": 132, "sources": [{ "path": "pipeline_runner.py", "line": 190, "label": "circuit breaker logic" }] }
   ],
   "edges": [
     { "id": "edge-pr-lint", "from": "pr_push", "to": "gate1_lint", "label": "trigger CI", "variant": "emphasis" },
