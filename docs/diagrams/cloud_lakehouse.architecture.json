@@ -26,7 +26,7 @@
     { "id": "bq_bronze", "type": "database", "label": "BigQuery Bronze", "sublabel": "raw_platzi landing", "pos": [680, 340], "size": [124, 56], "tag": "native lakehouse" },
     { "id": "dbt_silver", "type": "database", "label": "dbt Silver Cleaned", "sublabel": "stg_orders & dedupe", "pos": [900, 340], "size": [132, 56], "tag": "SHA-256 masked", "sources": [{ "path": "transform_dbt/models/staging/stg_orders.sql", "line": 1, "label": "staging model" }] },
     { "id": "dbt_gold", "type": "database", "label": "dbt Gold Marts", "sublabel": "fct_orders & dim_prod", "pos": [1130, 340], "size": [126, 56], "tag": "Kimball star", "sources": [{ "path": "transform_dbt/models/marts/gold_daily_sales_kpi.sql", "line": 1, "label": "gold sales KPI" }] },
-    { "id": "fastmcp_copilot", "type": "backend", "label": "FastMCP AI Copilot", "sublabel": "Gemini 1.5/2.0 NL2SQL", "pos": [1360, 340], "size": [128, 56], "tag": "MBB SCQA", "sources": [{ "path": "mcp_server/server.py", "line": 1, "label": "mcp server" }] },
+    { "id": "fastmcp_copilot", "type": "backend", "label": "FastMCP AI Copilot", "sublabel": "Gemini Flash & SCQA", "pos": [1360, 340], "size": [128, 56], "tag": "MBB Advisory", "sources": [{ "path": "mcp_server/server.py", "line": 1, "label": "mcp server" }] },
     { "id": "streamlit_cockpit", "type": "frontend", "label": "Streamlit Cockpit", "sublabel": "P&L, Pareto, RFM & AI", "pos": [1580, 340], "size": [128, 56], "tag": "Cloud Hosted", "sources": [{ "path": "dashboard.py", "line": 1, "label": "cockpit app" }] }
   ],
   "boundaries": [
