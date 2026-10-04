@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Platzi E-Commerce Cloud Lakehouse Architecture",
+    "subtitle": "GCP Serverless Zero-Ops Medallion Platform with dbt Core & Elementary",
+    "output": "docs/technical/zh/cloud_lakehouse_architecture.html",
+    "visual_preset": "blueprint",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "engineering_profile": "deployment-ownership",
+    "repository": {
+      "url": "https://github.com/shin7965977/data-pipeline-consulting-demo",
+      "provider": "github",
+      "revision": "8f26efa59e947fef875984b7ef5cf96e981d0326"
+    }
+  },
+  "components": [
+    { "id": "platzi_api", "type": "external", "label": "Platzi Store API", "sublabel": "REST JSON Upstream", "pos": [30, 340], "size": [120, 56], "tag": "external SaaS" },
+    { "id": "cloud_scheduler", "type": "cloud", "label": "Cloud Scheduler", "sublabel": "cron : 0 2 * * *", "pos": [240, 170], "size": [124, 56], "tag": "zero cost" },
+    { "id": "cloud_workflows", "type": "backend", "label": "Cloud Workflows", "sublabel": "DAG State Machine", "pos": [460, 170], "size": [128, 56], "tag": "$0 idle cost", "sources": [{ "path": "workflow_trigger.py", "line": 1, "label": "workflow trigger" }] },
+    { "id": "elementary_obs", "type": "security", "label": "Elementary Data", "sublabel": "Quality & Anomaly", "pos": [900, 170], "size": [132, 56], "tag": "dataops gate", "sources": [{ "path": "pipeline_runner.py", "line": 150, "label": "edr report runner" }] },
+    { "id": "looker_studio", "type": "frontend", "label": "Looker Studio BI", "sublabel": "Executive Dashboards", "pos": [1360, 170], "size": [128, 56], "tag": "commercial BI" },
+    { "id": "run_ingest", "type": "backend", "label": "Cloud Run Ingest", "sublabel": "API Extractor & dlt", "pos": [240, 340], "size": [124, 56], "tag": "containerized", "sources": [{ "path": "pipeline_runner.py", "line": 40, "label": "extractor logic" }] },
+    { "id": "gcs_raw", "type": "cloud", "label": "GCS Raw Bucket", "sublabel": "gs://..._cloudbuild", "pos": [460, 340], "size": [128, 56], "tag": "immutable bronze" },
+    { "id": "bq_bronze", "type": "database", "label": "BigQuery Bronze", "sublabel": "raw_platzi landing", "pos": [680, 340], "size": [124, 56], "tag": "native lakehouse" },
+    { "id": "dbt_silver", "type": "database", "label": "dbt Silver Cleaned", "sublabel": "stg_orders & dedupe", "pos": [900, 340], "size": [132, 56], "tag": "SHA-256 masked", "sources": [{ "path": "transform_dbt/models/staging/stg_orders.sql", "line": 1, "label": "staging model" }] },
+    { "id": "dbt_gold", "type": "database", "label": "dbt Gold Marts", "sublabel": "fct_orders & dim_prod", "pos": [1130, 340], "size": [126, 56], "tag": "Kimball star", "sources": [{ "path": "transform_dbt/models/marts/gold_daily_sales_kpi.sql", "line": 1, "label": "gold sales KPI" }] },
+    { "id": "fastmcp_copilot", "type": "backend", "label": "FastMCP AI Copilot", "sublabel": "Gemini 1.5/2.0 NL2SQL", "pos": [1360, 340], "size": [128, 56], "tag": "MBB SCQA", "sources": [{ "path": "mcp_server/server.py", "line": 1, "label": "mcp server" }] },
+    { "id": "streamlit_cockpit", "type": "frontend", "label": "Streamlit Cockpit", "sublabel": "P&L, Pareto, RFM & AI", "pos": [1580, 340], "size": [128, 56], "tag": "Cloud Hosted", "sources": [{ "path": "dashboard.py", "line": 1, "label": "cockpit app" }] }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "GCP Project: de-consulting-508822 (us-central1)",
+      "wraps": ["cloud_scheduler", "cloud_workflows", "run_ingest", "gcs_raw", "bq_bronze", "dbt_silver", "dbt_gold", "elementary_obs"],
+      "pad": 18
+    },
+    {
+      "kind": "security-group",
+      "label": "BigQuery Serverless Lakehouse Core",
+      "wraps": ["bq_bronze", "dbt_silver", "dbt_gold", "elementary_obs"],
+      "pad": 10
+    },
+    {
+      "kind": "region",
+      "label": "Commercial Analytics & AI Copilot",
+      "wraps": ["looker_studio", "fastmcp_copilot", "streamlit_cockpit"],
+      "pad": 18
+    }
+  ],
+  "connections": [
+    { "from": "platzi_api", "to": "run_ingest", "label": "HTTPS REST", "variant": "emphasis" },
+    { "from": "cloud_scheduler", "to": "cloud_workflows", "label": "cron trigger", "variant": "dashed" },
+    { "from": "cloud_workflows", "to": "run_ingest", "label": "dispatch job", "variant": "dashed" },
+    { "from": "run_ingest", "to": "gcs_raw", "label": "write Parquet", "variant": "emphasis" },
+    { "from": "gcs_raw", "to": "bq_bronze", "label": "batch load", "variant": "emphasis" },
+    { "from": "bq_bronze", "to": "dbt_silver", "label": "cleanse & dedupe", "variant": "default" },
+    { "from": "dbt_silver", "to": "dbt_gold", "label": "Kimball star", "variant": "emphasis" },
+    { "from": "dbt_gold", "to": "elementary_obs", "label": "telemetry audit", "variant": "security", "fromSide": "top", "toSide": "bottom" },
+    { "from": "dbt_gold", "to": "looker_studio", "label": "SQL query", "variant": "default", "fromSide": "top", "toSide": "bottom" },
+    { "from": "dbt_gold", "to": "fastmcp_copilot", "label": "Gold mart feed", "variant": "emphasis" },
+    { "from": "fastmcp_copilot", "to": "streamlit_cockpit", "label": "SCQA insights", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Serverless TCO Advantage ($0 Idle)",
+      "items": [
+        "Cloud Workflows & Cloud Run scale to zero with zero standby virtual machines",
+        "Eliminates minimum $300+/month Composer/Airflow baseline overhead",
+        "Pure pay-per-query BigQuery serverless lakehouse economics"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Kimball Star Schema & Data Governance",
+      "items": [
+        "Bronze layer preserves immutable source payload in GCS object storage",
+        "Silver layer enforces SHA-256 PII masking, currency normalization, and deduplication",
+        "Gold dimensional marts provide high-speed aggregations for executive BI"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "DataOps & Automated Observability",
+      "items": [
+        "Elementary captures schema drift, freshness violations, and volume anomalies",
+        "dbt test invariants prevent corrupted metrics from reaching Gold commercial tables",
+        "Full source traceability connecting architectural nodes directly to GitHub code"
+      ]
+    }
+  ]
+}

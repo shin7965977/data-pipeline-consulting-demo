@@ -83,7 +83,7 @@ flowchart TD
    - **Step 3**: Data Observability & Tests (`dbt test` + Elementary anomaly checks)
 3. **Canonical Schema Adapter Pattern**: Upstream e-commerce APIs (Shopify, WooCommerce, Platzi) are mapped into standardized schema contracts, insulating dbt models from source schema drift.
 4. **Enterprise PII Governance**: Names and emails are cryptographically salted and SHA-256 hashed at the staging layer; AI agents and BI dashboards never touch raw customer identities.
-5. **Data Observability**: Pre-integrated with **Elementary Data** for automated test anomaly detection, schema drift monitoring, and run history auditing.
+5. **Data Observability & Architecture Verification**: Pre-integrated with **Elementary Data** for automated test anomaly detection, schema drift monitoring, and run history auditing, combined with **Archify** for source-backed interactive cloud lakehouse topology and DataOps CI/CD pipeline verification.
 6. **Interactive Streamlit Executive Cockpit (`dashboard.py`)**: Real-time KPI monitoring, Plotly data visualizations, RFM customer segmentation, and an AI-driven natural language chart generator.
 7. **MBB Management Consultant AI Skill (`claude-skill-management-consultant-B1`)**: 129 consulting modules enforcing the **Pyramid Principle (Action Titles)**, **MECE Issue Trees**, **Net Realization Rate** calculations, and **30-60-90 Day Tactical Roadmaps**.
 8. **Domain Relevance AI Guardrails**: Intelligent prompt filtering that strictly defends the assistant against off-topic queries (e.g., politics, entertainment) to ensure professional focus.
@@ -97,7 +97,7 @@ flowchart TD
 | **Infrastructure as Code** | Terraform | BigQuery datasets, Cloud Run Jobs, Cloud Workflows, Cloud Scheduler & IAM |
 | **Data Ingestion** | `dlt` (data load tool) | Resilient schema evolution, automatic batching, typing & incremental loading |
 | **Data Transformation** | `dbt-core` + DuckDB / BigQuery | Medallion staging, Star Schema dimensional modeling & Gold marts |
-| **Data Observability** | `elementary-data` + dbt tests | Automated schema test assertions, uniqueness & referential integrity |
+| **Data Observability & Topology** | `elementary-data` + dbt tests + `archify` | Automated schema tests, statistical anomaly detection & source-backed interactive architecture topology |
 | **Orchestration & DAG** | Cloud Scheduler + Cloud Workflows + Cloud Run | Serverless visual DAG (`Ingest -> Transform -> Test`) with $0 idle cost |
 | **Executive Cockpit** | Streamlit + Plotly | Interactive analytics dashboard with P&L, Pareto SKU, and RFM tiers |
 | **AI Chart Generation** | Google GenAI SDK (Gemini Flash) | Text-to-Chart engine with instant Plotly rendering & domain guardrail |

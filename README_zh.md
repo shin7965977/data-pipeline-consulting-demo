@@ -83,7 +83,7 @@ flowchart TD
    - **階段 3**：Data Observability & Tests（透過 `dbt test` 與 Elementary 進行異常偵測）
 3. **標準綱要適配器模式（Canonical Schema Adapter）**：將上游異質電商 API（Shopify、WooCommerce、Platzi）映射至統一的契約綱要，隔離源頭變更對下游 dbt 模型的衝擊。
 4. **企業級個資隱私治理（PII Governance）**：顧客姓名與電子郵件在 Staging 階段即經過密碼學加鹽與 SHA-256 單向雜湊，AI 顧問與 BI 報表永久無法接觸原始個資。
-5. **數據可觀測性（Data Observability）**：內建 **Elementary Data**，即時監控綱要漂移（Schema Drift）、數值異動與管線執行歷程。
+5. **數據可觀測性與架構拓撲驗證（Data Observability & Architecture）**：內建 **Elementary Data** 即時監控綱要漂移（Schema Drift）、數值異動與管線執行歷程，並結合 **Archify** 提供原始碼精確錨定（Source-backed）的互動式無伺服器湖倉架構與 DataOps CI/CD 閘門拓撲。
 6. **C-Level 互動式 Streamlit 戰略儀表板 (`dashboard.py`)**：即時 KPI 監控、Plotly 視覺化圖表、顧客 RFM 價值分級矩陣，以及自然語言即時產圖。
 7. **MBB 頂級管理顧問模組 (`claude-skill-management-consultant-B1`)**：注入 129 個顧問模組，遵循**金字塔原理（Action Title 結論先行）**、**MECE 獲利樹拆解**、**實質淨營收實現率計算**與 **30-60-90 天落地行動計畫**。
 8. **商業範疇智慧防護欄（Domain Relevance Guardrails）**：自動過濾與本電商營運無關的無效提問（如政治、生活娛樂），確保諮詢焦點嚴謹專業。
@@ -97,7 +97,7 @@ flowchart TD
 | **基礎設施即程式碼** | Terraform | 自動化宣告 BigQuery、Cloud Run Jobs、Cloud Workflows、Scheduler 與 IAM |
 | **數據擷取引擎** | `dlt` (data load tool) | 彈性處理 Schema Evolution、自動分批增量載入與資料型態推斷 |
 | **數據轉換與建模** | `dbt-core` + DuckDB / BigQuery | 執行金牌湖倉轉換、星型模型（Star Schema）建立與商業指標聚合 |
-| **數據可觀測性** | `elementary-data` + dbt tests | 自動化資料品質斷言、欄位唯一性、關聯參照與異常告警檢驗 |
+| **數據可觀測性與拓撲驗證** | `elementary-data` + dbt tests + `archify` | 自動化資料品質斷言、異常告警檢驗、代碼溯源與 Archify 互動式全景拓撲驗證 |
 | **無伺服器 DAG 調度** | Cloud Scheduler + Cloud Workflows + Cloud Run | 以視覺化 DAG 串聯（Ingest ➔ Transform ➔ Test），零閒置固定伺服器月費 |
 | **戰略決策儀表板** | Streamlit + Plotly | 提供即時互動指標監控、損益實現率、商品 80/20 集中度與 RFM 客群分層 |
 | **AI 自然語言圖表生成** | Google GenAI SDK (Gemini Flash) | Text-to-Chart 引擎，將自然語言即時編譯為專業 Plotly 圖表，附帶領域防護欄 |

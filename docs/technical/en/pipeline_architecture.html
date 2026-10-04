@@ -384,6 +384,64 @@
             transition: opacity 0.15s ease;
             white-space: nowrap;
         }
+        /* View Mode Selector Tabs */
+        .view-mode-tabs {
+            pointer-events: auto;
+            display: inline-flex;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(12px);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            gap: 4px;
+        }
+
+        .view-mode-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .view-mode-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .view-mode-btn.active {
+            background: var(--accent-blue);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        }
+
+        .archify-frame-container {
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 50;
+            background: #090d16;
+            padding-top: 68px;
+        }
+
+        .archify-frame-container iframe {
+            width: 100%;
+            height: calc(100vh - 68px);
+            border: none;
+            background: transparent;
+        }
     </style>
 </head>
 <body>
@@ -395,13 +453,35 @@
         <span class="sub">Standard Engineering Architecture & Decision Playbook Canvas</span>
     </div>
 
-    <div class="stage-nav">
+    <!-- View Mode Selector Tabs -->
+    <div class="view-mode-tabs">
+        <button id="tab-canvas" class="view-mode-btn active" onclick="switchMainView('canvas')">
+            <span>📐 Classic Playbook Canvas</span>
+        </button>
+        <button id="tab-archify" class="view-mode-btn" onclick="switchMainView('archify')">
+            <span>🏛️ Archify Cloud Topology</span>
+        </button>
+        <button id="tab-cicd" class="view-mode-btn" onclick="switchMainView('cicd')">
+            <span>🛡️ Archify 5 Golden Gates</span>
+        </button>
+    </div>
+
+    <div class="stage-nav" id="stage-nav-bar">
         <button class="stage-nav-btn" onclick="openStageDrawer('ingestion')">1. Ingestion</button>
         <button class="stage-nav-btn" onclick="openStageDrawer('lakehouse')">2. Medallion Lakehouse</button>
         <button class="stage-nav-btn" onclick="openStageDrawer('orchestration')">3. Orchestration</button>
         <button class="stage-nav-btn" onclick="openStageDrawer('observability')">4. Observability Loop</button>
         <button class="stage-nav-btn" onclick="openStageDrawer('serving')">5. Consumption & Serving</button>
     </div>
+</div>
+
+<!-- Archify Views -->
+<div id="view-archify-topology" class="archify-frame-container">
+    <iframe src="cloud_lakehouse_architecture.html"></iframe>
+</div>
+
+<div id="view-archify-cicd" class="archify-frame-container">
+    <iframe src="dataops_cicd_pipeline.html"></iframe>
 </div>
 
 <!-- Floating Controls -->
@@ -417,7 +497,7 @@
 </div>
 
 <!-- Engineering Shapes & Lines Legend Widget -->
-<div style="position: fixed; bottom: 68px; left: 24px; z-index: 90; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 16px; font-size: 0.8rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); display: flex; gap: 16px; align-items: center; color: #334155;">
+<div id="legend-widget" style="position: fixed; bottom: 68px; left: 24px; z-index: 90; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 16px; font-size: 0.8rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); display: flex; gap: 16px; align-items: center; color: #334155;">
     <span style="font-weight: 800; color: #0f172a; border-right: 1px solid #cbd5e1; padding-right: 12px;">Legend</span>
     <span style="display: flex; align-items: center; gap: 6px;">🛢️ <strong>Cylinder</strong>: Storage Table</span>
     <span style="display: flex; align-items: center; gap: 6px;">🔷 <strong>Diamond</strong>: Quality/Security Gate</span>
@@ -1019,6 +1099,47 @@
     function closeDrawer() {
         drawer.classList.remove("active");
         document.querySelectorAll(".stage-nav-btn").forEach(btn => btn.classList.remove("active"));
+    }
+
+    function switchMainView(mode) {
+        const canvasViewport = document.getElementById('viewport');
+        const archifyView = document.getElementById('view-archify-topology');
+        const cicdView = document.getElementById('view-archify-cicd');
+        const stageNav = document.getElementById('stage-nav-bar');
+        const canvasControls = document.querySelector('.canvas-controls');
+        const hintBadge = document.querySelector('.hint-badge');
+        const legendWidget = document.getElementById('legend-widget');
+
+        document.querySelectorAll('.view-mode-btn').forEach(btn => btn.classList.remove('active'));
+
+        if (mode === 'canvas') {
+            document.getElementById('tab-canvas').classList.add('active');
+            if (canvasViewport) canvasViewport.style.display = 'flex';
+            if (archifyView) archifyView.style.display = 'none';
+            if (cicdView) cicdView.style.display = 'none';
+            if (stageNav) stageNav.style.display = 'flex';
+            if (canvasControls) canvasControls.style.display = 'flex';
+            if (hintBadge) hintBadge.style.display = 'block';
+            if (legendWidget) legendWidget.style.display = 'flex';
+        } else if (mode === 'archify') {
+            document.getElementById('tab-archify').classList.add('active');
+            if (canvasViewport) canvasViewport.style.display = 'none';
+            if (archifyView) archifyView.style.display = 'block';
+            if (cicdView) cicdView.style.display = 'none';
+            if (stageNav) stageNav.style.display = 'none';
+            if (canvasControls) canvasControls.style.display = 'none';
+            if (hintBadge) hintBadge.style.display = 'none';
+            if (legendWidget) legendWidget.style.display = 'none';
+        } else if (mode === 'cicd') {
+            document.getElementById('tab-cicd').classList.add('active');
+            if (canvasViewport) canvasViewport.style.display = 'none';
+            if (archifyView) archifyView.style.display = 'none';
+            if (cicdView) cicdView.style.display = 'block';
+            if (stageNav) stageNav.style.display = 'none';
+            if (canvasControls) canvasControls.style.display = 'none';
+            if (hintBadge) hintBadge.style.display = 'none';
+            if (legendWidget) legendWidget.style.display = 'none';
+        }
     }
 
     // Initial view tuning

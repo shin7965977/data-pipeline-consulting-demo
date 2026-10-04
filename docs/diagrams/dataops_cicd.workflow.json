@@ -1,0 +1,75 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DataOps 5 Golden Gates CI/CD & Observability Pipeline",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "output": "docs/technical/zh/dataops_cicd_pipeline.html"
+  },
+  "lanes": [
+    { "id": "developer", "label": "Developer & Git Trigger" },
+    { "id": "ci_pipeline", "label": "Automated CI Quality Gates" },
+    { "id": "cd_delivery", "label": "Serverless Cloud Run Deployment" },
+    { "id": "observability", "label": "Live Runtime Telemetry & Gates", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "phase_code", "label": "Code Commit", "fromCol": 0, "toCol": 0 },
+    { "id": "phase_gate", "label": "Pre-Deploy Quality Gates", "fromCol": 1, "toCol": 3, "variant": "emphasis" },
+    { "id": "phase_deploy", "label": "Zero-Ops Delivery & Telemetry", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "group_static", "label": "Static Code & Contract Gates", "lane": "ci_pipeline", "fromCol": 1, "toCol": 3, "variant": "emphasis" },
+    { "id": "group_runtime", "label": "Runtime Telemetry & Circuit Breaker", "lane": "observability", "fromCol": 4, "toCol": 5, "variant": "security" }
+  ],
+  "mainPath": ["pr_push", "gate1_lint", "gate2_dbt_pytest", "gate4_trufflehog", "cloud_build_deploy", "gate5_elementary_edr", "prod_lakehouse"],
+  "nodes": [
+    { "id": "pr_push", "lane": "developer", "col": 0, "type": "frontend", "label": "Git PR / Push", "sublabel": "feature branch", "width": 132 },
+    { "id": "gate1_lint", "lane": "ci_pipeline", "col": 1, "type": "security", "label": "Gate 1: Linting", "sublabel": "Ruff & SQLFluff", "tag": "style & syntax", "width": 132 },
+    { "id": "gate2_dbt_pytest", "lane": "ci_pipeline", "col": 2, "type": "backend", "label": "Gates 2-3: Tests", "sublabel": "dbt Parse & Pytest", "tag": "invariants & DAG", "width": 132 },
+    { "id": "gate4_trufflehog", "lane": "ci_pipeline", "col": 3, "type": "security", "label": "Gate 4: Secrets", "sublabel": "TruffleHog Credentials", "tag": "leak prevention", "width": 132 },
+    { "id": "cloud_build_deploy", "lane": "cd_delivery", "col": 4, "type": "cloud", "label": "Cloud Build CD", "sublabel": "Artifact Registry push", "tag": "immutable image", "width": 132 },
+    { "id": "gate5_elementary_edr", "lane": "observability", "col": 4, "type": "security", "label": "Gate 5: Elementary", "sublabel": "Anomaly & Freshness", "tag": "runtime telemetry", "width": 132 },
+    { "id": "prod_lakehouse", "lane": "cd_delivery", "col": 5, "type": "database", "label": "Prod Lakehouse", "sublabel": "BigQuery Gold Verified", "tag": "SLO guaranteed", "width": 132 },
+    { "id": "circuit_breaker", "lane": "observability", "col": 5, "type": "security", "label": "Circuit Breaker", "sublabel": "Rollback & Alert Webhook", "tag": "contain blast radius", "width": 132 }
+  ],
+  "edges": [
+    { "id": "edge-pr-lint", "from": "pr_push", "to": "gate1_lint", "label": "trigger CI", "variant": "emphasis" },
+    { "id": "edge-lint-parse", "from": "gate1_lint", "to": "gate2_dbt_pytest", "variant": "default" },
+    { "id": "edge-parse-truffle", "from": "gate2_dbt_pytest", "to": "gate4_trufflehog", "variant": "default" },
+    { "id": "edge-truffle-deploy", "from": "gate4_trufflehog", "to": "cloud_build_deploy", "label": "pass gates", "variant": "emphasis" },
+    { "id": "edge-deploy-edr", "from": "cloud_build_deploy", "to": "gate5_elementary_edr", "label": "run tests", "variant": "default" },
+    { "id": "edge-edr-prod", "from": "gate5_elementary_edr", "to": "prod_lakehouse", "label": "SLO verified", "variant": "emphasis" },
+    { "id": "edge-edr-breaker", "from": "gate5_elementary_edr", "to": "circuit_breaker", "label": "anomaly detected", "variant": "security", "role": "error" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Shift-Left Quality Assurance",
+      "items": [
+        "Pre-commit and GitHub Actions catch 95% of syntax and schema errors before cloud deployment",
+        "SQLFluff enforces enterprise SQL formatting and Kimball naming conventions across all models",
+        "Pytest validates data invariants without spinning up costly cloud warehouse compute"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Zero-Trust Security & Leak Prevention",
+      "items": [
+        "TruffleHog scans Git commits for accidental GCP service account keys or third-party API tokens",
+        "Container images are cryptographically built and tagged into Google Artifact Registry",
+        "Zero privilege escalation: Cloud Run executes with least-privilege IAM service account"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Runtime Observability & Circuit Breaker",
+      "items": [
+        "Elementary monitors statistical distributions, test pass rates, and freshness delays",
+        "Circuit Breaker blocks bad data propagation into Gold mart executive consumption",
+        "Automated Slack / Email alert dispatching for immediate incident response (MTTR < 15m)"
+      ]
+    }
+  ]
+}

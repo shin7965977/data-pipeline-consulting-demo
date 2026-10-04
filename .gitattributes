@@ -1,0 +1,12 @@
+# GitHub Linguist language overrides
+# Exclude vendored agent skills, test fixtures, and packages from repository language calculation
+.agents/** linguist-vendored
+scratch*/** linguist-vendored
+
+# Exclude generated HTML docs and standalone reports from language statistics
+docs/** linguist-documentation
+*.html linguist-documentation
+
+# Ensure Python and SQL are accurately recognized as primary engineering languages
+*.py linguist-detectable=true
+*.sql linguist-detectable=true
