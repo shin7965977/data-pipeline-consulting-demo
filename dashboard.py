@@ -95,6 +95,24 @@ st.markdown(
 )
 
 # ==============================================================================
+# Global Language Routing (Bilingual Support: zh / en)
+# ==============================================================================
+query_lang = st.query_params.get("lang", "").lower()
+if "lang" not in st.session_state:
+    st.session_state["lang"] = "en" if query_lang in ["en", "english"] else "zh"
+elif query_lang in ["en", "english"] and st.session_state.get("lang") != "en":
+    st.session_state["lang"] = "en"
+elif query_lang in ["zh", "tw", "cn"] and st.session_state.get("lang") != "zh":
+    st.session_state["lang"] = "zh"
+
+if st.session_state.get("lang") == "en":
+    import dashboard_en
+
+    dashboard_en.main()
+    st.stop()
+
+
+# ==============================================================================
 # 2. BigQuery Data Loader with Intelligent Fallback
 # ==============================================================================
 PROJECT_ID = os.getenv("GCP_PROJECT_ID", "de-consulting-508822")
@@ -594,6 +612,21 @@ def render_fastmcp_copilot():
 # 4. Sidebar Navigation & Global Filters
 # ==============================================================================
 with st.sidebar:
+    # Language Switcher
+    lang_choice_zh = st.radio(
+        "🌐 語言 / Language",
+        options=["繁體中文", "English"],
+        index=0,
+        horizontal=True,
+        key="sidebar_lang_selector_zh",
+    )
+    if lang_choice_zh == "English":
+        st.session_state["lang"] = "en"
+        st.session_state.pop("sidebar_lang_selector_zh", None)
+        st.session_state.pop("sidebar_lang_selector_en", None)
+        st.query_params["lang"] = "en"
+        st.rerun()
+
     st.title("🛍️ 營運智慧中心")
     st.caption("Serverless ELT Modern Lakehouse")
 
