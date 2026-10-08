@@ -11,6 +11,17 @@
 [![FastMCP](https://img.shields.io/badge/FastMCP-AI%20Service-purple.svg)](https://github.com/jlowin/fastmcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+---
+
+### 🚀 線上即時展示系統與雲端控制台 (Live Cloud Demonstrations)
+
+| 🔗 雲端平台與展示系統 | 🎯 核心功能與直接訪問 | 🌐 線上即時網址 (Live URL) |
+| :--- | :--- | :--- |
+| **🌐 全方位數據工程整合控制台** | 彙整完整 DataOps 架構藍圖、dbt 血緣 DAG、Elementary 數據可觀測性報告與 C-Level 商業提案簡報。 | [**開啟整合控制台 (Portal) ↗**](https://storage.googleapis.com/de-consulting-508822_cloudbuild/index.html)<br/>`https://storage.googleapis.com/de-consulting-508822_cloudbuild/index.html` |
+| **🛍️ 互動式高階營運戰略儀表板** | 雲端直連 BigQuery 金銀銅三層湖倉、P&L 財務漏斗、Pareto 80/20 熱銷品、顧客 LTV，以及 FastMCP + Gemini 頂級管理顧問 AI。 | [**啟動線上 Streamlit 儀表板 ↗**](https://data-pipeline-consulting-demo-v01.streamlit.app/)<br/>`https://data-pipeline-consulting-demo-v01.streamlit.app/`<br/>*(🇬🇧 [英文版直接入口 (English)](https://data-pipeline-consulting-demo-v01.streamlit.app/?lang=en) &bull; 🇹🇼 [繁體中文版預設入口](https://data-pipeline-consulting-demo-v01.streamlit.app/))* |
+
+---
+
 這是一套端到端、企業級的現代數據堆疊（Modern Data Stack, MDS）解決方案，專為**零售電商商業智慧與 C-Level 管理顧問諮詢展示**而設計。架構具備 **無伺服器優先、每月閒置成本趨近於 $0** 的極致 TCO 優勢，嚴格落實 **金牌資料湖倉（Medallion Architecture）**、**數據可觀測性（Data Observability）**、**互動式 Streamlit 戰略儀表板**、**Looker Studio BI**，以及由 FastMCP 與 Google Gemini 驅動的 **MBB 頂級顧問級 AI 智慧營運助手**。
 
 ---

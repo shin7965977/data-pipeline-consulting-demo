@@ -11,6 +11,17 @@
 [![FastMCP](https://img.shields.io/badge/FastMCP-AI%20Service-purple.svg)](https://github.com/jlowin/fastmcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+---
+
+### 🚀 Live Interactive Cloud Demonstrations
+
+| 🔗 Platform & Service | 🎯 Description & Highlights | 🌐 Direct Access (Live URL) |
+| :--- | :--- | :--- |
+| **🌐 Unified Cloud Engineering Portal** | Complete DataOps architecture blueprint, interactive dbt DAG lineage, Elementary data observability report, and C-Level consulting pitch decks. | [**Open Engineering Portal ↗**](https://storage.googleapis.com/de-consulting-508822_cloudbuild/index.html)<br/>`https://storage.googleapis.com/de-consulting-508822_cloudbuild/index.html` |
+| **🛍️ Executive Strategy Cockpit** | Live serverless e-commerce intelligence app with BigQuery Lakehouse metrics (Gold/Silver/Bronze), Pareto SKU analysis, Customer LTV, and FastMCP + Gemini AI Copilot. | [**Launch Live Streamlit App ↗**](https://data-pipeline-consulting-demo-v01.streamlit.app/)<br/>`https://data-pipeline-consulting-demo-v01.streamlit.app/`<br/>*(🇬🇧 [English Direct Access](https://data-pipeline-consulting-demo-v01.streamlit.app/?lang=en) &bull; 🇹🇼 [Traditional Chinese](https://data-pipeline-consulting-demo-v01.streamlit.app/))* |
+
+---
+
 An end-to-end, enterprise-grade Modern Data Stack (MDS) implementation designed for **e-commerce retail intelligence and C-Level management consulting demos**. Built with a **Serverless-first, near-$0/month idle TCO** architecture, strict **Medallion Data Lakehouse** engineering, **Data Observability**, **Interactive Streamlit Executive Cockpit**, **Looker Studio BI**, and an **MBB-Level AI Operations Copilot** powered by FastMCP and Google Gemini.
 
 ---
