@@ -3,6 +3,7 @@ dlt[bigquery]>=1.6.0
 requests>=2.31.0
 python-dotenv>=1.0.0
 google-cloud-bigquery>=3.20.0
+google-cloud-bigquery-storage>=2.24.0
 duckdb>=1.0.0
 
 # Transformations (dbt)

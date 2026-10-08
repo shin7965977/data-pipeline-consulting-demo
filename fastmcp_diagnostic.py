@@ -695,7 +695,7 @@ def render_fastmcp_chat_widget(
             if st.button(
                 label,
                 key=f"btn_sug_{unique_key}_{turn_idx}_{i}",
-                use_container_width=True,
+                width="stretch",
             ):
                 preset_query = prompt
 
@@ -712,7 +712,7 @@ def render_fastmcp_chat_widget(
             )
         with col_send:
             send_btn = st.form_submit_button(
-                "發送 💬", type="primary", use_container_width=True
+                "發送 💬", type="primary", width="stretch"
             )
 
     query_to_send = preset_query or (
@@ -743,7 +743,7 @@ def render_fastmcp_chat_widget(
                 "🗑️ 清空追問歷程",
                 key=f"btn_reset_chat_{unique_key}",
                 help="清空後續追問，重新回到初次診斷基準報告",
-                use_container_width=True,
+                width="stretch",
             ):
                 st.session_state[history_key] = [
                     {"role": "assistant", "content": initial_diagnostic}

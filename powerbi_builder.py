@@ -580,7 +580,7 @@ def render_powerbi_studio(
                     "🪄 AI 自動排版",
                     key=f"{key_prefix}_btn_apply_ai",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
                     if nl_canvas_input.strip():
@@ -598,7 +598,7 @@ def render_powerbi_studio(
                 if st.button(
                     "🔄 清空重設",
                     key=f"{key_prefix}_btn_reset_spec",
-                    use_container_width=True,
+                    width="stretch",
                     help="重設為空白工作台",
                 ):
                     st.session_state[f"{key_prefix}_active_spec"] = ""
@@ -632,7 +632,10 @@ def render_powerbi_studio(
                     i18nLang=i18n_code,
                     i18n_lang=i18n_code,
                 )
-                components.html(pyg_html, height=950, scrolling=True)
+                if hasattr(st, "iframe"):
+                    st.iframe(pyg_html, height=950, width="stretch")
+                else:
+                    components.html(pyg_html, height=950, scrolling=True)
 
             # FastMCP Mode A Diagnostic for Active Dataset in Power BI Canvas
             st.markdown("---")
@@ -642,7 +645,7 @@ def render_powerbi_studio(
                     "🤖 呼叫 FastMCP 顧問深度診斷當前自訂畫布 (Mode A)",
                     key=f"{key_prefix}_btn_fastmcp_pbi",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     help="調用 FastMCP 顧問引擎：對目前在畫布中探索的資料表進行 MBB 深度歸因診斷與戰術方針規劃",
                 )
             with col_pbi_mcp_info:

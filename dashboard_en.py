@@ -377,12 +377,12 @@ def render_fastmcp_copilot():
     st.markdown("##### 💡 Quick Commercial Queries")
     q_col1, q_col2 = st.columns(2)
     with q_col1:
-        if st.button("📊 7-Day Revenue & Refunds", key="btn_q1_en", use_container_width=True):
+        if st.button("📊 7-Day Revenue & Refunds", key="btn_q1_en", width="stretch"):
             st.session_state.ai_query_en = "What is our overall GMV, Net Revenue, and refund rate over the past week?"
-        if st.button("💎 Platinum VIP Cohort", key="btn_q3_en", use_container_width=True):
+        if st.button("💎 Platinum VIP Cohort", key="btn_q3_en", width="stretch"):
             st.session_state.ai_query_en = "Describe the behavioral profile and net margin of our top-tier Platinum LTV customers."
     with q_col2:
-        if st.button("🏆 Top 3 Best-Sellers", key="btn_q2_en", use_container_width=True):
+        if st.button("🏆 Top 3 Best-Sellers", key="btn_q2_en", width="stretch"):
             st.session_state.ai_query_en = "List the top 3 best-selling products by completed revenue and sales volume."
 
     user_prompt = st.text_area(
@@ -393,7 +393,7 @@ def render_fastmcp_copilot():
         help="Ask analytical questions related to e-commerce operations, margins, products, or customers.",
     )
 
-    if st.button("Submit Query 🚀", type="primary", use_container_width=True, key="btn_ai_submit_en"):
+    if st.button("Submit Query 🚀", type="primary", width="stretch", key="btn_ai_submit_en"):
         with st.spinner("AI is inspecting BigQuery Gold dataset via FastMCP..."):
             from mcp_server.server import (
                 get_customer_metrics,
@@ -586,7 +586,7 @@ def main():
                 st.cache_data.clear()
                 st.rerun()
 
-        if st.button("🚀 Trigger Live Pipeline Run", type="primary", use_container_width=True, key="btn_trigger_wf_en"):
+        if st.button("🚀 Trigger Live Pipeline Run", type="primary", width="stretch", key="btn_trigger_wf_en"):
             with st.spinner("Dispatching execution request to Google Cloud Workflows..."):
                 success, resp = trigger_pipeline_workflow(project_id=PROJECT_ID)
                 if success:
@@ -663,7 +663,7 @@ def main():
                 data=export_df.to_csv(index=False).encode("utf-8-sig"),
                 file_name=dl_filename,
                 mime="text/csv",
-                use_container_width=True,
+                width="stretch",
             )
 
         elif selected_layer == "silver":
@@ -696,7 +696,7 @@ def main():
                 data=s_df.to_csv(index=False).encode("utf-8-sig"),
                 file_name=f"bigquery_silver_{s_name}.csv",
                 mime="text/csv",
-                use_container_width=True,
+                width="stretch",
             )
 
         else:  # bronze
@@ -729,7 +729,7 @@ def main():
                 data=b_df.to_csv(index=False).encode("utf-8-sig"),
                 file_name=f"bigquery_bronze_{b_name}.csv",
                 mime="text/csv",
-                use_container_width=True,
+                width="stretch",
             )
 
         # FastMCP Operations Copilot
@@ -1017,7 +1017,7 @@ def main():
                     xaxis={"showgrid": False},
                     yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
                 )
-                st.plotly_chart(fig_rev, use_container_width=True)
+                st.plotly_chart(fig_rev, width="stretch")
 
                 col_t1, col_t2 = st.columns(2)
                 with col_t1:
@@ -1034,7 +1034,7 @@ def main():
                         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
                         yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
                     )
-                    st.plotly_chart(fig_status, use_container_width=True)
+                    st.plotly_chart(fig_status, width="stretch")
 
                 with col_t2:
                     st.subheader("💵 Average Order Value (AOV) Trajectory")
@@ -1051,7 +1051,7 @@ def main():
                         margin={"l": 20, "r": 20, "t": 30, "b": 20},
                         yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
                     )
-                    st.plotly_chart(fig_aov, use_container_width=True)
+                    st.plotly_chart(fig_aov, width="stretch")
             else:
                 st.info("No Gold KPI records matching the selected date filter.")
 
@@ -1080,7 +1080,7 @@ def main():
                         template="plotly_dark",
                     )
                     fig_tier.update_layout(height=350, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                    st.plotly_chart(fig_tier, use_container_width=True)
+                    st.plotly_chart(fig_tier, width="stretch")
 
                 with col_ltv2:
                     fig_tier_bar = px.bar(
@@ -1093,12 +1093,12 @@ def main():
                         title="Cumulative Net Revenue by Customer Tier ($)",
                     )
                     fig_tier_bar.update_layout(height=350, margin={"l": 20, "r": 20, "t": 40, "b": 20}, showlegend=False)
-                    st.plotly_chart(fig_tier_bar, use_container_width=True)
+                    st.plotly_chart(fig_tier_bar, width="stretch")
 
                 st.subheader("💎 Top VIP Customers (PII Masked & Encrypted)")
                 st.caption("🔒 GDPR / Privacy Compliant: First name initials masked, emails cryptographically hashed via SHA-256")
                 show_cols = [c for c in ["customer_id", "customer_name", "masked_email", "customer_tier", "total_orders", "completed_orders", "lifetime_net_revenue"] if c in df_ltv.columns]
-                st.dataframe(df_ltv[show_cols], use_container_width=True, hide_index=True)
+                st.dataframe(df_ltv[show_cols], width="stretch", hide_index=True)
             else:
                 st.info("No customer LTV records available.")
 
@@ -1120,7 +1120,7 @@ def main():
                         labels={"completed_sales_amount": "Revenue ($)", "product_title": "Product Title"},
                     )
                     fig_prod_rev.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                    st.plotly_chart(fig_prod_rev, use_container_width=True)
+                    st.plotly_chart(fig_prod_rev, width="stretch")
 
                 with c_p2:
                     top_qty_prod = df_prod.sort_values(by="units_sold", ascending=True).tail(10)
@@ -1135,10 +1135,10 @@ def main():
                         labels={"units_sold": "Units Sold", "product_title": "Product Title"},
                     )
                     fig_prod_qty.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                    st.plotly_chart(fig_prod_qty, use_container_width=True)
+                    st.plotly_chart(fig_prod_qty, width="stretch")
 
                 st.subheader("📋 Comprehensive Product Performance Ledger")
-                st.dataframe(df_prod, use_container_width=True, hide_index=True)
+                st.dataframe(df_prod, width="stretch", hide_index=True)
             else:
                 st.info("No product ranking records available.")
 
@@ -1160,19 +1160,19 @@ def main():
             st.markdown("##### 💡 Click quick prompts to render instantly:")
             c_btn1, c_btn2, c_btn3 = st.columns(3)
             with c_btn1:
-                if st.button("📈 GMV vs. Net Revenue Trend", key="btn_nl_1_en", use_container_width=True):
+                if st.button("📈 GMV vs. Net Revenue Trend", key="btn_nl_1_en", width="stretch"):
                     set_gold_chart_query_en("Compare daily GMV against realized Net Revenue over time")
-                if st.button("🏆 Top 10 Best Selling Products", key="btn_nl_4_en", use_container_width=True):
+                if st.button("🏆 Top 10 Best Selling Products", key="btn_nl_4_en", width="stretch"):
                     set_gold_chart_query_en("Draw a bar chart of top 10 best-selling products by completed revenue")
             with c_btn2:
-                if st.button("⚠️ Refund & Cancellation Rates", key="btn_nl_2_en", use_container_width=True):
+                if st.button("⚠️ Refund & Cancellation Rates", key="btn_nl_2_en", width="stretch"):
                     set_gold_chart_query_en("Plot daily refund rate and cancellation rate trajectories")
-                if st.button("🏷️ Category Sales Distribution", key="btn_nl_5_en", use_container_width=True):
+                if st.button("🏷️ Category Sales Distribution", key="btn_nl_5_en", width="stretch"):
                     set_gold_chart_query_en("Show category revenue share breakdown in a pie chart")
             with c_btn3:
-                if st.button("💵 Average Order Value (AOV)", key="btn_nl_3_en", use_container_width=True):
+                if st.button("💵 Average Order Value (AOV)", key="btn_nl_3_en", width="stretch"):
                     set_gold_chart_query_en("Plot historical AOV trends over time")
-                if st.button("👥 Customer Tier Revenue Share", key="btn_nl_6_en", use_container_width=True):
+                if st.button("👥 Customer Tier Revenue Share", key="btn_nl_6_en", width="stretch"):
                     set_gold_chart_query_en("Display customer tiers revenue contribution in a pie chart")
 
             col_input, col_submit = st.columns([4, 1])
@@ -1185,7 +1185,7 @@ def main():
                 )
             with col_submit:
                 st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                btn_gen = st.button("Generate Chart 🚀", key="btn_trigger_chart_en", type="primary", use_container_width=True)
+                btn_gen = st.button("Generate Chart 🚀", key="btn_trigger_chart_en", type="primary", width="stretch")
 
             target_query = current_nl.strip() if current_nl and current_nl.strip() else "Compare daily GMV against realized Net Revenue over time"
             if btn_gen and st.session_state.get("nl_last_executed_query_en") != target_query:
@@ -1220,7 +1220,7 @@ def main():
                 )
             else:
                 st.subheader(f"📊 {chart_title}")
-                st.plotly_chart(fig_nl, use_container_width=True)
+                st.plotly_chart(fig_nl, width="stretch")
 
                 st.markdown(
                     f"""
@@ -1241,7 +1241,7 @@ def main():
                         "🤖 Run FastMCP Deep Diagnostic (Mode A)",
                         key="btn_fastmcp_diag_main_en",
                         type="primary",
-                        use_container_width=True,
+                        width="stretch",
                         help="Trigger FastMCP consultant engine: Applies McKinsey SCQA + MECE Issue Trees + 30-60-90 day tactical roadmap for deep causal attribution.",
                     )
                 with col_mcp_info:
@@ -1268,7 +1268,7 @@ def main():
                     )
 
                 with st.expander("🔍 Click to Expand: Underlying Chart Dataset (Data Preview)"):
-                    st.dataframe(raw_df, use_container_width=True, hide_index=True)
+                    st.dataframe(raw_df, width="stretch", hide_index=True)
 
         # GOLD TAB 5: Custom Analytics Studio (Power BI Canvas)
         with tab5:
@@ -1298,7 +1298,7 @@ def main():
                         color_discrete_sequence=["#10b981", "#f59e0b", "#ef4444", "#6366f1"],
                     )
                     fig_s_status.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                    st.plotly_chart(fig_s_status, use_container_width=True)
+                    st.plotly_chart(fig_s_status, width="stretch")
 
                 with c_s2:
                     st.markdown("##### Gross vs. Net Order Volume")
@@ -1318,10 +1318,10 @@ def main():
                             height=320,
                             margin={"l": 20, "r": 20, "t": 30, "b": 20},
                         )
-                        st.plotly_chart(fig_s_trend, use_container_width=True)
+                        st.plotly_chart(fig_s_trend, width="stretch")
 
                 st.markdown("##### 📋 Fact Orders Detailed Table (Top 500)")
-                st.dataframe(df_orders, use_container_width=True, hide_index=True)
+                st.dataframe(df_orders, width="stretch", hide_index=True)
             else:
                 st.info("No silver fct_orders records available.")
 
@@ -1340,7 +1340,7 @@ def main():
                         color_discrete_sequence=["#38bdf8"],
                     )
                     fig_hist.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                    st.plotly_chart(fig_hist, use_container_width=True)
+                    st.plotly_chart(fig_hist, width="stretch")
 
                 with c_i2:
                     st.markdown("##### Quantity Breakdown")
@@ -1349,10 +1349,10 @@ def main():
                         qty_df.columns = ["quantity", "count"]
                         fig_qty = px.bar(qty_df, x="quantity", y="count", template="plotly_dark", color_discrete_sequence=["#a855f7"])
                         fig_qty.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                        st.plotly_chart(fig_qty, use_container_width=True)
+                        st.plotly_chart(fig_qty, width="stretch")
 
                 st.markdown("##### 📋 Fact Items Detailed Table (Top 500)")
-                st.dataframe(df_items, use_container_width=True, hide_index=True)
+                st.dataframe(df_items, width="stretch", hide_index=True)
             else:
                 st.info("No silver fct_order_items records available.")
 
@@ -1361,7 +1361,7 @@ def main():
             st.subheader("👥 dim_customers Customer Dimension (PII De-Identified)")
             st.caption("🔒 Privacy Compliant: Full names and emails masked / cryptographically hashed")
             if not df_cust.empty:
-                st.dataframe(df_cust, use_container_width=True, hide_index=True)
+                st.dataframe(df_cust, width="stretch", hide_index=True)
             else:
                 st.info("No silver dim_customers records available.")
 
@@ -1381,10 +1381,10 @@ def main():
                         title="Product Count by Category",
                     )
                     fig_cat.update_layout(height=340, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                    st.plotly_chart(fig_cat, use_container_width=True)
+                    st.plotly_chart(fig_cat, width="stretch")
 
                 st.markdown("##### 📋 Product Dimension Roster")
-                st.dataframe(df_prod_silver, use_container_width=True, hide_index=True)
+                st.dataframe(df_prod_silver, width="stretch", hide_index=True)
             else:
                 st.info("No silver dim_products records available.")
 
@@ -1408,7 +1408,7 @@ def main():
             st.subheader("📥 raw_orders Ingestion Event Logs")
             st.caption("Raw JSON events extracted from Platzi Fake Store API, containing dlt ingestion metadata")
             if not df_raw_orders.empty:
-                st.dataframe(df_raw_orders, use_container_width=True, hide_index=True)
+                st.dataframe(df_raw_orders, width="stretch", hide_index=True)
             else:
                 st.info("No bronze raw_orders records available.")
 
@@ -1417,7 +1417,7 @@ def main():
             st.subheader("🛒 raw_order_items Unfiltered Item Streams")
             st.caption("Raw order line items prior to transformation and schema standardization")
             if not df_raw_items.empty:
-                st.dataframe(df_raw_items, use_container_width=True, hide_index=True)
+                st.dataframe(df_raw_items, width="stretch", hide_index=True)
             else:
                 st.info("No bronze raw_order_items records available.")
 
@@ -1426,7 +1426,7 @@ def main():
             st.subheader("👤 raw_customers Customer Ingestion Snapshots")
             st.caption("Original customer records ingested before dbt staging privacy masking")
             if not df_raw_cust.empty:
-                st.dataframe(df_raw_cust, use_container_width=True, hide_index=True)
+                st.dataframe(df_raw_cust, width="stretch", hide_index=True)
             else:
                 st.info("No bronze raw_customers records available.")
 
@@ -1435,7 +1435,7 @@ def main():
             st.subheader("⚙️ _dlt_loads Pipeline Ingestion Run Logs")
             st.caption("Tracks load_id, schema versioning, and execution status across dlt pipeline runs")
             if not df_dlt.empty:
-                st.dataframe(df_dlt, use_container_width=True, hide_index=True)
+                st.dataframe(df_dlt, width="stretch", hide_index=True)
             else:
                 st.info("No bronze _dlt_loads audit records available.")
 
@@ -1461,7 +1461,7 @@ def main():
                 st.subheader(f"📌 {t_meta['title']}")
                 st.caption(f"Custom Tab Type: **{t_meta.get('type_label', 'Custom Dashboard')}** · Bound Dataset: `{t_meta.get('dataset_name', 'BigQuery Table')}`")
             with col_c_del:
-                if st.button("🗑️ Remove Tab", key=f"btn_del_tab_en_{t_meta['id']}", use_container_width=True, help="Remove this custom tab from the tab bar"):
+                if st.button("🗑️ Remove Tab", key=f"btn_del_tab_en_{t_meta['id']}", width="stretch", help="Remove this custom tab from the tab bar"):
                     st.session_state.custom_tabs_en = [x for x in st.session_state.custom_tabs_en if x["id"] != t_meta["id"]]
                     st.rerun()
 
@@ -1480,7 +1480,7 @@ def main():
                     )
                 with col_submit:
                     st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                    btn_gen = st.button("Generate Chart 🚀", key=f"btn_chart_en_{tab_id}", type="primary", use_container_width=True)
+                    btn_gen = st.button("Generate Chart 🚀", key=f"btn_chart_en_{tab_id}", type="primary", width="stretch")
 
                 target_query = current_nl if current_nl else t_meta.get("default_query", "Show daily revenue trajectory")
 
@@ -1515,7 +1515,7 @@ def main():
                     )
                 else:
                     st.subheader(f"📊 {chart_title}")
-                    st.plotly_chart(fig_nl, use_container_width=True)
+                    st.plotly_chart(fig_nl, width="stretch")
                     st.markdown(
                         f"""
                         <div class="metric-card" style="border-left: 4px solid #6366f1;">
@@ -1535,7 +1535,7 @@ def main():
                             "🤖 Run FastMCP Deep Diagnostic (Mode A)",
                             key=f"btn_mcp_custom_en_{tab_id}",
                             type="primary",
-                            use_container_width=True,
+                            width="stretch",
                         )
                     with col_mc2:
                         st.caption("⚡ **FastMCP Mode A**: Performs deep causal diagnostic over underlying data.")
@@ -1561,7 +1561,7 @@ def main():
                         )
 
                     with st.expander("🔍 Click to Expand: View Data Table"):
-                        st.dataframe(raw_df, use_container_width=True, hide_index=True)
+                        st.dataframe(raw_df, width="stretch", hide_index=True)
 
             elif t_meta["type"] == "powerbi_canvas":
                 render_powerbi_studio(
@@ -1656,7 +1656,7 @@ def main():
                 )
 
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🚀 Create & Append Tab", type="primary", use_container_width=True, key="btn_create_custom_tab_en"):
+            if st.button("🚀 Create & Append Tab", type="primary", width="stretch", key="btn_create_custom_tab_en"):
                 import uuid
                 tab_id = f"custom_en_{uuid.uuid4().hex[:6]}"
                 new_tab_meta = {

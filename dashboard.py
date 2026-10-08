@@ -396,12 +396,12 @@ def render_fastmcp_copilot():
     st.markdown("##### 💡 快速業務提問")
     q_col1, q_col2 = st.columns(2)
     with q_col1:
-        if st.button("📊 一週營收退款", key="btn_q1", use_container_width=True):
+        if st.button("📊 一週營收退款", key="btn_q1", width="stretch"):
             st.session_state.ai_query = "請問過去一週的整體 GMV、實質營收與退款率如何？"
-        if st.button("💎 Platinum 客戶", key="btn_q3", use_container_width=True):
+        if st.button("💎 Platinum 客戶", key="btn_q3", width="stretch"):
             st.session_state.ai_query = "請列出終身價值 (LTV) 最頂級的客戶群體特性。"
     with q_col2:
-        if st.button("🏆 Top 3 熱銷品", key="btn_q2", use_container_width=True):
+        if st.button("🏆 Top 3 熱銷品", key="btn_q2", width="stretch"):
             st.session_state.ai_query = "請列出目前總銷售額排名前三的商品名稱與金額。"
 
     user_prompt = st.text_area(
@@ -412,7 +412,7 @@ def render_fastmcp_copilot():
         help="輸入與電商營運、銷售績效、商品或顧客相關的分析問題",
     )
 
-    if st.button("送出提問 🚀", type="primary", use_container_width=True):
+    if st.button("送出提問 🚀", type="primary", width="stretch"):
         with st.spinner("AI 正在透過 FastMCP 查詢 BigQuery 金牌資料集..."):
             from mcp_server.server import (
                 get_customer_metrics,
@@ -681,7 +681,7 @@ with st.sidebar:
             st.cache_data.clear()
             st.rerun()
 
-    if st.button("🚀 立即同步最新資料 (Trigger Workflow)", type="primary", use_container_width=True, key="btn_trigger_wf"):
+    if st.button("🚀 立即同步最新資料 (Trigger Workflow)", type="primary", width="stretch", key="btn_trigger_wf"):
         with st.spinner("正在向 Google Cloud Workflows 發送執行請求..."):
             success, resp = trigger_pipeline_workflow(project_id=PROJECT_ID)
             if success:
@@ -758,7 +758,7 @@ with st.sidebar:
             data=export_df.to_csv(index=False).encode("utf-8-sig"),
             file_name=dl_filename,
             mime="text/csv",
-            use_container_width=True,
+            width="stretch",
         )
 
     elif selected_layer == "silver":
@@ -791,7 +791,7 @@ with st.sidebar:
             data=s_df.to_csv(index=False).encode("utf-8-sig"),
             file_name=f"bigquery_silver_{s_name}.csv",
             mime="text/csv",
-            use_container_width=True,
+            width="stretch",
         )
 
     else:  # bronze
@@ -824,7 +824,7 @@ with st.sidebar:
             data=b_df.to_csv(index=False).encode("utf-8-sig"),
             file_name=f"bigquery_bronze_{b_name}.csv",
             mime="text/csv",
-            use_container_width=True,
+            width="stretch",
         )
 
     st.markdown("---")
@@ -1114,7 +1114,7 @@ if selected_layer == "gold":
                 xaxis={"showgrid": False},
                 yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
             )
-            st.plotly_chart(fig_rev, use_container_width=True)
+            st.plotly_chart(fig_rev, width="stretch")
 
             col_t1, col_t2 = st.columns(2)
             with col_t1:
@@ -1131,7 +1131,7 @@ if selected_layer == "gold":
                     legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
                     yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
                 )
-                st.plotly_chart(fig_status, use_container_width=True)
+                st.plotly_chart(fig_status, width="stretch")
 
             with col_t2:
                 st.subheader("💵 平均客單價 (AOV) 走勢")
@@ -1148,7 +1148,7 @@ if selected_layer == "gold":
                     margin={"l": 20, "r": 20, "t": 30, "b": 20},
                     yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
                 )
-                st.plotly_chart(fig_aov, use_container_width=True)
+                st.plotly_chart(fig_aov, width="stretch")
         else:
             st.info("尚無符合篩選區間的金牌 KPI 數據。")
 
@@ -1179,7 +1179,7 @@ if selected_layer == "gold":
                     template="plotly_dark",
                 )
                 fig_tier.update_layout(height=350, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                st.plotly_chart(fig_tier, use_container_width=True)
+                st.plotly_chart(fig_tier, width="stretch")
 
             with col_ltv2:
                 fig_tier_bar = px.bar(
@@ -1192,12 +1192,12 @@ if selected_layer == "gold":
                     title="各級別顧客累積淨貢獻額 ($)",
                 )
                 fig_tier_bar.update_layout(height=350, margin={"l": 20, "r": 20, "t": 40, "b": 20}, showlegend=False)
-                st.plotly_chart(fig_tier_bar, use_container_width=True)
+                st.plotly_chart(fig_tier_bar, width="stretch")
 
             st.subheader("💎 高價值 VIP 客戶排名 (已套用 PII 加密遮蔽)")
             st.caption("🔒 符合 GDPR/個資規範：姓名首字星號化，電子信箱透過 SHA-256 雜湊")
             show_cols = [c for c in ["customer_id", "customer_name", "masked_email", "customer_tier", "total_orders", "completed_orders", "lifetime_net_revenue"] if c in df_ltv.columns]
-            st.dataframe(df_ltv[show_cols], use_container_width=True, hide_index=True)
+            st.dataframe(df_ltv[show_cols], width="stretch", hide_index=True)
         else:
             st.info("尚無客戶 LTV 分群數據。")
 
@@ -1221,7 +1221,7 @@ if selected_layer == "gold":
                     labels={"completed_sales_amount": "累積成交金額 ($)", "product_title": "商品名稱"},
                 )
                 fig_prod_rev.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                st.plotly_chart(fig_prod_rev, use_container_width=True)
+                st.plotly_chart(fig_prod_rev, width="stretch")
 
             with c_p2:
                 top_qty_prod = df_prod.sort_values(by="units_sold", ascending=True).tail(10)
@@ -1236,10 +1236,10 @@ if selected_layer == "gold":
                     labels={"units_sold": "累積銷售件數", "product_title": "商品名稱"},
                 )
                 fig_prod_qty.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                st.plotly_chart(fig_prod_qty, use_container_width=True)
+                st.plotly_chart(fig_prod_qty, width="stretch")
 
             st.subheader("📋 完整商品業績明細清單")
-            st.dataframe(df_prod, use_container_width=True, hide_index=True)
+            st.dataframe(df_prod, width="stretch", hide_index=True)
         else:
             st.info("尚無商品業績排行數據。")
 
@@ -1263,19 +1263,19 @@ if selected_layer == "gold":
         st.markdown("##### 💡 點擊範例指令立即生圖：")
         c_btn1, c_btn2, c_btn3 = st.columns(3)
         with c_btn1:
-            if st.button("📈 GMV 與淨營收對比走勢", key="btn_nl_1", use_container_width=True):
+            if st.button("📈 GMV 與淨營收對比走勢", key="btn_nl_1", width="stretch"):
                 set_gold_chart_query("請幫我畫出每日 GMV 與實質淨營收的對比走勢圖")
-            if st.button("🏆 Top 10 熱銷商品排行", key="btn_nl_4", use_container_width=True):
+            if st.button("🏆 Top 10 熱銷商品排行", key="btn_nl_4", width="stretch"):
                 set_gold_chart_query("用長條圖呈現銷售額前 10 大熱銷商品")
         with c_btn2:
-            if st.button("⚠️ 退款率與取消率監控", key="btn_nl_2", use_container_width=True):
+            if st.button("⚠️ 退款率與取消率監控", key="btn_nl_2", width="stretch"):
                 set_gold_chart_query("畫出每日退款率與取消率的監控走勢圖")
-            if st.button("🏷️ 商品品類銷售佔比圓餅圖", key="btn_nl_5", use_container_width=True):
+            if st.button("🏷️ 商品品類銷售佔比圓餅圖", key="btn_nl_5", width="stretch"):
                 set_gold_chart_query("幫我畫各商品品類 (Category) 銷售金額佔比圓餅圖")
         with c_btn3:
-            if st.button("💵 平均客單價 (AOV) 走勢", key="btn_nl_3", use_container_width=True):
+            if st.button("💵 平均客單價 (AOV) 走勢", key="btn_nl_3", width="stretch"):
                 set_gold_chart_query("請繪製平均客單價 AOV 的歷史波動走勢圖")
-            if st.button("👥 會員等級價值分佈圖", key="btn_nl_6", use_container_width=True):
+            if st.button("👥 會員等級價值分佈圖", key="btn_nl_6", width="stretch"):
                 set_gold_chart_query("用圓餅圖呈現不同會員等級 (Customer Tiers) 的營收貢獻")
 
         col_input, col_submit = st.columns([4, 1])
@@ -1288,7 +1288,7 @@ if selected_layer == "gold":
             )
         with col_submit:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            btn_gen = st.button("生成圖表 🚀", key="btn_trigger_chart", type="primary", use_container_width=True)
+            btn_gen = st.button("生成圖表 🚀", key="btn_trigger_chart", type="primary", width="stretch")
 
         target_query = current_nl.strip() if current_nl and current_nl.strip() else "請幫我畫出每日 GMV 與實質淨營收的對比走勢圖"
         if btn_gen and st.session_state.get("nl_last_executed_query") != target_query:
@@ -1323,7 +1323,7 @@ if selected_layer == "gold":
             )
         else:
             st.subheader(f"📊 {chart_title}")
-            st.plotly_chart(fig_nl, use_container_width=True)
+            st.plotly_chart(fig_nl, width="stretch")
 
             st.markdown(
                 f"""
@@ -1345,7 +1345,7 @@ if selected_layer == "gold":
                     "🤖 呼叫 FastMCP 顧問深度診斷 (Mode A)",
                     key="btn_fastmcp_diag_main",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     help="調用 FastMCP 顧問引擎：套用麥肯錫 SCQA + MECE 議題樹 + 30-60-90 天落地方針進行深度數據因果診斷",
                 )
             with col_mcp_info:
@@ -1372,7 +1372,7 @@ if selected_layer == "gold":
                 )
 
             with st.expander("🔍 點擊展開：檢視本圖表底層數據表 (Data Preview)"):
-                st.dataframe(raw_df, use_container_width=True, hide_index=True)
+                st.dataframe(raw_df, width="stretch", hide_index=True)
 
     # --------------------------------------------------------------------------
     # GOLD TAB 5: 類 Power BI 雙軌自訂視覺化看板
@@ -1406,7 +1406,7 @@ elif selected_layer == "silver":
                     color_discrete_sequence=["#10b981", "#f59e0b", "#ef4444", "#6366f1"],
                 )
                 fig_s_status.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                st.plotly_chart(fig_s_status, use_container_width=True)
+                st.plotly_chart(fig_s_status, width="stretch")
 
             with c_s2:
                 st.markdown("##### 訂單金額走勢 (Gross vs Net Amount)")
@@ -1426,10 +1426,10 @@ elif selected_layer == "silver":
                         height=320,
                         margin={"l": 20, "r": 20, "t": 30, "b": 20},
                     )
-                    st.plotly_chart(fig_s_trend, use_container_width=True)
+                    st.plotly_chart(fig_s_trend, width="stretch")
 
             st.markdown("##### 📋 訂單事實詳細資料表 (Top 500 筆)")
-            st.dataframe(df_orders, use_container_width=True, hide_index=True)
+            st.dataframe(df_orders, width="stretch", hide_index=True)
         else:
             st.info("尚無 fct_orders 銀牌資料。")
 
@@ -1450,7 +1450,7 @@ elif selected_layer == "silver":
                     color_discrete_sequence=["#38bdf8"],
                 )
                 fig_hist.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                st.plotly_chart(fig_hist, use_container_width=True)
+                st.plotly_chart(fig_hist, width="stretch")
 
             with c_i2:
                 st.markdown("##### 購買數量分佈 (Quantity Breakdown)")
@@ -1459,10 +1459,10 @@ elif selected_layer == "silver":
                     qty_df.columns = ["quantity", "count"]
                     fig_qty = px.bar(qty_df, x="quantity", y="count", template="plotly_dark", color_discrete_sequence=["#a855f7"])
                     fig_qty.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                    st.plotly_chart(fig_qty, use_container_width=True)
+                    st.plotly_chart(fig_qty, width="stretch")
 
             st.markdown("##### 📋 品項事實詳細資料表 (Top 500 筆)")
-            st.dataframe(df_items, use_container_width=True, hide_index=True)
+            st.dataframe(df_items, width="stretch", hide_index=True)
         else:
             st.info("尚無 fct_order_items 銀牌資料。")
 
@@ -1473,7 +1473,7 @@ elif selected_layer == "silver":
         st.subheader("👥 dim_customers 客戶維度表 (PII 去識別化)")
         st.caption("🔒 符合資安規範：姓名與信箱透過 SHA-256 雜湊或遮蔽處理")
         if not df_cust.empty:
-            st.dataframe(df_cust, use_container_width=True, hide_index=True)
+            st.dataframe(df_cust, width="stretch", hide_index=True)
         else:
             st.info("尚無 dim_customers 銀牌資料。")
 
@@ -1495,10 +1495,10 @@ elif selected_layer == "silver":
                     title="各商品品類涵蓋之商品項目數",
                 )
                 fig_cat.update_layout(height=340, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                st.plotly_chart(fig_cat, use_container_width=True)
+                st.plotly_chart(fig_cat, width="stretch")
 
             st.markdown("##### 📋 商品維度明細清單")
-            st.dataframe(df_prod_silver, use_container_width=True, hide_index=True)
+            st.dataframe(df_prod_silver, width="stretch", hide_index=True)
         else:
             st.info("尚無 dim_products 銀牌資料。")
 
@@ -1526,7 +1526,7 @@ else:  # bronze layer
         st.subheader("📥 raw_orders 原始訂單 Ingestion 串流記錄")
         st.caption("源自 Platzi Fake Store API 的原始 JSON 解析落地數據，包含 dlt Ingestion 元數據")
         if not df_raw_orders.empty:
-            st.dataframe(df_raw_orders, use_container_width=True, hide_index=True)
+            st.dataframe(df_raw_orders, width="stretch", hide_index=True)
         else:
             st.info("尚無 raw_orders 銅牌資料。")
 
@@ -1537,7 +1537,7 @@ else:  # bronze layer
         st.subheader("🛒 raw_order_items 原始品項拆解流水")
         st.caption("未經彙總與業務規則過濾之原始訂單品項記錄")
         if not df_raw_items.empty:
-            st.dataframe(df_raw_items, use_container_width=True, hide_index=True)
+            st.dataframe(df_raw_items, width="stretch", hide_index=True)
         else:
             st.info("尚無 raw_order_items 銅牌資料。")
 
@@ -1548,7 +1548,7 @@ else:  # bronze layer
         st.subheader("👤 raw_customers 原始客戶資料快照")
         st.caption("原始客戶明細，後續由 dbt staging 進行 PII 遮蔽雜湊轉換為銀牌維度")
         if not df_raw_cust.empty:
-            st.dataframe(df_raw_cust, use_container_width=True, hide_index=True)
+            st.dataframe(df_raw_cust, width="stretch", hide_index=True)
         else:
             st.info("尚無 raw_customers 銅牌資料。")
 
@@ -1559,7 +1559,7 @@ else:  # bronze layer
         st.subheader("⚙️ _dlt_loads Ingestion 管道載入歷程日誌")
         st.caption("記錄每次 dlt pipeline 載入之 load_id、schema 演化版本與載入完成狀態")
         if not df_dlt.empty:
-            st.dataframe(df_dlt, use_container_width=True, hide_index=True)
+            st.dataframe(df_dlt, width="stretch", hide_index=True)
         else:
             st.info("尚無 _dlt_loads 管道日誌資料。")
 
@@ -1590,7 +1590,7 @@ for idx, (t_meta, t_obj) in enumerate(zip(st.session_state.custom_tabs, custom_t
             st.subheader(f"📌 {t_meta['title']}")
             st.caption(f"自訂分頁類型：**{t_meta.get('type_label', '自訂看板')}** · 綁定資料表：`{t_meta.get('dataset_name', 'BigQuery 資料表')}`")
         with col_c_del:
-            if st.button("🗑️ 移除分頁", key=f"btn_del_tab_{t_meta['id']}", use_container_width=True, help="點擊從分頁列移除此自訂分頁"):
+            if st.button("🗑️ 移除分頁", key=f"btn_del_tab_{t_meta['id']}", width="stretch", help="點擊從分頁列移除此自訂分頁"):
                 st.session_state.custom_tabs = [x for x in st.session_state.custom_tabs if x["id"] != t_meta["id"]]
                 st.rerun()
 
@@ -1609,7 +1609,7 @@ for idx, (t_meta, t_obj) in enumerate(zip(st.session_state.custom_tabs, custom_t
                 )
             with col_submit:
                 st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                btn_gen = st.button("生成圖表 🚀", key=f"btn_chart_{tab_id}", type="primary", use_container_width=True)
+                btn_gen = st.button("生成圖表 🚀", key=f"btn_chart_{tab_id}", type="primary", width="stretch")
 
             target_query = current_nl if current_nl else t_meta.get("default_query", "請幫我畫出每日營收走勢")
 
@@ -1645,7 +1645,7 @@ for idx, (t_meta, t_obj) in enumerate(zip(st.session_state.custom_tabs, custom_t
                 )
             else:
                 st.subheader(f"📊 {chart_title}")
-                st.plotly_chart(fig_nl, use_container_width=True)
+                st.plotly_chart(fig_nl, width="stretch")
                 st.markdown(
                     f"""
                     <div class="metric-card" style="border-left: 4px solid #6366f1;">
@@ -1666,7 +1666,7 @@ for idx, (t_meta, t_obj) in enumerate(zip(st.session_state.custom_tabs, custom_t
                         "🤖 呼叫 FastMCP 顧問深度診斷 (Mode A)",
                         key=f"btn_mcp_custom_{tab_id}",
                         type="primary",
-                        use_container_width=True,
+                        width="stretch",
                         help="以 MBB 顧問框架 (SCQA + MECE Issue Tree + 30-60-90天執行方案) 對本圖表進行深層商業因果歸因診斷",
                     )
                 with col_mc2:
@@ -1693,7 +1693,7 @@ for idx, (t_meta, t_obj) in enumerate(zip(st.session_state.custom_tabs, custom_t
                     )
 
                 with st.expander("🔍 點擊展開：檢視底層數據表 (Data Preview)"):
-                    st.dataframe(raw_df, use_container_width=True, hide_index=True)
+                    st.dataframe(raw_df, width="stretch", hide_index=True)
 
         elif t_meta["type"] == "powerbi_canvas":
             render_powerbi_studio(
@@ -1791,7 +1791,7 @@ with tab_add:
             )
 
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚀 立即建立並加入分頁列", type="primary", use_container_width=True, key="btn_create_custom_tab"):
+        if st.button("🚀 立即建立並加入分頁列", type="primary", width="stretch", key="btn_create_custom_tab"):
             import uuid
             tab_id = f"custom_{uuid.uuid4().hex[:6]}"
             new_tab_meta = {
