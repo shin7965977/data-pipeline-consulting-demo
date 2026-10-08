@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="0; url=zh/portal.html">
+  <title>Redirecting to Unified Quality & Analytics Portal...</title>
+  <script>
+    const userLang = navigator.language || navigator.userLanguage;
+    if (userLang && userLang.toLowerCase().startsWith('en')) {
+      window.location.replace("en/portal.html");
+    } else {
+      window.location.replace("zh/portal.html");
+    }
+  </script>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0b0f19; color: #f1f5f9; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center;">
+  <div>
+    <h2>Redirecting to DataOps Unified Portal...</h2>
+    <p style="color: #94a3b8;">If you are not redirected automatically, please choose your language:</p>
+    <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
+      <a href="zh/portal.html" style="padding: 0.6rem 1.2rem; background: #6366f1; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">繁體中文 (Traditional Chinese)</a>
+      <a href="en/portal.html" style="padding: 0.6rem 1.2rem; background: #334155; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">English</a>
+    </div>
+  </div>
+</body>
+</html>
