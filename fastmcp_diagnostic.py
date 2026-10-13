@@ -952,7 +952,7 @@ def render_fastmcp_advisor_drawer(
             align-items: stretch !important;
         }
 
-        /* 2. Pinned Viewport Following: AI Advisor stays pinned in viewport when user scrolls down */
+        /* 2. Pinned Viewport Full-Height: AI Advisor extends vertically from top to bottom (100vh) */
         @media (min-width: 992px) {
             .st-key-ai_advisor_sticky_card,
             div.st-key-ai_advisor_sticky_card,
@@ -960,18 +960,25 @@ def render_fastmcp_advisor_drawer(
             div[data-testid="column"]:has(#right-ai-sidebar-marker) > div[data-testid="stVerticalBlock"] > div.element-container:has(#right-ai-sidebar-marker) + div,
             div[data-testid="column"]:has(#right-ai-sidebar-marker) div[data-testid="stVerticalBlockBorderWrapper"] {
                 position: fixed !important;
-                top: 3.6rem !important;
-                right: 2rem !important;
-                width: 25.5vw !important;
-                max-width: 440px !important;
-                min-width: 320px !important;
-                max-height: calc(100vh - 4.8rem) !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                right: 0 !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                width: 28.5vw !important;
+                max-width: 480px !important;
+                min-width: 340px !important;
                 overflow-y: auto !important;
                 z-index: 999 !important;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(99, 102, 241, 0.05) !important;
-                border: 1px solid rgba(226, 232, 240, 0.95) !important;
+                box-shadow: -6px 0 28px rgba(0, 0, 0, 0.06) !important;
+                border-top: none !important;
+                border-bottom: none !important;
+                border-right: none !important;
+                border-left: 1px solid rgba(226, 232, 240, 0.95) !important;
                 background-color: #ffffff !important;
-                border-radius: 14px !important;
+                border-radius: 0 !important;
+                padding: 1.5rem 1.25rem !important;
+                box-sizing: border-box !important;
                 color: #0f172a !important;
             }
         }
@@ -983,6 +990,8 @@ def render_fastmcp_advisor_drawer(
                 position: relative !important;
                 width: 100% !important;
                 max-width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
                 background-color: #ffffff !important;
                 border: 1px solid rgba(226, 232, 240, 0.95) !important;
                 border-radius: 14px !important;
@@ -995,6 +1004,13 @@ def render_fastmcp_advisor_drawer(
             background-color: #f8fafc !important;
             border: 1px solid #e2e8f0 !important;
             border-radius: 10px !important;
+        }
+
+        /* Dynamic vertical stretch for chat messages container */
+        .st-key-ai_advisor_sticky_card div[data-testid="stVerticalBlockBorderWrapper"]:has([data-testid="stChatMessage"]) {
+            height: calc(100vh - 360px) !important;
+            max-height: calc(100vh - 360px) !important;
+            min-height: 450px !important;
         }
 
         .st-key-ai_advisor_sticky_card [data-testid="stChatMessage"] {
@@ -1054,15 +1070,20 @@ def render_fastmcp_advisor_drawer(
                     
                     if (card && col && window.innerWidth >= 992) {
                         const colRect = col.getBoundingClientRect();
-                        if (colRect.width > 100) {
-                            card.style.position = 'fixed';
-                            card.style.top = '3.6rem';
-                            card.style.left = colRect.left + 'px';
-                            card.style.width = colRect.width + 'px';
-                            card.style.maxHeight = 'calc(100vh - 4.8rem)';
-                            card.style.overflowY = 'auto';
-                            card.style.zIndex = '999';
-                        }
+                        const rightWidth = Math.max(340, window.innerWidth - colRect.left);
+                        card.style.position = 'fixed';
+                        card.style.top = '0px';
+                        card.style.bottom = '0px';
+                        card.style.right = '0px';
+                        card.style.height = '100vh';
+                        card.style.maxHeight = '100vh';
+                        card.style.width = Math.min(480, rightWidth) + 'px';
+                        card.style.overflowY = 'auto';
+                        card.style.zIndex = '999';
+                        card.style.borderRadius = '0px';
+                        card.style.borderTop = 'none';
+                        card.style.borderBottom = 'none';
+                        card.style.borderRight = 'none';
                     }
                 } catch(e) {}
             }
@@ -1168,8 +1189,8 @@ def render_fastmcp_advisor_drawer(
             )
             st.session_state[hist_key] = [{"role": "assistant", "content": welcome_intro}]
 
-        # Chat conversation messages container
-        with st.container(height=380, border=True):
+        # Chat conversation messages container (Vertically expanded to fill full height)
+        with st.container(height=540, border=True):
             for msg in st.session_state[hist_key]:
                 avatar = "🤖" if msg["role"] == "assistant" else "👤"
                 with st.chat_message(msg["role"], avatar=avatar):
