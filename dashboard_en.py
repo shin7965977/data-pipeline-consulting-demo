@@ -755,813 +755,526 @@ def main():
 
     # ==========================================================================
     # Main Header & Executive Metric Cards
-    # ==========================================================================
-    header_col1, header_col2 = st.columns([2.7, 1.3])
-    layer_display_titles = {
-        "gold": "🥇 Gold Layer (platzi_gold · Certified Executive & BI Metrics)",
-        "silver": "🥈 Silver Layer (platzi_silver · Cleaned Fact & Dimension Tables)",
-        "bronze": "🥉 Bronze Layer (platzi_bronze · Raw Streams & Ingestion Audit)",
-    }
-    with header_col1:
-        st.title("E-Commerce Lakehouse Analytics")
-        st.markdown(
-            f"**Current Layer**: {layer_display_titles.get(selected_layer, 'BigQuery Lakehouse')} · "
-            "**Platzi Store API + dlt + GCP BigQuery + dbt-core**"
-        )
-    with header_col2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        c_status, c_ai_btn = st.columns([1.1, 1.0])
-        with c_status:
+    is_ai_open_en = st.session_state.get("show_ai_drawer", False)
+
+    if is_ai_open_en:
+        main_page_col, ai_sidebar_col = st.columns([7.2, 2.8], gap="large")
+    else:
+        main_page_col = st.container()
+        ai_sidebar_col = None
+
+    with main_page_col:
+        # ==========================================================================
+        header_col1, header_col2 = st.columns([2.7, 1.3])
+        layer_display_titles = {
+            "gold": "🥇 Gold Layer (platzi_gold · Certified Executive & BI Metrics)",
+            "silver": "🥈 Silver Layer (platzi_silver · Cleaned Fact & Dimension Tables)",
+            "bronze": "🥉 Bronze Layer (platzi_bronze · Raw Streams & Ingestion Audit)",
+        }
+        with header_col1:
+            st.title("E-Commerce Lakehouse Analytics")
             st.markdown(
-                f"""
-                <div style="text-align: right;">
-                    <div class="status-badge">
-                        <div class="pulse-dot"></div>
-                        {selected_layer.upper()} Connected
+                f"**Current Layer**: {layer_display_titles.get(selected_layer, 'BigQuery Lakehouse')} · "
+                "**Platzi Store API + dlt + GCP BigQuery + dbt-core**"
+            )
+        with header_col2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            c_status, c_ai_btn = st.columns([1.1, 1.0])
+            with c_status:
+                st.markdown(
+                    f"""
+                    <div style="text-align: right;">
+                        <div class="status-badge">
+                            <div class="pulse-dot"></div>
+                            {selected_layer.upper()} Connected
+                        </div>
                     </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with c_ai_btn:
-            is_ai_open_en = st.session_state.get("show_ai_drawer", False)
-            if st.button(
-                "» Collapse" if is_ai_open_en else "✨ AI Advisor",
-                type="secondary" if is_ai_open_en else "primary",
-                key="top_bar_ai_toggle_en",
-                width="stretch",
-                help="Toggle Right Collapsible AI Advisor Sidebar (Global Visibility + Focus Priority)",
-            ):
-                st.session_state["show_ai_drawer"] = not is_ai_open_en
-                st.rerun()
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c_ai_btn:
+                is_ai_open_en = st.session_state.get("show_ai_drawer", False)
+                if st.button(
+                    "» Collapse" if is_ai_open_en else "✨ AI Advisor",
+                    type="secondary" if is_ai_open_en else "primary",
+                    key="top_bar_ai_toggle_en",
+                    width="stretch",
+                    help="Toggle Right Collapsible AI Advisor Sidebar (Global Visibility + Focus Priority)",
+                ):
+                    st.session_state["show_ai_drawer"] = not is_ai_open_en
+                    st.rerun()
 
-    st.markdown("---")
+        st.markdown("---")
 
-    # Layer-Specific Executive KPI Cards
-    if selected_layer == "gold":
-        total_gmv = filtered_kpi["gmv"].sum() if not filtered_kpi.empty and "gmv" in filtered_kpi.columns else 0.0
-        total_net_rev = filtered_kpi["net_revenue"].sum() if not filtered_kpi.empty and "net_revenue" in filtered_kpi.columns else 0.0
-        total_orders = filtered_kpi["total_orders"].sum() if not filtered_kpi.empty and "total_orders" in filtered_kpi.columns else 0
-        completed_orders = filtered_kpi["completed_orders"].sum() if not filtered_kpi.empty and "completed_orders" in filtered_kpi.columns else 0
-        cancelled_orders = filtered_kpi["cancelled_orders"].sum() if not filtered_kpi.empty and "cancelled_orders" in filtered_kpi.columns else 0
-        refunded_orders = filtered_kpi["refunded_orders"].sum() if not filtered_kpi.empty and "refunded_orders" in filtered_kpi.columns else 0
-        avg_aov = filtered_kpi["aov"].mean() if not filtered_kpi.empty and "aov" in filtered_kpi.columns else 0.0
-        cancel_rate = (cancelled_orders / total_orders * 100) if total_orders > 0 else 0
-        refund_rate = (refunded_orders / total_orders * 100) if total_orders > 0 else 0
+        # Layer-Specific Executive KPI Cards
+        if selected_layer == "gold":
+            total_gmv = filtered_kpi["gmv"].sum() if not filtered_kpi.empty and "gmv" in filtered_kpi.columns else 0.0
+            total_net_rev = filtered_kpi["net_revenue"].sum() if not filtered_kpi.empty and "net_revenue" in filtered_kpi.columns else 0.0
+            total_orders = filtered_kpi["total_orders"].sum() if not filtered_kpi.empty and "total_orders" in filtered_kpi.columns else 0
+            completed_orders = filtered_kpi["completed_orders"].sum() if not filtered_kpi.empty and "completed_orders" in filtered_kpi.columns else 0
+            cancelled_orders = filtered_kpi["cancelled_orders"].sum() if not filtered_kpi.empty and "cancelled_orders" in filtered_kpi.columns else 0
+            refunded_orders = filtered_kpi["refunded_orders"].sum() if not filtered_kpi.empty and "refunded_orders" in filtered_kpi.columns else 0
+            avg_aov = filtered_kpi["aov"].mean() if not filtered_kpi.empty and "aov" in filtered_kpi.columns else 0.0
+            cancel_rate = (cancelled_orders / total_orders * 100) if total_orders > 0 else 0
+            refund_rate = (refunded_orders / total_orders * 100) if total_orders > 0 else 0
 
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
+            c1, c2, c3, c4 = st.columns(4)
+            with c1:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Gross Merchandise Value (GMV)</div>
+                        <div class="metric-value">${total_gmv:,.2f}</div>
+                        <div class="metric-subtext">Cumulative Order Volume</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c2:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Net Realized Revenue</div>
+                        <div class="metric-value">${total_net_rev:,.2f}</div>
+                        <div class="metric-subtext">Net of Refunds & Discounts</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c3:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Average Order Value (AOV)</div>
+                        <div class="metric-value">${avg_aov:,.2f}</div>
+                        <div class="metric-subtext">Completed Order Average</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c4:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Refund / Cancellation Rate</div>
+                        <div class="metric-value">{refund_rate:.1f}% <span style="font-size:1rem;color:#94a3b8;">/ {cancel_rate:.1f}%</span></div>
+                        <div class="metric-subtext warning">{refunded_orders} Refunded / {cancelled_orders} Cancelled</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+        elif selected_layer == "silver":
+            s_orders_cnt = len(df_orders)
+            s_gross = df_orders["gross_amount"].sum() if not df_orders.empty and "gross_amount" in df_orders.columns else 0.0
+            s_discount = df_orders["discount_amount"].sum() if not df_orders.empty and "discount_amount" in df_orders.columns else 0.0
+            s_net = df_orders["net_amount"].sum() if not df_orders.empty and "net_amount" in df_orders.columns else 0.0
+
+            c1, c2, c3, c4 = st.columns(4)
+            with c1:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Cleaned Orders (fct_orders)</div>
+                        <div class="metric-value">{s_orders_cnt:,} records</div>
+                        <div class="metric-subtext">Standardized Fact Records</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c2:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Gross Order Volume</div>
+                        <div class="metric-value">${s_gross:,.2f}</div>
+                        <div class="metric-subtext">List Price Total</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c3:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Promotional Discounts</div>
+                        <div class="metric-value">${s_discount:,.2f}</div>
+                        <div class="metric-subtext">Coupons & Allowances</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c4:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Net Order Amount</div>
+                        <div class="metric-value">${s_net:,.2f}</div>
+                        <div class="metric-subtext">Collected Settlement Cashflow</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+        else:  # bronze
+            b_raw_orders_cnt = len(df_raw_orders)
+            b_raw_items_cnt = len(df_raw_items)
+            b_raw_cust_cnt = len(df_raw_cust)
+            b_dlt_cnt = len(df_dlt)
+
+            c1, c2, c3, c4 = st.columns(4)
+            with c1:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Raw Orders (raw_orders)</div>
+                        <div class="metric-value">{b_raw_orders_cnt:,} records</div>
+                        <div class="metric-subtext">Platzi API Ingestion Landing</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c2:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Raw Items (raw_order_items)</div>
+                        <div class="metric-value">{b_raw_items_cnt:,} records</div>
+                        <div class="metric-subtext">Unfiltered Line Items</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c3:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">Raw Customers (raw_customers)</div>
+                        <div class="metric-value">{b_raw_cust_cnt:,} records</div>
+                        <div class="metric-subtext">Pre-Masking Customer Snapshots</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with c4:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-label">dlt Load Batches (_dlt_loads)</div>
+                        <div class="metric-value">{b_dlt_cnt:,} batches</div>
+                        <div class="metric-subtext">Schema Evolution & Audit Log</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+        st.markdown("---")
+
+        # --------------------------------------------------------------------------
+        # Dynamic Tab Definitions
+        # --------------------------------------------------------------------------
+        if "custom_tabs_en" not in st.session_state:
+            st.session_state.custom_tabs_en = []
+
+        if selected_layer == "gold":
+            base_tab_titles = [
+                "📈 Revenue Trends & Funnel",
+                "👥 Customer Lifetime Value (LTV)",
+                "🏆 Product & Category Performance",
+                "✨ Natural Language AI Charts",
+                "🎛️ Custom BI Studio (Power BI Canvas)",
+            ]
+        elif selected_layer == "silver":
+            base_tab_titles = [
+                "📦 Orders Fact (fct_orders)",
+                "🛒 Line Items Fact (fct_order_items)",
+                "👥 Customers Dimension (dim_customers)",
+                "🏷️ Products Dimension (dim_products)",
+                "🎛️ Silver BI Studio (Power BI Canvas)",
+            ]
+        else:  # bronze
+            base_tab_titles = [
+                "📥 Raw Orders (raw_orders)",
+                "🛒 Raw Items (raw_order_items)",
+                "👤 Raw Customers (raw_customers)",
+                "⚙️ dlt Ingestion Logs (_dlt_loads)",
+                "🎛️ Bronze BI Studio (Power BI Canvas)",
+            ]
+
+        custom_tab_titles = [f"📌 {t['title']}" for t in st.session_state.custom_tabs_en]
+        all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ Add Custom Tab"]
+
+        tab_parent = st.container()
+
+        with tab_parent:
+            active_tab_nav_key = f"active_tab_nav_en_{selected_layer}"
+            if active_tab_nav_key not in st.session_state or st.session_state[active_tab_nav_key] not in all_tab_titles:
+                st.session_state[active_tab_nav_key] = all_tab_titles[0]
+
+            # Custom Segmented Control styling for modern tab look
             st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Gross Merchandise Value (GMV)</div>
-                    <div class="metric-value">${total_gmv:,.2f}</div>
-                    <div class="metric-subtext">Cumulative Order Volume</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with c2:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Net Realized Revenue</div>
-                    <div class="metric-value">${total_net_rev:,.2f}</div>
-                    <div class="metric-subtext">Net of Refunds & Discounts</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with c3:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Average Order Value (AOV)</div>
-                    <div class="metric-value">${avg_aov:,.2f}</div>
-                    <div class="metric-subtext">Completed Order Average</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with c4:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Refund / Cancellation Rate</div>
-                    <div class="metric-value">{refund_rate:.1f}% <span style="font-size:1rem;color:#94a3b8;">/ {cancel_rate:.1f}%</span></div>
-                    <div class="metric-subtext warning">{refunded_orders} Refunded / {cancelled_orders} Cancelled</div>
-                </div>
+                """
+                <style>
+                div[data-testid="stSegmentedControl"] {
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    gap: 8px !important;
+                    background: rgba(15, 23, 42, 0.45) !important;
+                    padding: 6px !important;
+                    border-radius: 12px !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    margin-bottom: 1.5rem !important;
+                }
+                div[data-testid="stSegmentedControl"] button {
+                    border-radius: 8px !important;
+                    font-size: 0.95rem !important;
+                    font-weight: 600 !important;
+                    padding: 0.55rem 1.1rem !important;
+                    border: none !important;
+                    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                }
+                div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+                    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+                    color: #ffffff !important;
+                    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
+                }
+                </style>
                 """,
                 unsafe_allow_html=True,
             )
 
-    elif selected_layer == "silver":
-        s_orders_cnt = len(df_orders)
-        s_gross = df_orders["gross_amount"].sum() if not df_orders.empty and "gross_amount" in df_orders.columns else 0.0
-        s_discount = df_orders["discount_amount"].sum() if not df_orders.empty and "discount_amount" in df_orders.columns else 0.0
-        s_net = df_orders["net_amount"].sum() if not df_orders.empty and "net_amount" in df_orders.columns else 0.0
-
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Cleaned Orders (fct_orders)</div>
-                    <div class="metric-value">{s_orders_cnt:,} records</div>
-                    <div class="metric-subtext">Standardized Fact Records</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
+            active_tab = st.segmented_control(
+                "Tab Navigation",
+                options=all_tab_titles,
+                default=st.session_state[active_tab_nav_key],
+                key=active_tab_nav_key,
+                label_visibility="collapsed",
             )
-        with c2:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Gross Order Volume</div>
-                    <div class="metric-value">${s_gross:,.2f}</div>
-                    <div class="metric-subtext">List Price Total</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with c3:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Promotional Discounts</div>
-                    <div class="metric-value">${s_discount:,.2f}</div>
-                    <div class="metric-subtext">Coupons & Allowances</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with c4:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Net Order Amount</div>
-                    <div class="metric-value">${s_net:,.2f}</div>
-                    <div class="metric-subtext">Collected Settlement Cashflow</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            if not active_tab:
+                active_tab = st.session_state[active_tab_nav_key]
 
-    else:  # bronze
-        b_raw_orders_cnt = len(df_raw_orders)
-        b_raw_items_cnt = len(df_raw_items)
-        b_raw_cust_cnt = len(df_raw_cust)
-        b_dlt_cnt = len(df_dlt)
-
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Raw Orders (raw_orders)</div>
-                    <div class="metric-value">{b_raw_orders_cnt:,} records</div>
-                    <div class="metric-subtext">Platzi API Ingestion Landing</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with c2:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Raw Items (raw_order_items)</div>
-                    <div class="metric-value">{b_raw_items_cnt:,} records</div>
-                    <div class="metric-subtext">Unfiltered Line Items</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with c3:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">Raw Customers (raw_customers)</div>
-                    <div class="metric-value">{b_raw_cust_cnt:,} records</div>
-                    <div class="metric-subtext">Pre-Masking Customer Snapshots</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with c4:
-            st.markdown(
-                f"""
-                <div class="metric-card">
-                    <div class="metric-label">dlt Load Batches (_dlt_loads)</div>
-                    <div class="metric-value">{b_dlt_cnt:,} batches</div>
-                    <div class="metric-subtext">Schema Evolution & Audit Log</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-    st.markdown("---")
-
-    # --------------------------------------------------------------------------
-    # Dynamic Tab Definitions
-    # --------------------------------------------------------------------------
-    if "custom_tabs_en" not in st.session_state:
-        st.session_state.custom_tabs_en = []
-
-    if selected_layer == "gold":
-        base_tab_titles = [
-            "📈 Revenue Trends & Funnel",
-            "👥 Customer Lifetime Value (LTV)",
-            "🏆 Product & Category Performance",
-            "✨ Natural Language AI Charts",
-            "🎛️ Custom BI Studio (Power BI Canvas)",
-        ]
-    elif selected_layer == "silver":
-        base_tab_titles = [
-            "📦 Orders Fact (fct_orders)",
-            "🛒 Line Items Fact (fct_order_items)",
-            "👥 Customers Dimension (dim_customers)",
-            "🏷️ Products Dimension (dim_products)",
-            "🎛️ Silver BI Studio (Power BI Canvas)",
-        ]
-    else:  # bronze
-        base_tab_titles = [
-            "📥 Raw Orders (raw_orders)",
-            "🛒 Raw Items (raw_order_items)",
-            "👤 Raw Customers (raw_customers)",
-            "⚙️ dlt Ingestion Logs (_dlt_loads)",
-            "🎛️ Bronze BI Studio (Power BI Canvas)",
-        ]
-
-    custom_tab_titles = [f"📌 {t['title']}" for t in st.session_state.custom_tabs_en]
-    all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ Add Custom Tab"]
-
-    tab_parent = st.container()
-
-    with tab_parent:
-        active_tab_nav_key = f"active_tab_nav_en_{selected_layer}"
-        if active_tab_nav_key not in st.session_state or st.session_state[active_tab_nav_key] not in all_tab_titles:
-            st.session_state[active_tab_nav_key] = all_tab_titles[0]
-
-        # Custom Segmented Control styling for modern tab look
-        st.markdown(
-            """
-            <style>
-            div[data-testid="stSegmentedControl"] {
-                display: flex !important;
-                flex-wrap: wrap !important;
-                gap: 8px !important;
-                background: rgba(15, 23, 42, 0.45) !important;
-                padding: 6px !important;
-                border-radius: 12px !important;
-                border: 1px solid rgba(255, 255, 255, 0.08) !important;
-                margin-bottom: 1.5rem !important;
-            }
-            div[data-testid="stSegmentedControl"] button {
-                border-radius: 8px !important;
-                font-size: 0.95rem !important;
-                font-weight: 600 !important;
-                padding: 0.55rem 1.1rem !important;
-                border: none !important;
-                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-            }
-            div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-                color: #ffffff !important;
-                box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        active_tab = st.segmented_control(
-            "Tab Navigation",
-            options=all_tab_titles,
-            default=st.session_state[active_tab_nav_key],
-            key=active_tab_nav_key,
-            label_visibility="collapsed",
-        )
-        if not active_tab:
-            active_tab = st.session_state[active_tab_nav_key]
-
-    # Render Tabs
-    if selected_layer == "gold":
-        # GOLD TAB 1: Revenue Trends & Funnel
-        if active_tab == base_tab_titles[0]:
-            st.subheader("📊 Daily GMV vs. Net Realized Revenue")
-            if not filtered_kpi.empty:
-                fig_rev = go.Figure()
-                fig_rev.add_trace(
-                    go.Scatter(
-                        x=filtered_kpi["order_date"],
-                        y=filtered_kpi["gmv"],
-                        mode="lines+markers",
-                        name="GMV (Gross Volume)",
-                        line={"color": "#6366f1", "width": 3},
-                        fill="tozeroy",
-                        fillcolor="rgba(99, 102, 241, 0.1)",
+        # Render Tabs
+        if selected_layer == "gold":
+            # GOLD TAB 1: Revenue Trends & Funnel
+            if active_tab == base_tab_titles[0]:
+                st.subheader("📊 Daily GMV vs. Net Realized Revenue")
+                if not filtered_kpi.empty:
+                    fig_rev = go.Figure()
+                    fig_rev.add_trace(
+                        go.Scatter(
+                            x=filtered_kpi["order_date"],
+                            y=filtered_kpi["gmv"],
+                            mode="lines+markers",
+                            name="GMV (Gross Volume)",
+                            line={"color": "#6366f1", "width": 3},
+                            fill="tozeroy",
+                            fillcolor="rgba(99, 102, 241, 0.1)",
+                        )
                     )
-                )
-                fig_rev.add_trace(
-                    go.Scatter(
-                        x=filtered_kpi["order_date"],
-                        y=filtered_kpi["net_revenue"],
-                        mode="lines+markers",
-                        name="Net Revenue (Realized)",
-                        line={"color": "#10b981", "width": 3},
+                    fig_rev.add_trace(
+                        go.Scatter(
+                            x=filtered_kpi["order_date"],
+                            y=filtered_kpi["net_revenue"],
+                            mode="lines+markers",
+                            name="Net Revenue (Realized)",
+                            line={"color": "#10b981", "width": 3},
+                        )
                     )
-                )
-                fig_rev.update_layout(
-                    template="plotly_dark",
-                    height=380,
-                    margin={"l": 20, "r": 20, "t": 30, "b": 20},
-                    legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
-                    xaxis={"showgrid": False},
-                    yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
-                )
-                st.plotly_chart(fig_rev, width="stretch")
-
-                col_t1, col_t2 = st.columns(2)
-                with col_t1:
-                    st.subheader("📦 Order Fulfillment Status Breakdown")
-                    fig_status = go.Figure()
-                    fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["completed_orders"], name="Completed", marker_color="#10b981"))
-                    fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["cancelled_orders"], name="Cancelled", marker_color="#f59e0b"))
-                    fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["refunded_orders"], name="Refunded", marker_color="#ef4444"))
-                    fig_status.update_layout(
-                        barmode="stack",
+                    fig_rev.update_layout(
                         template="plotly_dark",
-                        height=320,
+                        height=380,
                         margin={"l": 20, "r": 20, "t": 30, "b": 20},
                         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
+                        xaxis={"showgrid": False},
                         yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
                     )
-                    st.plotly_chart(fig_status, width="stretch")
+                    st.plotly_chart(fig_rev, width="stretch")
 
-                with col_t2:
-                    st.subheader("💵 Average Order Value (AOV) Trajectory")
-                    fig_aov = px.line(
-                        filtered_kpi,
-                        x="order_date",
-                        y="aov",
-                        template="plotly_dark",
-                        markers=True,
-                        color_discrete_sequence=["#38bdf8"],
-                    )
-                    fig_aov.update_layout(
-                        height=320,
-                        margin={"l": 20, "r": 20, "t": 30, "b": 20},
-                        yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
-                    )
-                    st.plotly_chart(fig_aov, width="stretch")
-            else:
-                st.info("No Gold KPI records matching the selected date filter.")
-
-        # GOLD TAB 2: Customer LTV Segmentation
-        elif active_tab == base_tab_titles[1]:
-            st.subheader("👥 Customer Tier Distribution & Value Contribution")
-            if not df_ltv.empty:
-                col_ltv1, col_ltv2 = st.columns([1, 2])
-                tier_counts = df_ltv["customer_tier"].value_counts().reset_index()
-                tier_counts.columns = ["customer_tier", "count"]
-                tier_colors = {
-                    "Platinum": "#a855f7",
-                    "Gold": "#eab308",
-                    "Silver": "#94a3b8",
-                    "Bronze": "#b45309",
-                }
-
-                with col_ltv1:
-                    fig_tier = px.pie(
-                        tier_counts,
-                        names="customer_tier",
-                        values="count",
-                        hole=0.55,
-                        color="customer_tier",
-                        color_discrete_map=tier_colors,
-                        template="plotly_dark",
-                    )
-                    fig_tier.update_layout(height=350, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                    st.plotly_chart(fig_tier, width="stretch")
-
-                with col_ltv2:
-                    fig_tier_bar = px.bar(
-                        df_ltv.groupby("customer_tier")["lifetime_net_revenue"].sum().reset_index(),
-                        x="customer_tier",
-                        y="lifetime_net_revenue",
-                        color="customer_tier",
-                        color_discrete_map=tier_colors,
-                        template="plotly_dark",
-                        title="Cumulative Net Revenue by Customer Tier ($)",
-                    )
-                    fig_tier_bar.update_layout(height=350, margin={"l": 20, "r": 20, "t": 40, "b": 20}, showlegend=False)
-                    st.plotly_chart(fig_tier_bar, width="stretch")
-
-                st.subheader("💎 Top VIP Customers (PII Masked & Encrypted)")
-                st.caption("🔒 GDPR / Privacy Compliant: First name initials masked, emails cryptographically hashed via SHA-256")
-                show_cols = [c for c in ["customer_id", "customer_name", "masked_email", "customer_tier", "total_orders", "completed_orders", "lifetime_net_revenue"] if c in df_ltv.columns]
-                st.dataframe(df_ltv[show_cols], width="stretch", hide_index=True)
-            else:
-                st.info("No customer LTV records available.")
-
-        # GOLD TAB 3: Product & Category Rankings
-        elif active_tab == base_tab_titles[2]:
-            st.subheader("🏆 Product Revenue & Volume Leaderboards")
-            if not df_prod.empty:
-                c_p1, c_p2 = st.columns(2)
-                with c_p1:
-                    top_rev_prod = df_prod.sort_values(by="completed_sales_amount", ascending=True).tail(10)
-                    fig_prod_rev = px.bar(
-                        top_rev_prod,
-                        x="completed_sales_amount",
-                        y="product_title",
-                        orientation="h",
-                        color="category_name" if "category_name" in top_rev_prod.columns else None,
-                        template="plotly_dark",
-                        title="Top 10 Products by Completed Sales Revenue ($)",
-                        labels={"completed_sales_amount": "Revenue ($)", "product_title": "Product Title"},
-                    )
-                    fig_prod_rev.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                    st.plotly_chart(fig_prod_rev, width="stretch")
-
-                with c_p2:
-                    top_qty_prod = df_prod.sort_values(by="units_sold", ascending=True).tail(10)
-                    fig_prod_qty = px.bar(
-                        top_qty_prod,
-                        x="units_sold",
-                        y="product_title",
-                        orientation="h",
-                        color="category_name" if "category_name" in top_qty_prod.columns else None,
-                        template="plotly_dark",
-                        title="Top 10 Products by Units Sold",
-                        labels={"units_sold": "Units Sold", "product_title": "Product Title"},
-                    )
-                    fig_prod_qty.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                    st.plotly_chart(fig_prod_qty, width="stretch")
-
-                st.subheader("📋 Comprehensive Product Performance Ledger")
-                st.dataframe(df_prod, width="stretch", hide_index=True)
-            else:
-                st.info("No product ranking records available.")
-
-        # GOLD TAB 4: Natural Language AI Charts
-        elif active_tab == base_tab_titles[3]:
-            st.subheader("✨ Natural Language AI Smart Chart Generator (Text-to-Chart)")
-            st.caption("🤖 Enter any analytical requirement in plain English. AI inspects BigQuery Gold schema and renders an interactive Plotly chart.")
-
-            gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
-
-            def set_gold_chart_query_en(q: str):
-                st.session_state["nl_chart_input_field_en"] = q
-                st.session_state["nl_chart_query_en"] = q
-                st.session_state.pop("fastmcp_diag_result_gold_tab4_en", None)
-                st.session_state.pop("mcp_chat_hist_gold_tab4_en", None)
-                st.session_state.pop("active_model_gold_tab4_en", None)
-                st.rerun()
-
-            st.markdown("##### 💡 Click quick prompts to render instantly:")
-            c_btn1, c_btn2, c_btn3 = st.columns(3)
-            with c_btn1:
-                if st.button("📈 GMV vs. Net Revenue Trend", key="btn_nl_1_en", width="stretch"):
-                    set_gold_chart_query_en("Compare daily GMV against realized Net Revenue over time")
-                if st.button("🏆 Top 10 Best Selling Products", key="btn_nl_4_en", width="stretch"):
-                    set_gold_chart_query_en("Draw a bar chart of top 10 best-selling products by completed revenue")
-            with c_btn2:
-                if st.button("⚠️ Refund & Cancellation Rates", key="btn_nl_2_en", width="stretch"):
-                    set_gold_chart_query_en("Plot daily refund rate and cancellation rate trajectories")
-                if st.button("🏷️ Category Sales Distribution", key="btn_nl_5_en", width="stretch"):
-                    set_gold_chart_query_en("Show category revenue share breakdown in a pie chart")
-            with c_btn3:
-                if st.button("💵 Average Order Value (AOV)", key="btn_nl_3_en", width="stretch"):
-                    set_gold_chart_query_en("Plot historical AOV trends over time")
-                if st.button("👥 Customer Tier Revenue Share", key="btn_nl_6_en", width="stretch"):
-                    set_gold_chart_query_en("Display customer tiers revenue contribution in a pie chart")
-
-            if "nl_chart_input_field_en" not in st.session_state:
-                st.session_state["nl_chart_input_field_en"] = "Compare daily GMV against realized Net Revenue over time"
-
-            col_input, col_submit = st.columns([4, 1])
-            with col_input:
-                current_nl = st.text_input(
-                    "Enter chart visualization prompt:",
-                    key="nl_chart_input_field_en",
-                    placeholder="e.g. Draw a bar chart of top 5 selling products, or daily refund rate trend...",
-                )
-            with col_submit:
-                st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                btn_gen = st.button("Generate Chart 🚀", key="btn_trigger_chart_en", type="primary", width="stretch")
-
-            target_query = current_nl.strip() if current_nl and current_nl.strip() else "Compare daily GMV against realized Net Revenue over time"
-            if btn_gen and st.session_state.get("nl_last_executed_query_en") != target_query:
-                st.session_state.pop("fastmcp_diag_result_gold_tab4_en", None)
-                st.session_state.pop("mcp_chat_hist_gold_tab4_en", None)
-                st.session_state.pop("active_model_gold_tab4_en", None)
-                st.session_state["nl_chart_query_en"] = target_query
-                st.rerun()
-            st.session_state["nl_last_executed_query_en"] = target_query
-
-            with st.spinner("AI is parsing natural language intent and querying BigQuery Gold dataset..."):
-                fig_nl, chart_title, insight_text, raw_df = generate_chart_from_nl(
-                    prompt=target_query,
-                    df_kpi=filtered_kpi,
-                    df_prod=df_prod,
-                    df_ltv=df_ltv,
-                    gemini_api_key=gemini_key,
-                )
-
-            st.markdown("---")
-            if fig_nl is None:
-                st.warning(f"### {chart_title}")
-                st.markdown(
-                    f"""
-                    <div class="metric-card" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05);">
-                        <div style="font-size: 1.05rem; line-height: 1.6; color: var(--text-color, #0f172a);">
-                            {insight_text}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.subheader(f"📊 {chart_title}")
-                st.plotly_chart(fig_nl, width="stretch")
-
-                st.markdown(
-                    f"""
-                    <div class="metric-card" style="border-left: 4px solid #6366f1;">
-                        <div class="metric-label">💡 MBB Executive Takeaway</div>
-                        <div style="font-size: 1.05rem; font-weight: 500; color: var(--text-color, #0f172a); margin-top: 0.25rem;">
-                            {insight_text}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                st.markdown("---")
-                col_mcp_btn, col_mcp_info = st.columns([1.8, 3.2])
-                with col_mcp_btn:
-                    run_mcp_diag = st.button(
-                        "🤖 Run FastMCP Deep Diagnostic (Mode A)",
-                        key="btn_fastmcp_diag_main_en",
-                        type="primary",
-                        width="stretch",
-                        help="Trigger FastMCP consultant engine: Applies McKinsey SCQA + MECE Issue Trees + 30-60-90 day tactical roadmap for deep causal attribution.",
-                    )
-                with col_mcp_info:
-                    st.caption("⚡ **FastMCP Mode A**: Synthesizes chart data and executes MBB-grade causal attribution diagnostic.")
-
-                diag_res_key = "fastmcp_diag_result_gold_tab4_en"
-                if run_mcp_diag:
-                    with st.spinner("🤖 FastMCP consultant is running MBB causal attribution diagnostic..."):
-                        diag_output = run_fastmcp_chart_diagnostic(
-                            chart_title=chart_title,
-                            df=raw_df,
-                            prompt_intent=target_query,
-                            gemini_api_key=gemini_key,
-                        )
-                        st.session_state[diag_res_key] = diag_output
-
-                if st.session_state.get(diag_res_key):
-                    render_fastmcp_chat_widget(
-                        unique_key="gold_tab4_en",
-                        chart_title=chart_title,
-                        df=raw_df,
-                        initial_diagnostic=st.session_state[diag_res_key],
-                        gemini_api_key=gemini_key,
-                    )
-
-                with st.expander("🔍 Click to Expand: Underlying Chart Dataset (Data Preview)"):
-                    st.dataframe(raw_df, width="stretch", hide_index=True)
-
-        # GOLD TAB 5: Custom Analytics Studio (Power BI Canvas)
-        elif active_tab == base_tab_titles[4]:
-            render_powerbi_studio(
-                df_kpi=filtered_kpi,
-                df_ltv=df_ltv,
-                df_prod=df_prod,
-                key_prefix="pbi_main_en",
-            )
-
-    elif selected_layer == "silver":
-        # SILVER TAB 1: Orders Fact
-        if active_tab == base_tab_titles[0]:
-            st.subheader("📦 fct_orders Cleaned Transactions Overview")
-            if not df_orders.empty:
-                c_s1, c_s2 = st.columns(2)
-                with c_s1:
-                    st.markdown("##### Order Status Distribution")
-                    status_counts = df_orders["order_status"].value_counts().reset_index()
-                    status_counts.columns = ["order_status", "count"]
-                    fig_s_status = px.pie(
-                        status_counts,
-                        names="order_status",
-                        values="count",
-                        template="plotly_dark",
-                        hole=0.45,
-                        color_discrete_sequence=["#10b981", "#f59e0b", "#ef4444", "#6366f1"],
-                    )
-                    fig_s_status.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                    st.plotly_chart(fig_s_status, width="stretch")
-
-                with c_s2:
-                    st.markdown("##### Gross vs. Net Order Volume")
-                    if "created_at" in df_orders.columns:
-                        orders_trend = df_orders.copy()
-                        orders_trend["order_day"] = pd.to_datetime(orders_trend["created_at"]).dt.date
-                        day_agg = orders_trend.groupby("order_day").agg(
-                            gross_sum=("gross_amount", "sum"),
-                            net_sum=("net_amount", "sum"),
-                        ).reset_index()
-                        fig_s_trend = go.Figure()
-                        fig_s_trend.add_trace(go.Bar(x=day_agg["order_day"], y=day_agg["gross_sum"], name="Gross Total", marker_color="#6366f1"))
-                        fig_s_trend.add_trace(go.Bar(x=day_agg["order_day"], y=day_agg["net_sum"], name="Net Settled", marker_color="#10b981"))
-                        fig_s_trend.update_layout(
-                            barmode="group",
+                    col_t1, col_t2 = st.columns(2)
+                    with col_t1:
+                        st.subheader("📦 Order Fulfillment Status Breakdown")
+                        fig_status = go.Figure()
+                        fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["completed_orders"], name="Completed", marker_color="#10b981"))
+                        fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["cancelled_orders"], name="Cancelled", marker_color="#f59e0b"))
+                        fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["refunded_orders"], name="Refunded", marker_color="#ef4444"))
+                        fig_status.update_layout(
+                            barmode="stack",
                             template="plotly_dark",
                             height=320,
                             margin={"l": 20, "r": 20, "t": 30, "b": 20},
+                            legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
+                            yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
                         )
-                        st.plotly_chart(fig_s_trend, width="stretch")
+                        st.plotly_chart(fig_status, width="stretch")
 
-                st.markdown("##### 📋 Fact Orders Detailed Table (Top 500)")
-                st.dataframe(df_orders, width="stretch", hide_index=True)
-            else:
-                st.info("No silver fct_orders records available.")
+                    with col_t2:
+                        st.subheader("💵 Average Order Value (AOV) Trajectory")
+                        fig_aov = px.line(
+                            filtered_kpi,
+                            x="order_date",
+                            y="aov",
+                            template="plotly_dark",
+                            markers=True,
+                            color_discrete_sequence=["#38bdf8"],
+                        )
+                        fig_aov.update_layout(
+                            height=320,
+                            margin={"l": 20, "r": 20, "t": 30, "b": 20},
+                            yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
+                        )
+                        st.plotly_chart(fig_aov, width="stretch")
+                else:
+                    st.info("No Gold KPI records matching the selected date filter.")
 
-        # SILVER TAB 2: Line Items Fact
-        elif active_tab == base_tab_titles[1]:
-            st.subheader("🛒 fct_order_items Line-Level Fact Breakdown")
-            if not df_items.empty:
-                c_i1, c_i2 = st.columns(2)
-                with c_i1:
-                    st.markdown("##### Unit Price Distribution")
-                    fig_hist = px.histogram(
-                        df_items,
-                        x="unit_price" if "unit_price" in df_items.columns else df_items.columns[0],
-                        nbins=20,
-                        template="plotly_dark",
-                        color_discrete_sequence=["#38bdf8"],
-                    )
-                    fig_hist.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                    st.plotly_chart(fig_hist, width="stretch")
+            # GOLD TAB 2: Customer LTV Segmentation
+            elif active_tab == base_tab_titles[1]:
+                st.subheader("👥 Customer Tier Distribution & Value Contribution")
+                if not df_ltv.empty:
+                    col_ltv1, col_ltv2 = st.columns([1, 2])
+                    tier_counts = df_ltv["customer_tier"].value_counts().reset_index()
+                    tier_counts.columns = ["customer_tier", "count"]
+                    tier_colors = {
+                        "Platinum": "#a855f7",
+                        "Gold": "#eab308",
+                        "Silver": "#94a3b8",
+                        "Bronze": "#b45309",
+                    }
 
-                with c_i2:
-                    st.markdown("##### Quantity Breakdown")
-                    if "quantity" in df_items.columns:
-                        qty_df = df_items["quantity"].value_counts().reset_index()
-                        qty_df.columns = ["quantity", "count"]
-                        fig_qty = px.bar(qty_df, x="quantity", y="count", template="plotly_dark", color_discrete_sequence=["#a855f7"])
-                        fig_qty.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                        st.plotly_chart(fig_qty, width="stretch")
+                    with col_ltv1:
+                        fig_tier = px.pie(
+                            tier_counts,
+                            names="customer_tier",
+                            values="count",
+                            hole=0.55,
+                            color="customer_tier",
+                            color_discrete_map=tier_colors,
+                            template="plotly_dark",
+                        )
+                        fig_tier.update_layout(height=350, margin={"l": 20, "r": 20, "t": 30, "b": 20})
+                        st.plotly_chart(fig_tier, width="stretch")
 
-                st.markdown("##### 📋 Fact Items Detailed Table (Top 500)")
-                st.dataframe(df_items, width="stretch", hide_index=True)
-            else:
-                st.info("No silver fct_order_items records available.")
+                    with col_ltv2:
+                        fig_tier_bar = px.bar(
+                            df_ltv.groupby("customer_tier")["lifetime_net_revenue"].sum().reset_index(),
+                            x="customer_tier",
+                            y="lifetime_net_revenue",
+                            color="customer_tier",
+                            color_discrete_map=tier_colors,
+                            template="plotly_dark",
+                            title="Cumulative Net Revenue by Customer Tier ($)",
+                        )
+                        fig_tier_bar.update_layout(height=350, margin={"l": 20, "r": 20, "t": 40, "b": 20}, showlegend=False)
+                        st.plotly_chart(fig_tier_bar, width="stretch")
 
-        # SILVER TAB 3: Customers Dimension
-        elif active_tab == base_tab_titles[2]:
-            st.subheader("👥 dim_customers Customer Dimension (PII De-Identified)")
-            st.caption("🔒 Privacy Compliant: Full names and emails masked / cryptographically hashed")
-            if not df_cust.empty:
-                st.dataframe(df_cust, width="stretch", hide_index=True)
-            else:
-                st.info("No silver dim_customers records available.")
+                    st.subheader("💎 Top VIP Customers (PII Masked & Encrypted)")
+                    st.caption("🔒 GDPR / Privacy Compliant: First name initials masked, emails cryptographically hashed via SHA-256")
+                    show_cols = [c for c in ["customer_id", "customer_name", "masked_email", "customer_tier", "total_orders", "completed_orders", "lifetime_net_revenue"] if c in df_ltv.columns]
+                    st.dataframe(df_ltv[show_cols], width="stretch", hide_index=True)
+                else:
+                    st.info("No customer LTV records available.")
 
-        # SILVER TAB 4: Products Dimension
-        elif active_tab == base_tab_titles[3]:
-            st.subheader("🏷️ dim_products Product Dimension")
-            if not df_prod_silver.empty:
-                if "category_name" in df_prod_silver.columns:
-                    cat_counts = df_prod_silver["category_name"].value_counts().reset_index()
-                    cat_counts.columns = ["category_name", "product_count"]
-                    fig_cat = px.bar(
-                        cat_counts,
-                        x="category_name",
-                        y="product_count",
-                        template="plotly_dark",
-                        color="category_name",
-                        title="Product Count by Category",
-                    )
-                    fig_cat.update_layout(height=340, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                    st.plotly_chart(fig_cat, width="stretch")
+            # GOLD TAB 3: Product & Category Rankings
+            elif active_tab == base_tab_titles[2]:
+                st.subheader("🏆 Product Revenue & Volume Leaderboards")
+                if not df_prod.empty:
+                    c_p1, c_p2 = st.columns(2)
+                    with c_p1:
+                        top_rev_prod = df_prod.sort_values(by="completed_sales_amount", ascending=True).tail(10)
+                        fig_prod_rev = px.bar(
+                            top_rev_prod,
+                            x="completed_sales_amount",
+                            y="product_title",
+                            orientation="h",
+                            color="category_name" if "category_name" in top_rev_prod.columns else None,
+                            template="plotly_dark",
+                            title="Top 10 Products by Completed Sales Revenue ($)",
+                            labels={"completed_sales_amount": "Revenue ($)", "product_title": "Product Title"},
+                        )
+                        fig_prod_rev.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
+                        st.plotly_chart(fig_prod_rev, width="stretch")
 
-                st.markdown("##### 📋 Product Dimension Roster")
-                st.dataframe(df_prod_silver, width="stretch", hide_index=True)
-            else:
-                st.info("No silver dim_products records available.")
+                    with c_p2:
+                        top_qty_prod = df_prod.sort_values(by="units_sold", ascending=True).tail(10)
+                        fig_prod_qty = px.bar(
+                            top_qty_prod,
+                            x="units_sold",
+                            y="product_title",
+                            orientation="h",
+                            color="category_name" if "category_name" in top_qty_prod.columns else None,
+                            template="plotly_dark",
+                            title="Top 10 Products by Units Sold",
+                            labels={"units_sold": "Units Sold", "product_title": "Product Title"},
+                        )
+                        fig_prod_qty.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
+                        st.plotly_chart(fig_prod_qty, width="stretch")
 
-        # SILVER TAB 5: Silver BI Studio
-        elif active_tab == base_tab_titles[4]:
-            silver_datasets = {
-                "orders": {"name": "📦 fct_orders (Orders Fact)", "df": df_orders},
-                "items": {"name": "🛒 fct_order_items (Line Items Fact)", "df": df_items},
-                "customers": {"name": "👥 dim_customers (Customers Dimension)", "df": df_cust},
-                "products": {"name": "🏷️ dim_products (Products Dimension)", "df": df_prod_silver},
-            }
-            render_powerbi_studio(
-                key_prefix="pbi_silver_en",
-                dataset_configs=silver_datasets,
-                default_dataset_key="orders",
-            )
+                    st.subheader("📋 Comprehensive Product Performance Ledger")
+                    st.dataframe(df_prod, width="stretch", hide_index=True)
+                else:
+                    st.info("No product ranking records available.")
 
-    else:  # bronze
-        # BRONZE TAB 1: Raw Orders
-        if active_tab == base_tab_titles[0]:
-            st.subheader("📥 raw_orders Ingestion Event Logs")
-            st.caption("Raw JSON events extracted from Platzi Fake Store API, containing dlt ingestion metadata")
-            if not df_raw_orders.empty:
-                st.dataframe(df_raw_orders, width="stretch", hide_index=True)
-            else:
-                st.info("No bronze raw_orders records available.")
+            # GOLD TAB 4: Natural Language AI Charts
+            elif active_tab == base_tab_titles[3]:
+                st.subheader("✨ Natural Language AI Smart Chart Generator (Text-to-Chart)")
+                st.caption("🤖 Enter any analytical requirement in plain English. AI inspects BigQuery Gold schema and renders an interactive Plotly chart.")
 
-        # BRONZE TAB 2: Raw Items
-        elif active_tab == base_tab_titles[1]:
-            st.subheader("🛒 raw_order_items Unfiltered Item Streams")
-            st.caption("Raw order line items prior to transformation and schema standardization")
-            if not df_raw_items.empty:
-                st.dataframe(df_raw_items, width="stretch", hide_index=True)
-            else:
-                st.info("No bronze raw_order_items records available.")
+                gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
 
-        # BRONZE TAB 3: Raw Customers
-        elif active_tab == base_tab_titles[2]:
-            st.subheader("👤 raw_customers Customer Ingestion Snapshots")
-            st.caption("Original customer records ingested before dbt staging privacy masking")
-            if not df_raw_cust.empty:
-                st.dataframe(df_raw_cust, width="stretch", hide_index=True)
-            else:
-                st.info("No bronze raw_customers records available.")
-
-        # BRONZE TAB 4: dlt Load Logs
-        elif active_tab == base_tab_titles[3]:
-            st.subheader("⚙️ _dlt_loads Pipeline Ingestion Run Logs")
-            st.caption("Tracks load_id, schema versioning, and execution status across dlt pipeline runs")
-            if not df_dlt.empty:
-                st.dataframe(df_dlt, width="stretch", hide_index=True)
-            else:
-                st.info("No bronze _dlt_loads audit records available.")
-
-        # BRONZE TAB 5: Bronze BI Studio
-        elif active_tab == base_tab_titles[4]:
-            bronze_datasets = {
-                "raw_orders": {"name": "📥 raw_orders (Raw Order Stream)", "df": df_raw_orders},
-                "raw_items": {"name": "🛒 raw_order_items (Raw Line Items)", "df": df_raw_items},
-                "raw_cust": {"name": "👤 raw_customers (Raw Customers)", "df": df_raw_cust},
-                "dlt_loads": {"name": "⚙️ _dlt_loads (dlt Audit Log)", "df": df_dlt},
-            }
-            render_powerbi_studio(
-                key_prefix="pbi_bronze_en",
-                dataset_configs=bronze_datasets,
-                default_dataset_key="raw_orders",
-            )
-
-    # Dynamic Custom Tabs
-    for idx, t_meta in enumerate(st.session_state.custom_tabs_en):
-        if active_tab == f"📌 {t_meta['title']}":
-            with st.container():
-                col_c_title, col_c_del = st.columns([5, 1])
-            with col_c_title:
-                st.subheader(f"📌 {t_meta['title']}")
-                st.caption(f"Custom Tab Type: **{t_meta.get('type_label', 'Custom Dashboard')}** · Bound Dataset: `{t_meta.get('dataset_name', 'BigQuery Table')}`")
-            with col_c_del:
-                if st.button("🗑️ Remove Tab", key=f"btn_del_tab_en_{t_meta['id']}", width="stretch", help="Remove this custom tab from the tab bar"):
-                    st.session_state.custom_tabs_en = [x for x in st.session_state.custom_tabs_en if x["id"] != t_meta["id"]]
+                def set_gold_chart_query_en(q: str):
+                    st.session_state["nl_chart_input_field_en"] = q
+                    st.session_state["nl_chart_query_en"] = q
+                    st.session_state.pop("fastmcp_diag_result_gold_tab4_en", None)
+                    st.session_state.pop("mcp_chat_hist_gold_tab4_en", None)
+                    st.session_state.pop("active_model_gold_tab4_en", None)
                     st.rerun()
 
-            st.markdown("---")
+                st.markdown("##### 💡 Click quick prompts to render instantly:")
+                c_btn1, c_btn2, c_btn3 = st.columns(3)
+                with c_btn1:
+                    if st.button("📈 GMV vs. Net Revenue Trend", key="btn_nl_1_en", width="stretch"):
+                        set_gold_chart_query_en("Compare daily GMV against realized Net Revenue over time")
+                    if st.button("🏆 Top 10 Best Selling Products", key="btn_nl_4_en", width="stretch"):
+                        set_gold_chart_query_en("Draw a bar chart of top 10 best-selling products by completed revenue")
+                with c_btn2:
+                    if st.button("⚠️ Refund & Cancellation Rates", key="btn_nl_2_en", width="stretch"):
+                        set_gold_chart_query_en("Plot daily refund rate and cancellation rate trajectories")
+                    if st.button("🏷️ Category Sales Distribution", key="btn_nl_5_en", width="stretch"):
+                        set_gold_chart_query_en("Show category revenue share breakdown in a pie chart")
+                with c_btn3:
+                    if st.button("💵 Average Order Value (AOV)", key="btn_nl_3_en", width="stretch"):
+                        set_gold_chart_query_en("Plot historical AOV trends over time")
+                    if st.button("👥 Customer Tier Revenue Share", key="btn_nl_6_en", width="stretch"):
+                        set_gold_chart_query_en("Display customer tiers revenue contribution in a pie chart")
 
-            if t_meta["type"] == "ai_chart":
-                tab_id = t_meta["id"]
-                gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
+                if "nl_chart_input_field_en" not in st.session_state:
+                    st.session_state["nl_chart_input_field_en"] = "Compare daily GMV against realized Net Revenue over time"
+
                 col_input, col_submit = st.columns([4, 1])
                 with col_input:
                     current_nl = st.text_input(
-                        "Enter chart generation prompt:",
-                        value=st.session_state.get(f"nl_query_en_{tab_id}", t_meta.get("default_query", "Show sales by category in a pie chart")),
-                        key=f"input_nl_en_{tab_id}",
-                        placeholder="e.g. Draw a bar chart of top 5 selling products...",
+                        "Enter chart visualization prompt:",
+                        key="nl_chart_input_field_en",
+                        placeholder="e.g. Draw a bar chart of top 5 selling products, or daily refund rate trend...",
                     )
                 with col_submit:
                     st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                    btn_gen = st.button("Generate Chart 🚀", key=f"btn_chart_en_{tab_id}", type="primary", width="stretch")
+                    btn_gen = st.button("Generate Chart 🚀", key="btn_trigger_chart_en", type="primary", width="stretch")
 
-                target_query = current_nl if current_nl else t_meta.get("default_query", "Show daily revenue trajectory")
+                target_query = current_nl.strip() if current_nl and current_nl.strip() else "Compare daily GMV against realized Net Revenue over time"
+                if btn_gen and st.session_state.get("nl_last_executed_query_en") != target_query:
+                    st.session_state.pop("fastmcp_diag_result_gold_tab4_en", None)
+                    st.session_state.pop("mcp_chat_hist_gold_tab4_en", None)
+                    st.session_state.pop("active_model_gold_tab4_en", None)
+                    st.session_state["nl_chart_query_en"] = target_query
+                    st.rerun()
+                st.session_state["nl_last_executed_query_en"] = target_query
 
-                chart_kpi = filtered_kpi if not filtered_kpi.empty else df_kpi
-                if chart_kpi.empty:
-                    chart_kpi, chart_ltv, chart_prod, _ = load_gold_data()
-                else:
-                    chart_ltv = df_ltv
-                    chart_prod = df_prod
-
-                with st.spinner("AI is parsing query and rendering interactive visualization..."):
+                with st.spinner("AI is parsing natural language intent and querying BigQuery Gold dataset..."):
                     fig_nl, chart_title, insight_text, raw_df = generate_chart_from_nl(
                         prompt=target_query,
-                        df_kpi=chart_kpi,
-                        df_prod=chart_prod,
-                        df_ltv=chart_ltv,
+                        df_kpi=filtered_kpi,
+                        df_prod=df_prod,
+                        df_ltv=df_ltv,
                         gemini_api_key=gemini_key,
                     )
 
@@ -1581,6 +1294,7 @@ def main():
                 else:
                     st.subheader(f"📊 {chart_title}")
                     st.plotly_chart(fig_nl, width="stretch")
+
                     st.markdown(
                         f"""
                         <div class="metric-card" style="border-left: 4px solid #6366f1;">
@@ -1594,279 +1308,576 @@ def main():
                     )
 
                     st.markdown("---")
-                    col_mc1, col_mc2 = st.columns([1.8, 3.2])
-                    with col_mc1:
-                        btn_mcp_c = st.button(
+                    col_mcp_btn, col_mcp_info = st.columns([1.8, 3.2])
+                    with col_mcp_btn:
+                        run_mcp_diag = st.button(
                             "🤖 Run FastMCP Deep Diagnostic (Mode A)",
-                            key=f"btn_mcp_custom_en_{tab_id}",
+                            key="btn_fastmcp_diag_main_en",
                             type="primary",
                             width="stretch",
+                            help="Trigger FastMCP consultant engine: Applies McKinsey SCQA + MECE Issue Trees + 30-60-90 day tactical roadmap for deep causal attribution.",
                         )
-                    with col_mc2:
-                        st.caption("⚡ **FastMCP Mode A**: Performs deep causal diagnostic over underlying data.")
+                    with col_mcp_info:
+                        st.caption("⚡ **FastMCP Mode A**: Synthesizes chart data and executes MBB-grade causal attribution diagnostic.")
 
-                    diag_key_c = f"diag_res_custom_en_{tab_id}"
-                    if btn_mcp_c:
-                        with st.spinner("🤖 FastMCP consultant is executing diagnostic..."):
-                            diag_out = run_fastmcp_chart_diagnostic(
+                    diag_res_key = "fastmcp_diag_result_gold_tab4_en"
+                    if run_mcp_diag:
+                        with st.spinner("🤖 FastMCP consultant is running MBB causal attribution diagnostic..."):
+                            diag_output = run_fastmcp_chart_diagnostic(
                                 chart_title=chart_title,
                                 df=raw_df,
                                 prompt_intent=target_query,
                                 gemini_api_key=gemini_key,
                             )
-                            st.session_state[diag_key_c] = diag_out
+                            st.session_state[diag_res_key] = diag_output
 
-                    if st.session_state.get(diag_key_c):
+                    if st.session_state.get(diag_res_key):
                         render_fastmcp_chat_widget(
-                            unique_key=f"custom_en_{tab_id}",
+                            unique_key="gold_tab4_en",
                             chart_title=chart_title,
                             df=raw_df,
-                            initial_diagnostic=st.session_state[diag_key_c],
+                            initial_diagnostic=st.session_state[diag_res_key],
                             gemini_api_key=gemini_key,
                         )
 
-                    with st.expander("🔍 Click to Expand: View Data Table"):
+                    with st.expander("🔍 Click to Expand: Underlying Chart Dataset (Data Preview)"):
                         st.dataframe(raw_df, width="stretch", hide_index=True)
 
-            elif t_meta["type"] == "powerbi_canvas":
+            # GOLD TAB 5: Custom Analytics Studio (Power BI Canvas)
+            elif active_tab == base_tab_titles[4]:
                 render_powerbi_studio(
-                    df_kpi=filtered_kpi if not filtered_kpi.empty else df_kpi,
+                    df_kpi=filtered_kpi,
                     df_ltv=df_ltv,
                     df_prod=df_prod,
-                    key_prefix=f"pbi_custom_en_{t_meta['id']}",
-                    default_dataset_key=t_meta.get("dataset_key", "kpi"),
+                    key_prefix="pbi_main_en",
                 )
 
-    # TAB ADD: Add Custom Analytics Tab
-    if active_tab == "➕ Add Custom Tab":
-        st.subheader("➕ Add Custom Analytics Tab")
-        st.caption("Expand your dashboard tabs with dedicated AI Smart Charts or Power BI Drag-and-Drop Canvases.")
+        elif selected_layer == "silver":
+            # SILVER TAB 1: Orders Fact
+            if active_tab == base_tab_titles[0]:
+                st.subheader("📦 fct_orders Cleaned Transactions Overview")
+                if not df_orders.empty:
+                    c_s1, c_s2 = st.columns(2)
+                    with c_s1:
+                        st.markdown("##### Order Status Distribution")
+                        status_counts = df_orders["order_status"].value_counts().reset_index()
+                        status_counts.columns = ["order_status", "count"]
+                        fig_s_status = px.pie(
+                            status_counts,
+                            names="order_status",
+                            values="count",
+                            template="plotly_dark",
+                            hole=0.45,
+                            color_discrete_sequence=["#10b981", "#f59e0b", "#ef4444", "#6366f1"],
+                        )
+                        fig_s_status.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
+                        st.plotly_chart(fig_s_status, width="stretch")
 
-        with st.container():
-            st.markdown(
-                """
-                <div class="metric-card" style="border-left: 4px solid #6366f1; margin-bottom: 1.25rem;">
-                    <div style="font-size: 1.05rem; font-weight: 600; color: var(--text-color, #0f172a);">
-                        🛠️ Select Tab Engine & Data Binding
-                    </div>
-                    <div style="font-size: 0.9rem; color: #64748b; margin-top: 0.25rem;">
-                        Once added, your custom tab is appended to the top navigation bar with isolated session state.
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+                    with c_s2:
+                        st.markdown("##### Gross vs. Net Order Volume")
+                        if "created_at" in df_orders.columns:
+                            orders_trend = df_orders.copy()
+                            orders_trend["order_day"] = pd.to_datetime(orders_trend["created_at"]).dt.date
+                            day_agg = orders_trend.groupby("order_day").agg(
+                                gross_sum=("gross_amount", "sum"),
+                                net_sum=("net_amount", "sum"),
+                            ).reset_index()
+                            fig_s_trend = go.Figure()
+                            fig_s_trend.add_trace(go.Bar(x=day_agg["order_day"], y=day_agg["gross_sum"], name="Gross Total", marker_color="#6366f1"))
+                            fig_s_trend.add_trace(go.Bar(x=day_agg["order_day"], y=day_agg["net_sum"], name="Net Settled", marker_color="#10b981"))
+                            fig_s_trend.update_layout(
+                                barmode="group",
+                                template="plotly_dark",
+                                height=320,
+                                margin={"l": 20, "r": 20, "t": 30, "b": 20},
+                            )
+                            st.plotly_chart(fig_s_trend, width="stretch")
 
-            col_new_t1, col_new_t2 = st.columns(2)
-            with col_new_t1:
-                new_tab_type = st.radio(
-                    "1. Select Engine Type:",
-                    options=[
-                        "✨ Natural Language AI Chart (Text-to-Chart)",
-                        "🎛️ Visual Custom Studio (Power BI Drag-and-Drop Canvas)",
-                    ],
-                    index=0,
-                    key="new_tab_type_radio_en",
-                )
-                is_ai_type = "AI" in new_tab_type
+                    st.markdown("##### 📋 Fact Orders Detailed Table (Top 500)")
+                    st.dataframe(df_orders, width="stretch", hide_index=True)
+                else:
+                    st.info("No silver fct_orders records available.")
 
-            with col_new_t2:
-                if selected_layer == "gold":
-                    dataset_options = {
-                        "kpi": "📊 gold_daily_sales_kpi (Daily Revenue & KPI)",
-                        "prod": "🏆 gold_product_performance (Product & Category Sales)",
-                        "ltv": "👥 gold_customer_ltv (Customer LTV & Segmentation)",
-                    }
-                elif selected_layer == "silver":
-                    dataset_options = {
-                        "orders": "📦 fct_orders (Cleaned Orders Fact)",
-                        "items": "🛒 fct_order_items (Line Items Fact)",
-                        "customers": "👥 dim_customers (Customers Dimension)",
-                        "products": "🏷️ dim_products (Products Dimension)",
-                    }
-                else:  # bronze
-                    dataset_options = {
-                        "raw_orders": "📥 raw_orders (Raw Order Events)",
-                        "raw_items": "🛒 raw_order_items (Raw Item Streams)",
-                        "raw_cust": "👤 raw_customers (Raw Customer Snapshots)",
-                        "dlt_loads": "⚙️ _dlt_loads (dlt Ingestion Logs)",
-                    }
+            # SILVER TAB 2: Line Items Fact
+            elif active_tab == base_tab_titles[1]:
+                st.subheader("🛒 fct_order_items Line-Level Fact Breakdown")
+                if not df_items.empty:
+                    c_i1, c_i2 = st.columns(2)
+                    with c_i1:
+                        st.markdown("##### Unit Price Distribution")
+                        fig_hist = px.histogram(
+                            df_items,
+                            x="unit_price" if "unit_price" in df_items.columns else df_items.columns[0],
+                            nbins=20,
+                            template="plotly_dark",
+                            color_discrete_sequence=["#38bdf8"],
+                        )
+                        fig_hist.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
+                        st.plotly_chart(fig_hist, width="stretch")
 
-                new_tab_ds = st.selectbox(
-                    "2. Bind Data Source:",
-                    options=list(dataset_options.keys()),
-                    format_func=lambda k: dataset_options[k],
-                    index=0,
-                    key="new_tab_ds_select_en",
-                )
+                    with c_i2:
+                        st.markdown("##### Quantity Breakdown")
+                        if "quantity" in df_items.columns:
+                            qty_df = df_items["quantity"].value_counts().reset_index()
+                            qty_df.columns = ["quantity", "count"]
+                            fig_qty = px.bar(qty_df, x="quantity", y="count", template="plotly_dark", color_discrete_sequence=["#a855f7"])
+                            fig_qty.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
+                            st.plotly_chart(fig_qty, width="stretch")
 
-            default_name = (
-                f"AI Smart Chart {len(st.session_state.custom_tabs_en) + 1}"
-                if is_ai_type
-                else f"Custom Studio {len(st.session_state.custom_tabs_en) + 1}"
-            )
-            new_tab_name = st.text_input(
-                "3. Tab Display Title:",
-                value=default_name,
-                key="new_tab_name_input_en",
-                placeholder="e.g. Marketing Return Analysis, Category Canvas...",
-            )
+                    st.markdown("##### 📋 Fact Items Detailed Table (Top 500)")
+                    st.dataframe(df_items, width="stretch", hide_index=True)
+                else:
+                    st.info("No silver fct_order_items records available.")
 
-            initial_ai_query = ""
-            if is_ai_type:
-                initial_ai_query = st.text_input(
-                    "4. Default Natural Language Query (Optional):",
-                    value="Show category sales share in a pie chart",
-                    key="new_tab_ai_query_input_en",
-                )
+            # SILVER TAB 3: Customers Dimension
+            elif active_tab == base_tab_titles[2]:
+                st.subheader("👥 dim_customers Customer Dimension (PII De-Identified)")
+                st.caption("🔒 Privacy Compliant: Full names and emails masked / cryptographically hashed")
+                if not df_cust.empty:
+                    st.dataframe(df_cust, width="stretch", hide_index=True)
+                else:
+                    st.info("No silver dim_customers records available.")
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🚀 Create & Append Tab", type="primary", width="stretch", key="btn_create_custom_tab_en"):
-                import uuid
-                tab_id = f"custom_en_{uuid.uuid4().hex[:6]}"
-                new_tab_meta = {
-                    "id": tab_id,
-                    "title": new_tab_name.strip() or default_name,
-                    "type": "ai_chart" if is_ai_type else "powerbi_canvas",
-                    "type_label": "Natural Language AI Chart" if is_ai_type else "Power BI Studio Canvas",
-                    "dataset_key": new_tab_ds,
-                    "dataset_name": dataset_options[new_tab_ds],
-                    "default_query": initial_ai_query,
+            # SILVER TAB 4: Products Dimension
+            elif active_tab == base_tab_titles[3]:
+                st.subheader("🏷️ dim_products Product Dimension")
+                if not df_prod_silver.empty:
+                    if "category_name" in df_prod_silver.columns:
+                        cat_counts = df_prod_silver["category_name"].value_counts().reset_index()
+                        cat_counts.columns = ["category_name", "product_count"]
+                        fig_cat = px.bar(
+                            cat_counts,
+                            x="category_name",
+                            y="product_count",
+                            template="plotly_dark",
+                            color="category_name",
+                            title="Product Count by Category",
+                        )
+                        fig_cat.update_layout(height=340, margin={"l": 20, "r": 20, "t": 40, "b": 20})
+                        st.plotly_chart(fig_cat, width="stretch")
+
+                    st.markdown("##### 📋 Product Dimension Roster")
+                    st.dataframe(df_prod_silver, width="stretch", hide_index=True)
+                else:
+                    st.info("No silver dim_products records available.")
+
+            # SILVER TAB 5: Silver BI Studio
+            elif active_tab == base_tab_titles[4]:
+                silver_datasets = {
+                    "orders": {"name": "📦 fct_orders (Orders Fact)", "df": df_orders},
+                    "items": {"name": "🛒 fct_order_items (Line Items Fact)", "df": df_items},
+                    "customers": {"name": "👥 dim_customers (Customers Dimension)", "df": df_cust},
+                    "products": {"name": "🏷️ dim_products (Products Dimension)", "df": df_prod_silver},
                 }
-                st.session_state.custom_tabs_en.append(new_tab_meta)
-                st.success(f"🎉 Tab '{new_tab_meta['title']}' created successfully!")
-                st.rerun()
+                render_powerbi_studio(
+                    key_prefix="pbi_silver_en",
+                    dataset_configs=silver_datasets,
+                    default_dataset_key="orders",
+                )
 
-    # ==========================================================================
+        else:  # bronze
+            # BRONZE TAB 1: Raw Orders
+            if active_tab == base_tab_titles[0]:
+                st.subheader("📥 raw_orders Ingestion Event Logs")
+                st.caption("Raw JSON events extracted from Platzi Fake Store API, containing dlt ingestion metadata")
+                if not df_raw_orders.empty:
+                    st.dataframe(df_raw_orders, width="stretch", hide_index=True)
+                else:
+                    st.info("No bronze raw_orders records available.")
+
+            # BRONZE TAB 2: Raw Items
+            elif active_tab == base_tab_titles[1]:
+                st.subheader("🛒 raw_order_items Unfiltered Item Streams")
+                st.caption("Raw order line items prior to transformation and schema standardization")
+                if not df_raw_items.empty:
+                    st.dataframe(df_raw_items, width="stretch", hide_index=True)
+                else:
+                    st.info("No bronze raw_order_items records available.")
+
+            # BRONZE TAB 3: Raw Customers
+            elif active_tab == base_tab_titles[2]:
+                st.subheader("👤 raw_customers Customer Ingestion Snapshots")
+                st.caption("Original customer records ingested before dbt staging privacy masking")
+                if not df_raw_cust.empty:
+                    st.dataframe(df_raw_cust, width="stretch", hide_index=True)
+                else:
+                    st.info("No bronze raw_customers records available.")
+
+            # BRONZE TAB 4: dlt Load Logs
+            elif active_tab == base_tab_titles[3]:
+                st.subheader("⚙️ _dlt_loads Pipeline Ingestion Run Logs")
+                st.caption("Tracks load_id, schema versioning, and execution status across dlt pipeline runs")
+                if not df_dlt.empty:
+                    st.dataframe(df_dlt, width="stretch", hide_index=True)
+                else:
+                    st.info("No bronze _dlt_loads audit records available.")
+
+            # BRONZE TAB 5: Bronze BI Studio
+            elif active_tab == base_tab_titles[4]:
+                bronze_datasets = {
+                    "raw_orders": {"name": "📥 raw_orders (Raw Order Stream)", "df": df_raw_orders},
+                    "raw_items": {"name": "🛒 raw_order_items (Raw Line Items)", "df": df_raw_items},
+                    "raw_cust": {"name": "👤 raw_customers (Raw Customers)", "df": df_raw_cust},
+                    "dlt_loads": {"name": "⚙️ _dlt_loads (dlt Audit Log)", "df": df_dlt},
+                }
+                render_powerbi_studio(
+                    key_prefix="pbi_bronze_en",
+                    dataset_configs=bronze_datasets,
+                    default_dataset_key="raw_orders",
+                )
+
+        # Dynamic Custom Tabs
+        for idx, t_meta in enumerate(st.session_state.custom_tabs_en):
+            if active_tab == f"📌 {t_meta['title']}":
+                with st.container():
+                    col_c_title, col_c_del = st.columns([5, 1])
+                with col_c_title:
+                    st.subheader(f"📌 {t_meta['title']}")
+                    st.caption(f"Custom Tab Type: **{t_meta.get('type_label', 'Custom Dashboard')}** · Bound Dataset: `{t_meta.get('dataset_name', 'BigQuery Table')}`")
+                with col_c_del:
+                    if st.button("🗑️ Remove Tab", key=f"btn_del_tab_en_{t_meta['id']}", width="stretch", help="Remove this custom tab from the tab bar"):
+                        st.session_state.custom_tabs_en = [x for x in st.session_state.custom_tabs_en if x["id"] != t_meta["id"]]
+                        st.rerun()
+
+                st.markdown("---")
+
+                if t_meta["type"] == "ai_chart":
+                    tab_id = t_meta["id"]
+                    gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
+                    col_input, col_submit = st.columns([4, 1])
+                    with col_input:
+                        current_nl = st.text_input(
+                            "Enter chart generation prompt:",
+                            value=st.session_state.get(f"nl_query_en_{tab_id}", t_meta.get("default_query", "Show sales by category in a pie chart")),
+                            key=f"input_nl_en_{tab_id}",
+                            placeholder="e.g. Draw a bar chart of top 5 selling products...",
+                        )
+                    with col_submit:
+                        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+                        btn_gen = st.button("Generate Chart 🚀", key=f"btn_chart_en_{tab_id}", type="primary", width="stretch")
+
+                    target_query = current_nl if current_nl else t_meta.get("default_query", "Show daily revenue trajectory")
+
+                    chart_kpi = filtered_kpi if not filtered_kpi.empty else df_kpi
+                    if chart_kpi.empty:
+                        chart_kpi, chart_ltv, chart_prod, _ = load_gold_data()
+                    else:
+                        chart_ltv = df_ltv
+                        chart_prod = df_prod
+
+                    with st.spinner("AI is parsing query and rendering interactive visualization..."):
+                        fig_nl, chart_title, insight_text, raw_df = generate_chart_from_nl(
+                            prompt=target_query,
+                            df_kpi=chart_kpi,
+                            df_prod=chart_prod,
+                            df_ltv=chart_ltv,
+                            gemini_api_key=gemini_key,
+                        )
+
+                    st.markdown("---")
+                    if fig_nl is None:
+                        st.warning(f"### {chart_title}")
+                        st.markdown(
+                            f"""
+                            <div class="metric-card" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05);">
+                                <div style="font-size: 1.05rem; line-height: 1.6; color: var(--text-color, #0f172a);">
+                                    {insight_text}
+                                </div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.subheader(f"📊 {chart_title}")
+                        st.plotly_chart(fig_nl, width="stretch")
+                        st.markdown(
+                            f"""
+                            <div class="metric-card" style="border-left: 4px solid #6366f1;">
+                                <div class="metric-label">💡 MBB Executive Takeaway</div>
+                                <div style="font-size: 1.05rem; font-weight: 500; color: var(--text-color, #0f172a); margin-top: 0.25rem;">
+                                    {insight_text}
+                                </div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+
+                        st.markdown("---")
+                        col_mc1, col_mc2 = st.columns([1.8, 3.2])
+                        with col_mc1:
+                            btn_mcp_c = st.button(
+                                "🤖 Run FastMCP Deep Diagnostic (Mode A)",
+                                key=f"btn_mcp_custom_en_{tab_id}",
+                                type="primary",
+                                width="stretch",
+                            )
+                        with col_mc2:
+                            st.caption("⚡ **FastMCP Mode A**: Performs deep causal diagnostic over underlying data.")
+
+                        diag_key_c = f"diag_res_custom_en_{tab_id}"
+                        if btn_mcp_c:
+                            with st.spinner("🤖 FastMCP consultant is executing diagnostic..."):
+                                diag_out = run_fastmcp_chart_diagnostic(
+                                    chart_title=chart_title,
+                                    df=raw_df,
+                                    prompt_intent=target_query,
+                                    gemini_api_key=gemini_key,
+                                )
+                                st.session_state[diag_key_c] = diag_out
+
+                        if st.session_state.get(diag_key_c):
+                            render_fastmcp_chat_widget(
+                                unique_key=f"custom_en_{tab_id}",
+                                chart_title=chart_title,
+                                df=raw_df,
+                                initial_diagnostic=st.session_state[diag_key_c],
+                                gemini_api_key=gemini_key,
+                            )
+
+                        with st.expander("🔍 Click to Expand: View Data Table"):
+                            st.dataframe(raw_df, width="stretch", hide_index=True)
+
+                elif t_meta["type"] == "powerbi_canvas":
+                    render_powerbi_studio(
+                        df_kpi=filtered_kpi if not filtered_kpi.empty else df_kpi,
+                        df_ltv=df_ltv,
+                        df_prod=df_prod,
+                        key_prefix=f"pbi_custom_en_{t_meta['id']}",
+                        default_dataset_key=t_meta.get("dataset_key", "kpi"),
+                    )
+
+        # TAB ADD: Add Custom Analytics Tab
+        if active_tab == "➕ Add Custom Tab":
+            st.subheader("➕ Add Custom Analytics Tab")
+            st.caption("Expand your dashboard tabs with dedicated AI Smart Charts or Power BI Drag-and-Drop Canvases.")
+
+            with st.container():
+                st.markdown(
+                    """
+                    <div class="metric-card" style="border-left: 4px solid #6366f1; margin-bottom: 1.25rem;">
+                        <div style="font-size: 1.05rem; font-weight: 600; color: var(--text-color, #0f172a);">
+                            🛠️ Select Tab Engine & Data Binding
+                        </div>
+                        <div style="font-size: 0.9rem; color: #64748b; margin-top: 0.25rem;">
+                            Once added, your custom tab is appended to the top navigation bar with isolated session state.
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                col_new_t1, col_new_t2 = st.columns(2)
+                with col_new_t1:
+                    new_tab_type = st.radio(
+                        "1. Select Engine Type:",
+                        options=[
+                            "✨ Natural Language AI Chart (Text-to-Chart)",
+                            "🎛️ Visual Custom Studio (Power BI Drag-and-Drop Canvas)",
+                        ],
+                        index=0,
+                        key="new_tab_type_radio_en",
+                    )
+                    is_ai_type = "AI" in new_tab_type
+
+                with col_new_t2:
+                    if selected_layer == "gold":
+                        dataset_options = {
+                            "kpi": "📊 gold_daily_sales_kpi (Daily Revenue & KPI)",
+                            "prod": "🏆 gold_product_performance (Product & Category Sales)",
+                            "ltv": "👥 gold_customer_ltv (Customer LTV & Segmentation)",
+                        }
+                    elif selected_layer == "silver":
+                        dataset_options = {
+                            "orders": "📦 fct_orders (Cleaned Orders Fact)",
+                            "items": "🛒 fct_order_items (Line Items Fact)",
+                            "customers": "👥 dim_customers (Customers Dimension)",
+                            "products": "🏷️ dim_products (Products Dimension)",
+                        }
+                    else:  # bronze
+                        dataset_options = {
+                            "raw_orders": "📥 raw_orders (Raw Order Events)",
+                            "raw_items": "🛒 raw_order_items (Raw Item Streams)",
+                            "raw_cust": "👤 raw_customers (Raw Customer Snapshots)",
+                            "dlt_loads": "⚙️ _dlt_loads (dlt Ingestion Logs)",
+                        }
+
+                    new_tab_ds = st.selectbox(
+                        "2. Bind Data Source:",
+                        options=list(dataset_options.keys()),
+                        format_func=lambda k: dataset_options[k],
+                        index=0,
+                        key="new_tab_ds_select_en",
+                    )
+
+                default_name = (
+                    f"AI Smart Chart {len(st.session_state.custom_tabs_en) + 1}"
+                    if is_ai_type
+                    else f"Custom Studio {len(st.session_state.custom_tabs_en) + 1}"
+                )
+                new_tab_name = st.text_input(
+                    "3. Tab Display Title:",
+                    value=default_name,
+                    key="new_tab_name_input_en",
+                    placeholder="e.g. Marketing Return Analysis, Category Canvas...",
+                )
+
+                initial_ai_query = ""
+                if is_ai_type:
+                    initial_ai_query = st.text_input(
+                        "4. Default Natural Language Query (Optional):",
+                        value="Show category sales share in a pie chart",
+                        key="new_tab_ai_query_input_en",
+                    )
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("🚀 Create & Append Tab", type="primary", width="stretch", key="btn_create_custom_tab_en"):
+                    import uuid
+                    tab_id = f"custom_en_{uuid.uuid4().hex[:6]}"
+                    new_tab_meta = {
+                        "id": tab_id,
+                        "title": new_tab_name.strip() or default_name,
+                        "type": "ai_chart" if is_ai_type else "powerbi_canvas",
+                        "type_label": "Natural Language AI Chart" if is_ai_type else "Power BI Studio Canvas",
+                        "dataset_key": new_tab_ds,
+                        "dataset_name": dataset_options[new_tab_ds],
+                        "default_query": initial_ai_query,
+                    }
+                    st.session_state.custom_tabs_en.append(new_tab_meta)
+                    st.success(f"🎉 Tab '{new_tab_meta['title']}' created successfully!")
+                    st.rerun()
+
+        # ==========================================================================
     # Render FastMCP AI Advisor Right Collapsible Sidebar (Mode B)
     # ==========================================================================
-    if st.session_state.get("show_ai_drawer", False):
-            tab_data_map_en = {}
-            if selected_layer == "gold":
-                tab_data_map_en["📈 Revenue Trends & Funnel"] = {
-                    "title": "Revenue Trends & Funnel",
-                    "kpis": {
-                        "Gross Merchandise Value (GMV)": f"${total_gmv:,.2f}",
-                        "Net Realized Revenue": f"${total_net_rev:,.2f}",
-                        "Total Orders": f"{total_orders:,}",
-                        "Completed Orders": f"{completed_orders:,}",
-                        "Cancelled Orders": f"{cancelled_orders:,}",
-                        "Refunded Orders": f"{refunded_orders:,}",
-                        "Average Order Value (AOV)": f"${avg_aov:,.2f}",
-                        "Cancellation Rate": f"{cancel_rate:.2f}%",
-                        "Refund Rate": f"{refund_rate:.2f}%",
-                    },
-                    "records_summary": filtered_kpi.tail(25).to_dict(orient="records") if not filtered_kpi.empty else [],
-                    "suggested_questions": [
-                        "What key drivers explain current net profitability?",
-                        "Are there noticeable spikes in cancellation or refund rates?",
-                        "How can we optimize AOV and profit margin structure?",
-                    ],
-                }
-                tab_data_map_en["👥 Customer Lifetime Value (LTV)"] = {
-                    "title": "Customer Lifetime Value (LTV)",
-                    "customer_segments_summary": df_ltv.head(30).to_dict(orient="records") if not df_ltv.empty else [],
-                    "suggested_questions": [
-                        "What is the revenue contribution of Platinum VIP customers?",
-                        "What targeted plays can rescue At-Risk customer segments?",
-                        "What is the LTV gap between first-time and repeat buyers?",
-                    ],
-                }
-                cat_summary_en = (
-                    df_prod[["category_name", "completed_sales_amount"]].groupby("category_name").sum().reset_index().to_dict(orient="records")
-                    if not df_prod.empty and "category_name" in df_prod.columns
-                    else []
+    if ai_sidebar_col is not None:
+        with ai_sidebar_col:
+                tab_data_map_en = {}
+                if selected_layer == "gold":
+                    tab_data_map_en["📈 Revenue Trends & Funnel"] = {
+                        "title": "Revenue Trends & Funnel",
+                        "kpis": {
+                            "Gross Merchandise Value (GMV)": f"${total_gmv:,.2f}",
+                            "Net Realized Revenue": f"${total_net_rev:,.2f}",
+                            "Total Orders": f"{total_orders:,}",
+                            "Completed Orders": f"{completed_orders:,}",
+                            "Cancelled Orders": f"{cancelled_orders:,}",
+                            "Refunded Orders": f"{refunded_orders:,}",
+                            "Average Order Value (AOV)": f"${avg_aov:,.2f}",
+                            "Cancellation Rate": f"{cancel_rate:.2f}%",
+                            "Refund Rate": f"{refund_rate:.2f}%",
+                        },
+                        "records_summary": filtered_kpi.tail(25).to_dict(orient="records") if not filtered_kpi.empty else [],
+                        "suggested_questions": [
+                            "What key drivers explain current net profitability?",
+                            "Are there noticeable spikes in cancellation or refund rates?",
+                            "How can we optimize AOV and profit margin structure?",
+                        ],
+                    }
+                    tab_data_map_en["👥 Customer Lifetime Value (LTV)"] = {
+                        "title": "Customer Lifetime Value (LTV)",
+                        "customer_segments_summary": df_ltv.head(30).to_dict(orient="records") if not df_ltv.empty else [],
+                        "suggested_questions": [
+                            "What is the revenue contribution of Platinum VIP customers?",
+                            "What targeted plays can rescue At-Risk customer segments?",
+                            "What is the LTV gap between first-time and repeat buyers?",
+                        ],
+                    }
+                    cat_summary_en = (
+                        df_prod[["category_name", "completed_sales_amount"]].groupby("category_name").sum().reset_index().to_dict(orient="records")
+                        if not df_prod.empty and "category_name" in df_prod.columns
+                        else []
+                    )
+                    tab_data_map_en["🏆 Product & Category Performance"] = {
+                        "title": "Product & Category Performance",
+                        "top_products_summary": df_prod.head(15).to_dict(orient="records") if not df_prod.empty else [],
+                        "categories_summary": cat_summary_en,
+                        "suggested_questions": [
+                            "Does revenue exhibit Pareto 80/20 concentration across Top 3 SKUs?",
+                            "How healthy are category-level pricing and sales volumes?",
+                            "Which low-margin, high-volume products need price restructuring?",
+                        ],
+                    }
+                    tab_data_map_en["✨ Natural Language AI Charts"] = {
+                        "title": "Natural Language AI Charts",
+                        "kpis": {"GMV": f"${total_gmv:,.2f}", "Total Orders": f"{total_orders:,}"},
+                        "suggested_questions": [
+                            "What critical unmapped dimensions should be explored next?",
+                            "Are there latent anomalies or correlations in gold metrics?",
+                            "How to drill down deeper into the certified metrics?",
+                        ],
+                    }
+                    tab_data_map_en["🎛️ Custom BI Studio (Power BI Canvas)"] = {
+                        "title": "Custom BI Studio (Power BI Canvas)",
+                        "canvas_sample": df_prod.head(20).to_dict(orient="records") if not df_prod.empty else [],
+                        "suggested_questions": [
+                            "What operational insights emerge from the custom canvas layout?",
+                            "Which additional dimensions are recommended for cross-analysis?",
+                            "What 30-60-90 day tactical recommendations apply here?",
+                        ],
+                    }
+                elif selected_layer == "silver":
+                    tab_data_map_en["📦 Orders Fact (fct_orders)"] = {
+                        "title": "Orders Fact (fct_orders)",
+                        "records_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
+                        "suggested_questions": ["What is the breakdown between gross and promotional discounts?"],
+                    }
+                    tab_data_map_en["🛒 Line Items Fact (fct_order_items)"] = {
+                        "title": "Line Items Fact (fct_order_items)",
+                        "records_sample": df_items.head(20).to_dict(orient="records") if not df_items.empty else [],
+                        "suggested_questions": ["What are the unit price distributions across order items?"],
+                    }
+                    tab_data_map_en["👥 Customers Dimension (dim_customers)"] = {
+                        "title": "Customers Dimension (dim_customers)",
+                        "records_sample": df_cust.head(20).to_dict(orient="records") if not df_cust.empty else [],
+                        "suggested_questions": ["What are customer registration and retention cohorts?"],
+                    }
+                    tab_data_map_en["🏷️ Products Dimension (dim_products)"] = {
+                        "title": "Products Dimension (dim_products)",
+                        "records_sample": df_prod_silver.head(20).to_dict(orient="records") if not df_prod_silver.empty else [],
+                        "suggested_questions": ["What is the active product price range coverage?"],
+                    }
+                    tab_data_map_en["🎛️ Silver BI Studio (Power BI Canvas)"] = {
+                        "title": "Silver BI Studio (Power BI Canvas)",
+                        "canvas_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
+                        "suggested_questions": ["What correlations emerge from silver level data?"],
+                    }
+                else:  # bronze
+                    tab_data_map_en["📥 Raw Orders (raw_orders)"] = {
+                        "title": "Raw Orders (raw_orders)",
+                        "count": len(df_raw_orders),
+                        "suggested_questions": ["Are there schema anomalies in the raw ingestion batch?"],
+                    }
+                    tab_data_map_en["🛒 Raw Items (raw_order_items)"] = {
+                        "title": "Raw Items (raw_order_items)",
+                        "count": len(df_raw_items),
+                        "suggested_questions": ["What is the ingestion latency of raw line items?"],
+                    }
+                    tab_data_map_en["👤 Raw Customers (raw_customers)"] = {
+                        "title": "Raw Customers (raw_customers)",
+                        "count": len(df_raw_cust),
+                        "suggested_questions": ["Is raw PII hashing verified and compliant?"],
+                    }
+                    tab_data_map_en["⚙️ dlt Ingestion Logs (_dlt_loads)"] = {
+                        "title": "dlt Ingestion Logs (_dlt_loads)",
+                        "count": len(df_dlt),
+                        "suggested_questions": ["What schema evolution events occurred recently in dlt?"],
+                    }
+                    tab_data_map_en["🎛️ Bronze BI Studio (Power BI Canvas)"] = {
+                        "title": "Bronze BI Studio (Power BI Canvas)",
+                        "canvas_sample": df_raw_orders.head(20).to_dict(orient="records") if not df_raw_orders.empty else [],
+                        "suggested_questions": ["How clean is the bronze pipeline flow?"],
+                    }
+    
+                fastmcp_diagnostic.render_fastmcp_advisor_drawer(
+                    current_layer=selected_layer,
+                    base_tab_titles=base_tab_titles,
+                    tab_data_map=tab_data_map_en,
+                    active_tab_title=active_tab,
+                    language="en",
                 )
-                tab_data_map_en["🏆 Product & Category Performance"] = {
-                    "title": "Product & Category Performance",
-                    "top_products_summary": df_prod.head(15).to_dict(orient="records") if not df_prod.empty else [],
-                    "categories_summary": cat_summary_en,
-                    "suggested_questions": [
-                        "Does revenue exhibit Pareto 80/20 concentration across Top 3 SKUs?",
-                        "How healthy are category-level pricing and sales volumes?",
-                        "Which low-margin, high-volume products need price restructuring?",
-                    ],
-                }
-                tab_data_map_en["✨ Natural Language AI Charts"] = {
-                    "title": "Natural Language AI Charts",
-                    "kpis": {"GMV": f"${total_gmv:,.2f}", "Total Orders": f"{total_orders:,}"},
-                    "suggested_questions": [
-                        "What critical unmapped dimensions should be explored next?",
-                        "Are there latent anomalies or correlations in gold metrics?",
-                        "How to drill down deeper into the certified metrics?",
-                    ],
-                }
-                tab_data_map_en["🎛️ Custom BI Studio (Power BI Canvas)"] = {
-                    "title": "Custom BI Studio (Power BI Canvas)",
-                    "canvas_sample": df_prod.head(20).to_dict(orient="records") if not df_prod.empty else [],
-                    "suggested_questions": [
-                        "What operational insights emerge from the custom canvas layout?",
-                        "Which additional dimensions are recommended for cross-analysis?",
-                        "What 30-60-90 day tactical recommendations apply here?",
-                    ],
-                }
-            elif selected_layer == "silver":
-                tab_data_map_en["📦 Orders Fact (fct_orders)"] = {
-                    "title": "Orders Fact (fct_orders)",
-                    "records_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
-                    "suggested_questions": ["What is the breakdown between gross and promotional discounts?"],
-                }
-                tab_data_map_en["🛒 Line Items Fact (fct_order_items)"] = {
-                    "title": "Line Items Fact (fct_order_items)",
-                    "records_sample": df_items.head(20).to_dict(orient="records") if not df_items.empty else [],
-                    "suggested_questions": ["What are the unit price distributions across order items?"],
-                }
-                tab_data_map_en["👥 Customers Dimension (dim_customers)"] = {
-                    "title": "Customers Dimension (dim_customers)",
-                    "records_sample": df_cust.head(20).to_dict(orient="records") if not df_cust.empty else [],
-                    "suggested_questions": ["What are customer registration and retention cohorts?"],
-                }
-                tab_data_map_en["🏷️ Products Dimension (dim_products)"] = {
-                    "title": "Products Dimension (dim_products)",
-                    "records_sample": df_prod_silver.head(20).to_dict(orient="records") if not df_prod_silver.empty else [],
-                    "suggested_questions": ["What is the active product price range coverage?"],
-                }
-                tab_data_map_en["🎛️ Silver BI Studio (Power BI Canvas)"] = {
-                    "title": "Silver BI Studio (Power BI Canvas)",
-                    "canvas_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
-                    "suggested_questions": ["What correlations emerge from silver level data?"],
-                }
-            else:  # bronze
-                tab_data_map_en["📥 Raw Orders (raw_orders)"] = {
-                    "title": "Raw Orders (raw_orders)",
-                    "count": len(df_raw_orders),
-                    "suggested_questions": ["Are there schema anomalies in the raw ingestion batch?"],
-                }
-                tab_data_map_en["🛒 Raw Items (raw_order_items)"] = {
-                    "title": "Raw Items (raw_order_items)",
-                    "count": len(df_raw_items),
-                    "suggested_questions": ["What is the ingestion latency of raw line items?"],
-                }
-                tab_data_map_en["👤 Raw Customers (raw_customers)"] = {
-                    "title": "Raw Customers (raw_customers)",
-                    "count": len(df_raw_cust),
-                    "suggested_questions": ["Is raw PII hashing verified and compliant?"],
-                }
-                tab_data_map_en["⚙️ dlt Ingestion Logs (_dlt_loads)"] = {
-                    "title": "dlt Ingestion Logs (_dlt_loads)",
-                    "count": len(df_dlt),
-                    "suggested_questions": ["What schema evolution events occurred recently in dlt?"],
-                }
-                tab_data_map_en["🎛️ Bronze BI Studio (Power BI Canvas)"] = {
-                    "title": "Bronze BI Studio (Power BI Canvas)",
-                    "canvas_sample": df_raw_orders.head(20).to_dict(orient="records") if not df_raw_orders.empty else [],
-                    "suggested_questions": ["How clean is the bronze pipeline flow?"],
-                }
-
-            fastmcp_diagnostic.render_fastmcp_advisor_drawer(
-                current_layer=selected_layer,
-                base_tab_titles=base_tab_titles,
-                tab_data_map=tab_data_map_en,
-                active_tab_title=active_tab,
-                language="en",
-            )
-
-
+    
+    
+    
 
 if __name__ == "__main__":
     main()

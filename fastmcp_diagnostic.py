@@ -942,53 +942,21 @@ def render_fastmcp_advisor_drawer(
     tab_display_title = tab_payload.get("title", active_scope)
     safe_scope_id = re.sub(r"[^a-zA-Z0-9_\u4e00-\u9fff]", "", active_scope or "default")
 
-    # Inject Symmetrical Right Sidebar CSS (Margin-Push + Full-Height Viewport Dock)
-    st.markdown(
-        """
-        <style>
-        /* 1. Symmetrical Right Collapsible Sidebar (App-Level Independent Dock) */
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(#right-ai-sidebar-marker) {
-            position: fixed !important;
-            top: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 390px !important;
-            height: 100vh !important;
-            z-index: 99990 !important;
-            background: linear-gradient(180deg, #0b1120 0%, #0f172a 100%) !important;
-            border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
-            border-top: none !important;
-            border-bottom: none !important;
-            border-right: none !important;
-            border-radius: 0 !important;
-            box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5) !important;
-            overflow-y: auto !important;
-            padding: 1.25rem 1rem !important;
-            box-sizing: border-box !important;
-        }
-
-        /* 2. Margin-Push on Main Canvas: ZERO Overlay, Dynamic Adaptive Resize */
-        @media (min-width: 992px) {
-            .main .block-container {
-                max-width: calc(100% - 400px) !important;
-                margin-right: 400px !important;
-                transition: max-width 0.25s ease-out, margin-right 0.25s ease-out !important;
-            }
-        }
-        @media (max-width: 991px) {
-            div[data-testid="stVerticalBlockBorderWrapper"]:has(#right-ai-sidebar-marker) {
-                width: 100% !important;
-                max-width: 390px !important;
-            }
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Render inside border container matching CSS selector
+    # Right Sidebar Container (Rendered cleanly within top-level right column)
     with st.container(border=True):
-        st.markdown('<div id="right-ai-sidebar-marker"></div>', unsafe_allow_html=True)
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stVerticalBlock"]:has(> #right-ai-sidebar-marker) {
+                position: sticky;
+                top: 0.8rem;
+                z-index: 100;
+            }
+            </style>
+            <div id="right-ai-sidebar-marker"></div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         # Header section: Title, FAST MCP badge, active scope & Symmetrical Collapse button '>>'
         head_col, close_col = st.columns([3.8, 1.2])

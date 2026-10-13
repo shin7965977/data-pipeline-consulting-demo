@@ -849,853 +849,539 @@ with st.sidebar:
 
 # ==============================================================================
 # 5. Main Workspace: E-Commerce Lakehouse Analytics
-# ==============================================================================
-header_col1, header_col2 = st.columns([2.7, 1.3])
-layer_display_titles = {
-    "gold": "🥇 金牌層 (platzi_gold · 業務決策與 BI 指標)",
-    "silver": "🥈 銀牌層 (platzi_silver · 清洗事實與維度明細)",
-    "bronze": "🥉 銅牌層 (platzi_bronze · 原始串流與 Ingestion 歷程)",
-}
-with header_col1:
-    st.title("E-Commerce Lakehouse Analytics")
-    st.markdown(
-        f"**當前湖倉層級**：{layer_display_titles.get(selected_layer, 'BigQuery Lakehouse')} · "
-        "**Platzi Store API + dlt + GCP BigQuery + dbt-core**"
-    )
-with header_col2:
-    st.markdown("<br>", unsafe_allow_html=True)
-    c_status, c_ai_btn = st.columns([1.1, 1.0])
-    with c_status:
+is_ai_open = st.session_state.get("show_ai_drawer", False)
+
+if is_ai_open:
+    main_page_col, ai_sidebar_col = st.columns([7.2, 2.8], gap="large")
+else:
+    main_page_col = st.container()
+    ai_sidebar_col = None
+
+with main_page_col:
+    # ==============================================================================
+    header_col1, header_col2 = st.columns([2.7, 1.3])
+    layer_display_titles = {
+        "gold": "🥇 金牌層 (platzi_gold · 業務決策與 BI 指標)",
+        "silver": "🥈 銀牌層 (platzi_silver · 清洗事實與維度明細)",
+        "bronze": "🥉 銅牌層 (platzi_bronze · 原始串流與 Ingestion 歷程)",
+    }
+    with header_col1:
+        st.title("E-Commerce Lakehouse Analytics")
         st.markdown(
-            f"""
-            <div style="text-align: right;">
-                <div class="status-badge">
-                    <div class="pulse-dot"></div>
-                    {selected_layer.upper()} Connected
+            f"**當前湖倉層級**：{layer_display_titles.get(selected_layer, 'BigQuery Lakehouse')} · "
+            "**Platzi Store API + dlt + GCP BigQuery + dbt-core**"
+        )
+    with header_col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        c_status, c_ai_btn = st.columns([1.1, 1.0])
+        with c_status:
+            st.markdown(
+                f"""
+                <div style="text-align: right;">
+                    <div class="status-badge">
+                        <div class="pulse-dot"></div>
+                        {selected_layer.upper()} Connected
+                    </div>
                 </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c_ai_btn:
-        is_ai_open = st.session_state.get("show_ai_drawer", False)
-        if st.button(
-            "» 收起顧問" if is_ai_open else "✨ AI 顧問",
-            type="secondary" if is_ai_open else "primary",
-            key="top_bar_ai_toggle",
-            width="stretch",
-            help="點擊展開/收起對稱式獨立右側邊欄（全盤湖倉視野 ＋ 當前焦點加權）",
-        ):
-            st.session_state["show_ai_drawer"] = not is_ai_open
-            st.rerun()
+                """,
+                unsafe_allow_html=True,
+            )
+        with c_ai_btn:
+            is_ai_open = st.session_state.get("show_ai_drawer", False)
+            if st.button(
+                "» 收起顧問" if is_ai_open else "✨ AI 顧問",
+                type="secondary" if is_ai_open else "primary",
+                key="top_bar_ai_toggle",
+                width="stretch",
+                help="點擊展開/收起對稱式獨立右側邊欄（全盤湖倉視野 ＋ 當前焦點加權）",
+            ):
+                st.session_state["show_ai_drawer"] = not is_ai_open
+                st.rerun()
 
-st.markdown("---")
+    st.markdown("---")
 
-# ------------------------------------------------------------------------------
-# Layer-Specific Executive KPI Cards
-# ------------------------------------------------------------------------------
-if selected_layer == "gold":
-    total_gmv = filtered_kpi["gmv"].sum() if not filtered_kpi.empty and "gmv" in filtered_kpi.columns else 0.0
-    total_net_rev = filtered_kpi["net_revenue"].sum() if not filtered_kpi.empty and "net_revenue" in filtered_kpi.columns else 0.0
-    total_orders = filtered_kpi["total_orders"].sum() if not filtered_kpi.empty and "total_orders" in filtered_kpi.columns else 0
-    completed_orders = filtered_kpi["completed_orders"].sum() if not filtered_kpi.empty and "completed_orders" in filtered_kpi.columns else 0
-    cancelled_orders = filtered_kpi["cancelled_orders"].sum() if not filtered_kpi.empty and "cancelled_orders" in filtered_kpi.columns else 0
-    refunded_orders = filtered_kpi["refunded_orders"].sum() if not filtered_kpi.empty and "refunded_orders" in filtered_kpi.columns else 0
-    avg_aov = filtered_kpi["aov"].mean() if not filtered_kpi.empty and "aov" in filtered_kpi.columns else 0.0
-    cancel_rate = (cancelled_orders / total_orders * 100) if total_orders > 0 else 0
-    refund_rate = (refunded_orders / total_orders * 100) if total_orders > 0 else 0
+    # ------------------------------------------------------------------------------
+    # Layer-Specific Executive KPI Cards
+    # ------------------------------------------------------------------------------
+    if selected_layer == "gold":
+        total_gmv = filtered_kpi["gmv"].sum() if not filtered_kpi.empty and "gmv" in filtered_kpi.columns else 0.0
+        total_net_rev = filtered_kpi["net_revenue"].sum() if not filtered_kpi.empty and "net_revenue" in filtered_kpi.columns else 0.0
+        total_orders = filtered_kpi["total_orders"].sum() if not filtered_kpi.empty and "total_orders" in filtered_kpi.columns else 0
+        completed_orders = filtered_kpi["completed_orders"].sum() if not filtered_kpi.empty and "completed_orders" in filtered_kpi.columns else 0
+        cancelled_orders = filtered_kpi["cancelled_orders"].sum() if not filtered_kpi.empty and "cancelled_orders" in filtered_kpi.columns else 0
+        refunded_orders = filtered_kpi["refunded_orders"].sum() if not filtered_kpi.empty and "refunded_orders" in filtered_kpi.columns else 0
+        avg_aov = filtered_kpi["aov"].mean() if not filtered_kpi.empty and "aov" in filtered_kpi.columns else 0.0
+        cancel_rate = (cancelled_orders / total_orders * 100) if total_orders > 0 else 0
+        refund_rate = (refunded_orders / total_orders * 100) if total_orders > 0 else 0
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">總銷售額 (GMV)</div>
+                    <div class="metric-value">${total_gmv:,.2f}</div>
+                    <div class="metric-subtext">累積總銷售訂單金流</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c2:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">淨實質營收 (Net Revenue)</div>
+                    <div class="metric-value">${total_net_rev:,.2f}</div>
+                    <div class="metric-subtext">已扣除退款與折扣</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c3:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">平均客單價 (AOV)</div>
+                    <div class="metric-value">${avg_aov:,.2f}</div>
+                    <div class="metric-subtext">成交訂單均額</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c4:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">訂單退款率 / 取消率</div>
+                    <div class="metric-value">{refund_rate:.1f}% <span style="font-size:1rem;color:#94a3b8;">/ {cancel_rate:.1f}%</span></div>
+                    <div class="metric-subtext warning">退款 {refunded_orders} 單 / 取消 {cancelled_orders} 單</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    elif selected_layer == "silver":
+        s_orders_cnt = len(df_orders)
+        s_gross = df_orders["gross_amount"].sum() if not df_orders.empty and "gross_amount" in df_orders.columns else 0.0
+        s_discount = df_orders["discount_amount"].sum() if not df_orders.empty and "discount_amount" in df_orders.columns else 0.0
+        s_net = df_orders["net_amount"].sum() if not df_orders.empty and "net_amount" in df_orders.columns else 0.0
+
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">清洗事實訂單 (fct_orders)</div>
+                    <div class="metric-value">{s_orders_cnt:,} 筆</div>
+                    <div class="metric-subtext">標準化與關聯事實紀錄</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c2:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">累計訂單總毛額 (Gross)</div>
+                    <div class="metric-value">${s_gross:,.2f}</div>
+                    <div class="metric-subtext">訂單標準牌價金額</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c3:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">行銷折扣扣減 (Discount)</div>
+                    <div class="metric-value">${s_discount:,.2f}</div>
+                    <div class="metric-subtext">優惠券與促銷折讓累計</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c4:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">實質訂單淨額 (Net Amount)</div>
+                    <div class="metric-value">${s_net:,.2f}</div>
+                    <div class="metric-subtext">實收交易金流總額</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    else:  # bronze
+        b_raw_orders_cnt = len(df_raw_orders)
+        b_raw_items_cnt = len(df_raw_items)
+        b_raw_cust_cnt = len(df_raw_cust)
+        b_dlt_cnt = len(df_dlt)
+
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">原始訂單事件 (raw_orders)</div>
+                    <div class="metric-value">{b_raw_orders_cnt:,} 筆</div>
+                    <div class="metric-subtext">Platzi API Ingestion 落地</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c2:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">原始訂單項目 (raw_items)</div>
+                    <div class="metric-value">{b_raw_items_cnt:,} 筆</div>
+                    <div class="metric-subtext">訂單細項未清洗流水</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c3:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">原始客戶快照 (raw_customers)</div>
+                    <div class="metric-value">{b_raw_cust_cnt:,} 筆</div>
+                    <div class="metric-subtext">含原始客戶欄位</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with c4:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">dlt 管道載入批次 (_dlt_loads)</div>
+                    <div class="metric-value">{b_dlt_cnt:,} 批</div>
+                    <div class="metric-subtext">ETL Schema 演化與狀態歷程</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("---")
+
+    # ------------------------------------------------------------------------------
+    # Dynamic Tab Definition per Layer
+    # ------------------------------------------------------------------------------
+    if "custom_tabs" not in st.session_state:
+        st.session_state.custom_tabs = []
+
+    if selected_layer == "gold":
+        base_tab_titles = [
+            "📈 營收走勢與轉換漏斗",
+            "👥 客戶終身價值 (LTV) 分群",
+            "🏆 熱銷商品與類別排行",
+            "✨ 自然語言 AI 智能圖表",
+            "🎛️ 視覺化自訂看板 (Power BI 畫布)",
+        ]
+    elif selected_layer == "silver":
+        base_tab_titles = [
+            "📦 訂單事實表 (fct_orders)",
+            "🛒 訂單品項事實表 (fct_order_items)",
+            "👥 客戶維度表 (dim_customers)",
+            "🏷️ 商品維度表 (dim_products)",
+            "🎛️ 銀牌層視覺化畫布 (Power BI 畫布)",
+        ]
+    else:  # bronze
+        base_tab_titles = [
+            "📥 原始訂單流 (raw_orders)",
+            "🛒 原始品項流 (raw_order_items)",
+            "👤 原始客戶快照 (raw_customers)",
+            "⚙️ dlt 載入歷程 (_dlt_loads)",
+            "🎛️ 銅牌層視覺化畫布 (Power BI 畫布)",
+        ]
+
+    custom_tab_titles = [f"📌 {t['title']}" for t in st.session_state.custom_tabs]
+    all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ 新增圖表分頁"]
+
+    tab_parent = st.container()
+
+    with tab_parent:
+        active_tab_nav_key = f"active_tab_nav_{selected_layer}"
+        if active_tab_nav_key not in st.session_state or st.session_state[active_tab_nav_key] not in all_tab_titles:
+            st.session_state[active_tab_nav_key] = all_tab_titles[0]
+
+        # Custom Segmented Control styling for modern tab look
         st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">總銷售額 (GMV)</div>
-                <div class="metric-value">${total_gmv:,.2f}</div>
-                <div class="metric-subtext">累積總銷售訂單金流</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c2:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">淨實質營收 (Net Revenue)</div>
-                <div class="metric-value">${total_net_rev:,.2f}</div>
-                <div class="metric-subtext">已扣除退款與折扣</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c3:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">平均客單價 (AOV)</div>
-                <div class="metric-value">${avg_aov:,.2f}</div>
-                <div class="metric-subtext">成交訂單均額</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c4:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">訂單退款率 / 取消率</div>
-                <div class="metric-value">{refund_rate:.1f}% <span style="font-size:1rem;color:#94a3b8;">/ {cancel_rate:.1f}%</span></div>
-                <div class="metric-subtext warning">退款 {refunded_orders} 單 / 取消 {cancelled_orders} 單</div>
-            </div>
+            """
+            <style>
+            div[data-testid="stSegmentedControl"] {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+                background: rgba(15, 23, 42, 0.45) !important;
+                padding: 6px !important;
+                border-radius: 12px !important;
+                border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                margin-bottom: 1.5rem !important;
+            }
+            div[data-testid="stSegmentedControl"] button {
+                border-radius: 8px !important;
+                font-size: 0.95rem !important;
+                font-weight: 600 !important;
+                padding: 0.55rem 1.1rem !important;
+                border: none !important;
+                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+                color: #ffffff !important;
+                box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
+            }
+            </style>
             """,
             unsafe_allow_html=True,
         )
 
-elif selected_layer == "silver":
-    s_orders_cnt = len(df_orders)
-    s_gross = df_orders["gross_amount"].sum() if not df_orders.empty and "gross_amount" in df_orders.columns else 0.0
-    s_discount = df_orders["discount_amount"].sum() if not df_orders.empty and "discount_amount" in df_orders.columns else 0.0
-    s_net = df_orders["net_amount"].sum() if not df_orders.empty and "net_amount" in df_orders.columns else 0.0
-
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">清洗事實訂單 (fct_orders)</div>
-                <div class="metric-value">{s_orders_cnt:,} 筆</div>
-                <div class="metric-subtext">標準化與關聯事實紀錄</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        active_tab = st.segmented_control(
+            "分頁導航",
+            options=all_tab_titles,
+            default=st.session_state[active_tab_nav_key],
+            key=active_tab_nav_key,
+            label_visibility="collapsed",
         )
-    with c2:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">累計訂單總毛額 (Gross)</div>
-                <div class="metric-value">${s_gross:,.2f}</div>
-                <div class="metric-subtext">訂單標準牌價金額</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c3:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">行銷折扣扣減 (Discount)</div>
-                <div class="metric-value">${s_discount:,.2f}</div>
-                <div class="metric-subtext">優惠券與促銷折讓累計</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c4:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">實質訂單淨額 (Net Amount)</div>
-                <div class="metric-value">${s_net:,.2f}</div>
-                <div class="metric-subtext">實收交易金流總額</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        if not active_tab:
+            active_tab = st.session_state[active_tab_nav_key]
 
-else:  # bronze
-    b_raw_orders_cnt = len(df_raw_orders)
-    b_raw_items_cnt = len(df_raw_items)
-    b_raw_cust_cnt = len(df_raw_cust)
-    b_dlt_cnt = len(df_dlt)
+    # ==============================================================================
+    # RENDER TABS ACCORDING TO SELECTED LAKEHOUSE LAYER
+    # ==============================================================================
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">原始訂單事件 (raw_orders)</div>
-                <div class="metric-value">{b_raw_orders_cnt:,} 筆</div>
-                <div class="metric-subtext">Platzi API Ingestion 落地</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c2:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">原始訂單項目 (raw_items)</div>
-                <div class="metric-value">{b_raw_items_cnt:,} 筆</div>
-                <div class="metric-subtext">訂單細項未清洗流水</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c3:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">原始客戶快照 (raw_customers)</div>
-                <div class="metric-value">{b_raw_cust_cnt:,} 筆</div>
-                <div class="metric-subtext">含原始客戶欄位</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with c4:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">dlt 管道載入批次 (_dlt_loads)</div>
-                <div class="metric-value">{b_dlt_cnt:,} 批</div>
-                <div class="metric-subtext">ETL Schema 演化與狀態歷程</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-st.markdown("---")
-
-# ------------------------------------------------------------------------------
-# Dynamic Tab Definition per Layer
-# ------------------------------------------------------------------------------
-if "custom_tabs" not in st.session_state:
-    st.session_state.custom_tabs = []
-
-if selected_layer == "gold":
-    base_tab_titles = [
-        "📈 營收走勢與轉換漏斗",
-        "👥 客戶終身價值 (LTV) 分群",
-        "🏆 熱銷商品與類別排行",
-        "✨ 自然語言 AI 智能圖表",
-        "🎛️ 視覺化自訂看板 (Power BI 畫布)",
-    ]
-elif selected_layer == "silver":
-    base_tab_titles = [
-        "📦 訂單事實表 (fct_orders)",
-        "🛒 訂單品項事實表 (fct_order_items)",
-        "👥 客戶維度表 (dim_customers)",
-        "🏷️ 商品維度表 (dim_products)",
-        "🎛️ 銀牌層視覺化畫布 (Power BI 畫布)",
-    ]
-else:  # bronze
-    base_tab_titles = [
-        "📥 原始訂單流 (raw_orders)",
-        "🛒 原始品項流 (raw_order_items)",
-        "👤 原始客戶快照 (raw_customers)",
-        "⚙️ dlt 載入歷程 (_dlt_loads)",
-        "🎛️ 銅牌層視覺化畫布 (Power BI 畫布)",
-    ]
-
-custom_tab_titles = [f"📌 {t['title']}" for t in st.session_state.custom_tabs]
-all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ 新增圖表分頁"]
-
-tab_parent = st.container()
-
-with tab_parent:
-    active_tab_nav_key = f"active_tab_nav_{selected_layer}"
-    if active_tab_nav_key not in st.session_state or st.session_state[active_tab_nav_key] not in all_tab_titles:
-        st.session_state[active_tab_nav_key] = all_tab_titles[0]
-
-    # Custom Segmented Control styling for modern tab look
-    st.markdown(
-        """
-        <style>
-        div[data-testid="stSegmentedControl"] {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            gap: 8px !important;
-            background: rgba(15, 23, 42, 0.45) !important;
-            padding: 6px !important;
-            border-radius: 12px !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            margin-bottom: 1.5rem !important;
-        }
-        div[data-testid="stSegmentedControl"] button {
-            border-radius: 8px !important;
-            font-size: 0.95rem !important;
-            font-weight: 600 !important;
-            padding: 0.55rem 1.1rem !important;
-            border: none !important;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        }
-        div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-            color: #ffffff !important;
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    active_tab = st.segmented_control(
-        "分頁導航",
-        options=all_tab_titles,
-        default=st.session_state[active_tab_nav_key],
-        key=active_tab_nav_key,
-        label_visibility="collapsed",
-    )
-    if not active_tab:
-        active_tab = st.session_state[active_tab_nav_key]
-
-# ==============================================================================
-# RENDER TABS ACCORDING TO SELECTED LAKEHOUSE LAYER
-# ==============================================================================
-
-if selected_layer == "gold":
-    # --------------------------------------------------------------------------
-    # GOLD TAB 1: 每日營收走勢與轉換漏斗
-    # --------------------------------------------------------------------------
-    if active_tab == base_tab_titles[0]:
-        st.subheader("📊 每日 GMV 與實質淨營收趨勢")
-        if not filtered_kpi.empty:
-            fig_rev = go.Figure()
-            fig_rev.add_trace(
-                go.Scatter(
-                    x=filtered_kpi["order_date"],
-                    y=filtered_kpi["gmv"],
-                    mode="lines+markers",
-                    name="GMV (總銷售)",
-                    line={"color": "#6366f1", "width": 3},
-                    fill="tozeroy",
-                    fillcolor="rgba(99, 102, 241, 0.1)",
+    if selected_layer == "gold":
+        # --------------------------------------------------------------------------
+        # GOLD TAB 1: 每日營收走勢與轉換漏斗
+        # --------------------------------------------------------------------------
+        if active_tab == base_tab_titles[0]:
+            st.subheader("📊 每日 GMV 與實質淨營收趨勢")
+            if not filtered_kpi.empty:
+                fig_rev = go.Figure()
+                fig_rev.add_trace(
+                    go.Scatter(
+                        x=filtered_kpi["order_date"],
+                        y=filtered_kpi["gmv"],
+                        mode="lines+markers",
+                        name="GMV (總銷售)",
+                        line={"color": "#6366f1", "width": 3},
+                        fill="tozeroy",
+                        fillcolor="rgba(99, 102, 241, 0.1)",
+                    )
                 )
-            )
-            fig_rev.add_trace(
-                go.Scatter(
-                    x=filtered_kpi["order_date"],
-                    y=filtered_kpi["net_revenue"],
-                    mode="lines+markers",
-                    name="Net Revenue (實質淨營收)",
-                    line={"color": "#10b981", "width": 3},
+                fig_rev.add_trace(
+                    go.Scatter(
+                        x=filtered_kpi["order_date"],
+                        y=filtered_kpi["net_revenue"],
+                        mode="lines+markers",
+                        name="Net Revenue (實質淨營收)",
+                        line={"color": "#10b981", "width": 3},
+                    )
                 )
-            )
-            fig_rev.update_layout(
-                template="plotly_dark",
-                height=380,
-                margin={"l": 20, "r": 20, "t": 30, "b": 20},
-                legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
-                xaxis={"showgrid": False},
-                yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
-            )
-            st.plotly_chart(fig_rev, width="stretch")
-
-            col_t1, col_t2 = st.columns(2)
-            with col_t1:
-                st.subheader("📦 訂單履約與狀態分佈")
-                fig_status = go.Figure()
-                fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["completed_orders"], name="Completed (已完成)", marker_color="#10b981"))
-                fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["cancelled_orders"], name="Cancelled (已取消)", marker_color="#f59e0b"))
-                fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["refunded_orders"], name="Refunded (已退款)", marker_color="#ef4444"))
-                fig_status.update_layout(
-                    barmode="stack",
+                fig_rev.update_layout(
                     template="plotly_dark",
-                    height=320,
+                    height=380,
                     margin={"l": 20, "r": 20, "t": 30, "b": 20},
                     legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
+                    xaxis={"showgrid": False},
                     yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
                 )
-                st.plotly_chart(fig_status, width="stretch")
+                st.plotly_chart(fig_rev, width="stretch")
 
-            with col_t2:
-                st.subheader("💵 平均客單價 (AOV) 走勢")
-                fig_aov = px.line(
-                    filtered_kpi,
-                    x="order_date",
-                    y="aov",
-                    template="plotly_dark",
-                    markers=True,
-                    color_discrete_sequence=["#38bdf8"],
-                )
-                fig_aov.update_layout(
-                    height=320,
-                    margin={"l": 20, "r": 20, "t": 30, "b": 20},
-                    yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
-                )
-                st.plotly_chart(fig_aov, width="stretch")
-        else:
-            st.info("尚無符合篩選區間的金牌 KPI 數據。")
-
-    # --------------------------------------------------------------------------
-    # GOLD TAB 2: 客戶終身價值 (LTV) 分群
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[1]:
-        st.subheader("👥 客戶層級 (Customer Tiers) 佔比與價值貢獻")
-        if not df_ltv.empty:
-            col_ltv1, col_ltv2 = st.columns([1, 2])
-            tier_counts = df_ltv["customer_tier"].value_counts().reset_index()
-            tier_counts.columns = ["customer_tier", "count"]
-            tier_colors = {
-                "Platinum": "#a855f7",
-                "Gold": "#eab308",
-                "Silver": "#94a3b8",
-                "Bronze": "#b45309",
-            }
-
-            with col_ltv1:
-                fig_tier = px.pie(
-                    tier_counts,
-                    names="customer_tier",
-                    values="count",
-                    hole=0.55,
-                    color="customer_tier",
-                    color_discrete_map=tier_colors,
-                    template="plotly_dark",
-                )
-                fig_tier.update_layout(height=350, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                st.plotly_chart(fig_tier, width="stretch")
-
-            with col_ltv2:
-                fig_tier_bar = px.bar(
-                    df_ltv.groupby("customer_tier")["lifetime_net_revenue"].sum().reset_index(),
-                    x="customer_tier",
-                    y="lifetime_net_revenue",
-                    color="customer_tier",
-                    color_discrete_map=tier_colors,
-                    template="plotly_dark",
-                    title="各級別顧客累積淨貢獻額 ($)",
-                )
-                fig_tier_bar.update_layout(height=350, margin={"l": 20, "r": 20, "t": 40, "b": 20}, showlegend=False)
-                st.plotly_chart(fig_tier_bar, width="stretch")
-
-            st.subheader("💎 高價值 VIP 客戶排名 (已套用 PII 加密遮蔽)")
-            st.caption("🔒 符合 GDPR/個資規範：姓名首字星號化，電子信箱透過 SHA-256 雜湊")
-            show_cols = [c for c in ["customer_id", "customer_name", "masked_email", "customer_tier", "total_orders", "completed_orders", "lifetime_net_revenue"] if c in df_ltv.columns]
-            st.dataframe(df_ltv[show_cols], width="stretch", hide_index=True)
-        else:
-            st.info("尚無客戶 LTV 分群數據。")
-
-    # --------------------------------------------------------------------------
-    # GOLD TAB 3: 熱銷商品與類別排行
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[2]:
-        st.subheader("🏆 商品業績與銷售數量排行榜")
-        if not df_prod.empty:
-            c_p1, c_p2 = st.columns(2)
-            with c_p1:
-                top_rev_prod = df_prod.sort_values(by="completed_sales_amount", ascending=True).tail(10)
-                fig_prod_rev = px.bar(
-                    top_rev_prod,
-                    x="completed_sales_amount",
-                    y="product_title",
-                    orientation="h",
-                    color="category_name" if "category_name" in top_rev_prod.columns else None,
-                    template="plotly_dark",
-                    title="Top 10 商品銷售金額排行 ($)",
-                    labels={"completed_sales_amount": "累積成交金額 ($)", "product_title": "商品名稱"},
-                )
-                fig_prod_rev.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                st.plotly_chart(fig_prod_rev, width="stretch")
-
-            with c_p2:
-                top_qty_prod = df_prod.sort_values(by="units_sold", ascending=True).tail(10)
-                fig_prod_qty = px.bar(
-                    top_qty_prod,
-                    x="units_sold",
-                    y="product_title",
-                    orientation="h",
-                    color="category_name" if "category_name" in top_qty_prod.columns else None,
-                    template="plotly_dark",
-                    title="Top 10 商品銷售件數排行 (件)",
-                    labels={"units_sold": "累積銷售件數", "product_title": "商品名稱"},
-                )
-                fig_prod_qty.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                st.plotly_chart(fig_prod_qty, width="stretch")
-
-            st.subheader("📋 完整商品業績明細清單")
-            st.dataframe(df_prod, width="stretch", hide_index=True)
-        else:
-            st.info("尚無商品業績排行數據。")
-
-    # --------------------------------------------------------------------------
-    # GOLD TAB 4: 自然語言 AI 智能圖表生成器 (NL-to-Visualization + FastMCP Mode A)
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[3]:
-        st.subheader("✨ 自然語言 AI 智能圖表生成器 (Text-to-Chart)")
-        st.caption("🤖 支援自然繁體中文輸入任何圖表需求，AI 即時自動選取 BigQuery 金牌資料欄位並繪製互動式 Plotly 圖表")
-
-        gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
-
-        def set_gold_chart_query(q: str):
-            st.session_state["nl_chart_input_field"] = q
-            st.session_state["nl_chart_query"] = q
-            st.session_state.pop("fastmcp_diag_result_gold_tab4", None)
-            st.session_state.pop("mcp_chat_hist_gold_tab4", None)
-            st.session_state.pop("active_model_gold_tab4", None)
-            st.rerun()
-
-        st.markdown("##### 💡 點擊範例指令立即生圖：")
-        c_btn1, c_btn2, c_btn3 = st.columns(3)
-        with c_btn1:
-            if st.button("📈 GMV 與淨營收對比走勢", key="btn_nl_1", width="stretch"):
-                set_gold_chart_query("請幫我畫出每日 GMV 與實質淨營收的對比走勢圖")
-            if st.button("🏆 Top 10 熱銷商品排行", key="btn_nl_4", width="stretch"):
-                set_gold_chart_query("用長條圖呈現銷售額前 10 大熱銷商品")
-        with c_btn2:
-            if st.button("⚠️ 退款率與取消率監控", key="btn_nl_2", width="stretch"):
-                set_gold_chart_query("畫出每日退款率與取消率的監控走勢圖")
-            if st.button("🏷️ 商品品類銷售佔比圓餅圖", key="btn_nl_5", width="stretch"):
-                set_gold_chart_query("幫我畫各商品品類 (Category) 銷售金額佔比圓餅圖")
-        with c_btn3:
-            if st.button("💵 平均客單價 (AOV) 走勢", key="btn_nl_3", width="stretch"):
-                set_gold_chart_query("請繪製平均客單價 AOV 的歷史波動走勢圖")
-            if st.button("👥 會員等級價值分佈圖", key="btn_nl_6", width="stretch"):
-                set_gold_chart_query("用圓餅圖呈現不同會員等級 (Customer Tiers) 的營收貢獻")
-
-        if "nl_chart_input_field" not in st.session_state:
-            st.session_state["nl_chart_input_field"] = "請幫我畫出每日 GMV 與實質淨營收的對比走勢圖"
-
-        col_input, col_submit = st.columns([4, 1])
-        with col_input:
-            current_nl = st.text_input(
-                "請輸入圖表生成指令：",
-                key="nl_chart_input_field",
-                placeholder="例如：畫出前五大商品銷售長條圖、或是每日退款率走勢...",
-            )
-        with col_submit:
-            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            btn_gen = st.button("生成圖表 🚀", key="btn_trigger_chart", type="primary", width="stretch")
-
-        target_query = current_nl.strip() if current_nl and current_nl.strip() else "請幫我畫出每日 GMV 與實質淨營收的對比走勢圖"
-        if btn_gen and st.session_state.get("nl_last_executed_query") != target_query:
-            st.session_state.pop("fastmcp_diag_result_gold_tab4", None)
-            st.session_state.pop("mcp_chat_hist_gold_tab4", None)
-            st.session_state.pop("active_model_gold_tab4", None)
-            st.session_state["nl_chart_query"] = target_query
-            st.rerun()
-        st.session_state["nl_last_executed_query"] = target_query
-
-        with st.spinner("AI 正在解析自然語言意圖並調用 BigQuery 金牌數據繪圖..."):
-            fig_nl, chart_title, insight_text, raw_df = generate_chart_from_nl(
-                prompt=target_query,
-                df_kpi=filtered_kpi,
-                df_prod=df_prod,
-                df_ltv=df_ltv,
-                gemini_api_key=gemini_key,
-            )
-
-        st.markdown("---")
-        if fig_nl is None:
-            st.warning(f"### {chart_title}")
-            st.markdown(
-                f"""
-                <div class="metric-card" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05);">
-                    <div style="font-size: 1.05rem; line-height: 1.6; color: var(--text-color, #0f172a);">
-                        {insight_text}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        else:
-            st.subheader(f"📊 {chart_title}")
-            st.plotly_chart(fig_nl, width="stretch")
-
-            st.markdown(
-                f"""
-                <div class="metric-card" style="border-left: 4px solid #6366f1;">
-                    <div class="metric-label">💡 MBB 顧問商業洞察 (Executive Takeaway)</div>
-                    <div style="font-size: 1.05rem; font-weight: 500; color: var(--text-color, #0f172a); margin-top: 0.25rem;">
-                        {insight_text}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            # FastMCP Mode A: Deep Diagnostic Trigger
-            st.markdown("---")
-            col_mcp_btn, col_mcp_info = st.columns([1.8, 3.2])
-            with col_mcp_btn:
-                run_mcp_diag = st.button(
-                    "🤖 呼叫 FastMCP 顧問深度診斷 (Mode A)",
-                    key="btn_fastmcp_diag_main",
-                    type="primary",
-                    width="stretch",
-                    help="調用 FastMCP 顧問引擎：套用麥肯錫 SCQA + MECE 議題樹 + 30-60-90 天落地方針進行深度數據因果診斷",
-                )
-            with col_mcp_info:
-                st.caption("⚡ **FastMCP A 模式**：圖表生成後，點擊立即呼叫 FastMCP 數據分析顧問對底層數據進行深層歸因診斷。")
-
-            diag_res_key = "fastmcp_diag_result_gold_tab4"
-            if run_mcp_diag:
-                with st.spinner("🤖 FastMCP 顧問正在以 MBB 標準執行深度因果歸因診斷 (SCQA + MECE Issue Tree)..."):
-                    diag_output = run_fastmcp_chart_diagnostic(
-                        chart_title=chart_title,
-                        df=raw_df,
-                        prompt_intent=target_query,
-                        gemini_api_key=gemini_key,
-                    )
-                    st.session_state[diag_res_key] = diag_output
-
-            if st.session_state.get(diag_res_key):
-                render_fastmcp_chat_widget(
-                    unique_key="gold_tab4",
-                    chart_title=chart_title,
-                    df=raw_df,
-                    initial_diagnostic=st.session_state[diag_res_key],
-                    gemini_api_key=gemini_key,
-                )
-
-            with st.expander("🔍 點擊展開：檢視本圖表底層數據表 (Data Preview)"):
-                st.dataframe(raw_df, width="stretch", hide_index=True)
-
-    # --------------------------------------------------------------------------
-    # GOLD TAB 5: 類 Power BI 雙軌自訂視覺化看板
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[4]:
-        render_powerbi_studio(
-                df_kpi=filtered_kpi,
-                df_ltv=df_ltv,
-                df_prod=df_prod,
-                key_prefix="pbi_main",
-            )
-
-elif selected_layer == "silver":
-    # --------------------------------------------------------------------------
-    # SILVER TAB 1: 訂單事實表 (fct_orders)
-    # --------------------------------------------------------------------------
-    if active_tab == base_tab_titles[0]:
-        st.subheader("📦 fct_orders 訂單清洗事實表概覽")
-        if not df_orders.empty:
-            c_s1, c_s2 = st.columns(2)
-            with c_s1:
-                st.markdown("##### 訂單履約狀態分佈 (Order Status)")
-                status_counts = df_orders["order_status"].value_counts().reset_index()
-                status_counts.columns = ["order_status", "count"]
-                fig_s_status = px.pie(
-                    status_counts,
-                    names="order_status",
-                    values="count",
-                    template="plotly_dark",
-                    hole=0.45,
-                    color_discrete_sequence=["#10b981", "#f59e0b", "#ef4444", "#6366f1"],
-                )
-                fig_s_status.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                st.plotly_chart(fig_s_status, width="stretch")
-
-            with c_s2:
-                st.markdown("##### 訂單金額走勢 (Gross vs Net Amount)")
-                if "created_at" in df_orders.columns:
-                    orders_trend = df_orders.copy()
-                    orders_trend["order_day"] = pd.to_datetime(orders_trend["created_at"]).dt.date
-                    day_agg = orders_trend.groupby("order_day").agg(
-                        gross_sum=("gross_amount", "sum"),
-                        net_sum=("net_amount", "sum"),
-                    ).reset_index()
-                    fig_s_trend = go.Figure()
-                    fig_s_trend.add_trace(go.Bar(x=day_agg["order_day"], y=day_agg["gross_sum"], name="總毛額 (Gross)", marker_color="#6366f1"))
-                    fig_s_trend.add_trace(go.Bar(x=day_agg["order_day"], y=day_agg["net_sum"], name="淨實付額 (Net)", marker_color="#10b981"))
-                    fig_s_trend.update_layout(
-                        barmode="group",
+                col_t1, col_t2 = st.columns(2)
+                with col_t1:
+                    st.subheader("📦 訂單履約與狀態分佈")
+                    fig_status = go.Figure()
+                    fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["completed_orders"], name="Completed (已完成)", marker_color="#10b981"))
+                    fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["cancelled_orders"], name="Cancelled (已取消)", marker_color="#f59e0b"))
+                    fig_status.add_trace(go.Bar(x=filtered_kpi["order_date"], y=filtered_kpi["refunded_orders"], name="Refunded (已退款)", marker_color="#ef4444"))
+                    fig_status.update_layout(
+                        barmode="stack",
                         template="plotly_dark",
                         height=320,
                         margin={"l": 20, "r": 20, "t": 30, "b": 20},
+                        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
+                        yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
                     )
-                    st.plotly_chart(fig_s_trend, width="stretch")
+                    st.plotly_chart(fig_status, width="stretch")
 
-            st.markdown("##### 📋 訂單事實詳細資料表 (Top 500 筆)")
-            st.dataframe(df_orders, width="stretch", hide_index=True)
-        else:
-            st.info("尚無 fct_orders 銀牌資料。")
+                with col_t2:
+                    st.subheader("💵 平均客單價 (AOV) 走勢")
+                    fig_aov = px.line(
+                        filtered_kpi,
+                        x="order_date",
+                        y="aov",
+                        template="plotly_dark",
+                        markers=True,
+                        color_discrete_sequence=["#38bdf8"],
+                    )
+                    fig_aov.update_layout(
+                        height=320,
+                        margin={"l": 20, "r": 20, "t": 30, "b": 20},
+                        yaxis={"showgrid": True, "gridcolor": "rgba(255, 255, 255, 0.08)"},
+                    )
+                    st.plotly_chart(fig_aov, width="stretch")
+            else:
+                st.info("尚無符合篩選區間的金牌 KPI 數據。")
 
-    # --------------------------------------------------------------------------
-    # SILVER TAB 2: 訂單品項事實表 (fct_order_items)
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[1]:
-        st.subheader("🛒 fct_order_items 訂單品項事實表明細")
-        if not df_items.empty:
-            c_i1, c_i2 = st.columns(2)
-            with c_i1:
-                st.markdown("##### 單品售價分佈 (Unit Price Distribution)")
-                fig_hist = px.histogram(
-                    df_items,
-                    x="unit_price" if "unit_price" in df_items.columns else df_items.columns[0],
-                    nbins=20,
-                    template="plotly_dark",
-                    color_discrete_sequence=["#38bdf8"],
-                )
-                fig_hist.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                st.plotly_chart(fig_hist, width="stretch")
+        # --------------------------------------------------------------------------
+        # GOLD TAB 2: 客戶終身價值 (LTV) 分群
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[1]:
+            st.subheader("👥 客戶層級 (Customer Tiers) 佔比與價值貢獻")
+            if not df_ltv.empty:
+                col_ltv1, col_ltv2 = st.columns([1, 2])
+                tier_counts = df_ltv["customer_tier"].value_counts().reset_index()
+                tier_counts.columns = ["customer_tier", "count"]
+                tier_colors = {
+                    "Platinum": "#a855f7",
+                    "Gold": "#eab308",
+                    "Silver": "#94a3b8",
+                    "Bronze": "#b45309",
+                }
 
-            with c_i2:
-                st.markdown("##### 購買數量分佈 (Quantity Breakdown)")
-                if "quantity" in df_items.columns:
-                    qty_df = df_items["quantity"].value_counts().reset_index()
-                    qty_df.columns = ["quantity", "count"]
-                    fig_qty = px.bar(qty_df, x="quantity", y="count", template="plotly_dark", color_discrete_sequence=["#a855f7"])
-                    fig_qty.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
-                    st.plotly_chart(fig_qty, width="stretch")
+                with col_ltv1:
+                    fig_tier = px.pie(
+                        tier_counts,
+                        names="customer_tier",
+                        values="count",
+                        hole=0.55,
+                        color="customer_tier",
+                        color_discrete_map=tier_colors,
+                        template="plotly_dark",
+                    )
+                    fig_tier.update_layout(height=350, margin={"l": 20, "r": 20, "t": 30, "b": 20})
+                    st.plotly_chart(fig_tier, width="stretch")
 
-            st.markdown("##### 📋 品項事實詳細資料表 (Top 500 筆)")
-            st.dataframe(df_items, width="stretch", hide_index=True)
-        else:
-            st.info("尚無 fct_order_items 銀牌資料。")
+                with col_ltv2:
+                    fig_tier_bar = px.bar(
+                        df_ltv.groupby("customer_tier")["lifetime_net_revenue"].sum().reset_index(),
+                        x="customer_tier",
+                        y="lifetime_net_revenue",
+                        color="customer_tier",
+                        color_discrete_map=tier_colors,
+                        template="plotly_dark",
+                        title="各級別顧客累積淨貢獻額 ($)",
+                    )
+                    fig_tier_bar.update_layout(height=350, margin={"l": 20, "r": 20, "t": 40, "b": 20}, showlegend=False)
+                    st.plotly_chart(fig_tier_bar, width="stretch")
 
-    # --------------------------------------------------------------------------
-    # SILVER TAB 3: 客戶維度表 (dim_customers)
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[2]:
-        st.subheader("👥 dim_customers 客戶維度表 (PII 去識別化)")
-        st.caption("🔒 符合資安規範：姓名與信箱透過 SHA-256 雜湊或遮蔽處理")
-        if not df_cust.empty:
-            st.dataframe(df_cust, width="stretch", hide_index=True)
-        else:
-            st.info("尚無 dim_customers 銀牌資料。")
+                st.subheader("💎 高價值 VIP 客戶排名 (已套用 PII 加密遮蔽)")
+                st.caption("🔒 符合 GDPR/個資規範：姓名首字星號化，電子信箱透過 SHA-256 雜湊")
+                show_cols = [c for c in ["customer_id", "customer_name", "masked_email", "customer_tier", "total_orders", "completed_orders", "lifetime_net_revenue"] if c in df_ltv.columns]
+                st.dataframe(df_ltv[show_cols], width="stretch", hide_index=True)
+            else:
+                st.info("尚無客戶 LTV 分群數據。")
 
-    # --------------------------------------------------------------------------
-    # SILVER TAB 4: 商品維度表 (dim_products)
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[3]:
-        st.subheader("🏷️ dim_products 商品維度表")
-        if not df_prod_silver.empty:
-            if "category_name" in df_prod_silver.columns:
-                cat_counts = df_prod_silver["category_name"].value_counts().reset_index()
-                cat_counts.columns = ["category_name", "product_count"]
-                fig_cat = px.bar(
-                    cat_counts,
-                    x="category_name",
-                    y="product_count",
-                    template="plotly_dark",
-                    color="category_name",
-                    title="各商品品類涵蓋之商品項目數",
-                )
-                fig_cat.update_layout(height=340, margin={"l": 20, "r": 20, "t": 40, "b": 20})
-                st.plotly_chart(fig_cat, width="stretch")
+        # --------------------------------------------------------------------------
+        # GOLD TAB 3: 熱銷商品與類別排行
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[2]:
+            st.subheader("🏆 商品業績與銷售數量排行榜")
+            if not df_prod.empty:
+                c_p1, c_p2 = st.columns(2)
+                with c_p1:
+                    top_rev_prod = df_prod.sort_values(by="completed_sales_amount", ascending=True).tail(10)
+                    fig_prod_rev = px.bar(
+                        top_rev_prod,
+                        x="completed_sales_amount",
+                        y="product_title",
+                        orientation="h",
+                        color="category_name" if "category_name" in top_rev_prod.columns else None,
+                        template="plotly_dark",
+                        title="Top 10 商品銷售金額排行 ($)",
+                        labels={"completed_sales_amount": "累積成交金額 ($)", "product_title": "商品名稱"},
+                    )
+                    fig_prod_rev.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
+                    st.plotly_chart(fig_prod_rev, width="stretch")
 
-            st.markdown("##### 📋 商品維度明細清單")
-            st.dataframe(df_prod_silver, width="stretch", hide_index=True)
-        else:
-            st.info("尚無 dim_products 銀牌資料。")
+                with c_p2:
+                    top_qty_prod = df_prod.sort_values(by="units_sold", ascending=True).tail(10)
+                    fig_prod_qty = px.bar(
+                        top_qty_prod,
+                        x="units_sold",
+                        y="product_title",
+                        orientation="h",
+                        color="category_name" if "category_name" in top_qty_prod.columns else None,
+                        template="plotly_dark",
+                        title="Top 10 商品銷售件數排行 (件)",
+                        labels={"units_sold": "累積銷售件數", "product_title": "商品名稱"},
+                    )
+                    fig_prod_qty.update_layout(height=420, margin={"l": 20, "r": 20, "t": 40, "b": 20})
+                    st.plotly_chart(fig_prod_qty, width="stretch")
 
-    # --------------------------------------------------------------------------
-    # SILVER TAB 5: 銀牌層視覺化畫布 (Power BI 畫布)
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[4]:
-        silver_datasets = {
-            "orders": {"name": "📦 fct_orders (訂單事實表)", "df": df_orders},
-            "items": {"name": "🛒 fct_order_items (品項明細表)", "df": df_items},
-            "customers": {"name": "👥 dim_customers (客戶維度表)", "df": df_cust},
-            "products": {"name": "🏷️ dim_products (商品維度表)", "df": df_prod_silver},
-        }
-        render_powerbi_studio(
-            key_prefix="pbi_silver",
-            dataset_configs=silver_datasets,
-            default_dataset_key="orders",
-        )
+                st.subheader("📋 完整商品業績明細清單")
+                st.dataframe(df_prod, width="stretch", hide_index=True)
+            else:
+                st.info("尚無商品業績排行數據。")
 
-else:  # bronze layer
-    # --------------------------------------------------------------------------
-    # BRONZE TAB 1: 原始訂單流 (raw_orders)
-    # --------------------------------------------------------------------------
-    if active_tab == base_tab_titles[0]:
-        st.subheader("📥 raw_orders 原始訂單 Ingestion 串流記錄")
-        st.caption("源自 Platzi Fake Store API 的原始 JSON 解析落地數據，包含 dlt Ingestion 元數據")
-        if not df_raw_orders.empty:
-            st.dataframe(df_raw_orders, width="stretch", hide_index=True)
-        else:
-            st.info("尚無 raw_orders 銅牌資料。")
+        # --------------------------------------------------------------------------
+        # GOLD TAB 4: 自然語言 AI 智能圖表生成器 (NL-to-Visualization + FastMCP Mode A)
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[3]:
+            st.subheader("✨ 自然語言 AI 智能圖表生成器 (Text-to-Chart)")
+            st.caption("🤖 支援自然繁體中文輸入任何圖表需求，AI 即時自動選取 BigQuery 金牌資料欄位並繪製互動式 Plotly 圖表")
 
-    # --------------------------------------------------------------------------
-    # BRONZE TAB 2: 原始品項流 (raw_order_items)
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[1]:
-        st.subheader("🛒 raw_order_items 原始品項拆解流水")
-        st.caption("未經彙總與業務規則過濾之原始訂單品項記錄")
-        if not df_raw_items.empty:
-            st.dataframe(df_raw_items, width="stretch", hide_index=True)
-        else:
-            st.info("尚無 raw_order_items 銅牌資料。")
+            gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
 
-    # --------------------------------------------------------------------------
-    # BRONZE TAB 3: 原始客戶快照 (raw_customers)
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[2]:
-        st.subheader("👤 raw_customers 原始客戶資料快照")
-        st.caption("原始客戶明細，後續由 dbt staging 進行 PII 遮蔽雜湊轉換為銀牌維度")
-        if not df_raw_cust.empty:
-            st.dataframe(df_raw_cust, width="stretch", hide_index=True)
-        else:
-            st.info("尚無 raw_customers 銅牌資料。")
-
-    # --------------------------------------------------------------------------
-    # BRONZE TAB 4: dlt 載入歷程 (_dlt_loads)
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[3]:
-        st.subheader("⚙️ _dlt_loads Ingestion 管道載入歷程日誌")
-        st.caption("記錄每次 dlt pipeline 載入之 load_id、schema 演化版本與載入完成狀態")
-        if not df_dlt.empty:
-            st.dataframe(df_dlt, width="stretch", hide_index=True)
-        else:
-            st.info("尚無 _dlt_loads 管道日誌資料。")
-
-    # --------------------------------------------------------------------------
-    # BRONZE TAB 5: 銅牌層視覺化畫布 (Power BI 畫布)
-    # --------------------------------------------------------------------------
-    elif active_tab == base_tab_titles[4]:
-        bronze_datasets = {
-            "raw_orders": {"name": "📥 raw_orders (原始訂單串流)", "df": df_raw_orders},
-            "raw_items": {"name": "🛒 raw_order_items (原始品項流水)", "df": df_raw_items},
-            "raw_cust": {"name": "👤 raw_customers (原始客戶快照)", "df": df_raw_cust},
-            "dlt_loads": {"name": "⚙️ _dlt_loads (dlt 載入日誌)", "df": df_dlt},
-        }
-        render_powerbi_studio(
-            key_prefix="pbi_bronze",
-            dataset_configs=bronze_datasets,
-            default_dataset_key="raw_orders",
-        )
-
-
-# ==============================================================================
-# DYNAMIC CUSTOM TABS (支援跨層級新增自訂分頁與 FastMCP Mode A)
-# ==============================================================================
-for idx, t_meta in enumerate(st.session_state.custom_tabs):
-    if active_tab == f"📌 {t_meta['title']}":
-        with st.container():
-            col_c_title, col_c_del = st.columns([5, 1])
-        with col_c_title:
-            st.subheader(f"📌 {t_meta['title']}")
-            st.caption(f"自訂分頁類型：**{t_meta.get('type_label', '自訂看板')}** · 綁定資料表：`{t_meta.get('dataset_name', 'BigQuery 資料表')}`")
-        with col_c_del:
-            if st.button("🗑️ 移除分頁", key=f"btn_del_tab_{t_meta['id']}", width="stretch", help="點擊從分頁列移除此自訂分頁"):
-                st.session_state.custom_tabs = [x for x in st.session_state.custom_tabs if x["id"] != t_meta["id"]]
+            def set_gold_chart_query(q: str):
+                st.session_state["nl_chart_input_field"] = q
+                st.session_state["nl_chart_query"] = q
+                st.session_state.pop("fastmcp_diag_result_gold_tab4", None)
+                st.session_state.pop("mcp_chat_hist_gold_tab4", None)
+                st.session_state.pop("active_model_gold_tab4", None)
                 st.rerun()
 
-        st.markdown("---")
+            st.markdown("##### 💡 點擊範例指令立即生圖：")
+            c_btn1, c_btn2, c_btn3 = st.columns(3)
+            with c_btn1:
+                if st.button("📈 GMV 與淨營收對比走勢", key="btn_nl_1", width="stretch"):
+                    set_gold_chart_query("請幫我畫出每日 GMV 與實質淨營收的對比走勢圖")
+                if st.button("🏆 Top 10 熱銷商品排行", key="btn_nl_4", width="stretch"):
+                    set_gold_chart_query("用長條圖呈現銷售額前 10 大熱銷商品")
+            with c_btn2:
+                if st.button("⚠️ 退款率與取消率監控", key="btn_nl_2", width="stretch"):
+                    set_gold_chart_query("畫出每日退款率與取消率的監控走勢圖")
+                if st.button("🏷️ 商品品類銷售佔比圓餅圖", key="btn_nl_5", width="stretch"):
+                    set_gold_chart_query("幫我畫各商品品類 (Category) 銷售金額佔比圓餅圖")
+            with c_btn3:
+                if st.button("💵 平均客單價 (AOV) 走勢", key="btn_nl_3", width="stretch"):
+                    set_gold_chart_query("請繪製平均客單價 AOV 的歷史波動走勢圖")
+                if st.button("👥 會員等級價值分佈圖", key="btn_nl_6", width="stretch"):
+                    set_gold_chart_query("用圓餅圖呈現不同會員等級 (Customer Tiers) 的營收貢獻")
 
-        if t_meta["type"] == "ai_chart":
-            tab_id = t_meta["id"]
-            gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
+            if "nl_chart_input_field" not in st.session_state:
+                st.session_state["nl_chart_input_field"] = "請幫我畫出每日 GMV 與實質淨營收的對比走勢圖"
+
             col_input, col_submit = st.columns([4, 1])
             with col_input:
                 current_nl = st.text_input(
                     "請輸入圖表生成指令：",
-                    value=st.session_state.get(f"nl_query_{tab_id}", t_meta.get("default_query", "請幫我畫出各品類銷售佔比")),
-                    key=f"input_nl_{tab_id}",
+                    key="nl_chart_input_field",
                     placeholder="例如：畫出前五大商品銷售長條圖、或是每日退款率走勢...",
                 )
             with col_submit:
                 st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                btn_gen = st.button("生成圖表 🚀", key=f"btn_chart_{tab_id}", type="primary", width="stretch")
+                btn_gen = st.button("生成圖表 🚀", key="btn_trigger_chart", type="primary", width="stretch")
 
-            target_query = current_nl if current_nl else t_meta.get("default_query", "請幫我畫出每日營收走勢")
+            target_query = current_nl.strip() if current_nl and current_nl.strip() else "請幫我畫出每日 GMV 與實質淨營收的對比走勢圖"
+            if btn_gen and st.session_state.get("nl_last_executed_query") != target_query:
+                st.session_state.pop("fastmcp_diag_result_gold_tab4", None)
+                st.session_state.pop("mcp_chat_hist_gold_tab4", None)
+                st.session_state.pop("active_model_gold_tab4", None)
+                st.session_state["nl_chart_query"] = target_query
+                st.rerun()
+            st.session_state["nl_last_executed_query"] = target_query
 
-            # Fallback to load gold if in non-gold layer for standard business charts
-            chart_kpi = filtered_kpi if not filtered_kpi.empty else df_kpi
-            if chart_kpi.empty:
-                chart_kpi, chart_ltv, chart_prod, _ = load_gold_data()
-            else:
-                chart_ltv = df_ltv
-                chart_prod = df_prod
-
-            with st.spinner("AI 正在解析自然語言意圖並繪製互動圖表..."):
+            with st.spinner("AI 正在解析自然語言意圖並調用 BigQuery 金牌數據繪圖..."):
                 fig_nl, chart_title, insight_text, raw_df = generate_chart_from_nl(
                     prompt=target_query,
-                    df_kpi=chart_kpi,
-                    df_prod=chart_prod,
-                    df_ltv=chart_ltv,
+                    df_kpi=filtered_kpi,
+                    df_prod=df_prod,
+                    df_ltv=df_ltv,
                     gemini_api_key=gemini_key,
                 )
 
@@ -1715,6 +1401,7 @@ for idx, t_meta in enumerate(st.session_state.custom_tabs):
             else:
                 st.subheader(f"📊 {chart_title}")
                 st.plotly_chart(fig_nl, width="stretch")
+
                 st.markdown(
                     f"""
                     <div class="metric-card" style="border-left: 4px solid #6366f1;">
@@ -1727,289 +1414,612 @@ for idx, t_meta in enumerate(st.session_state.custom_tabs):
                     unsafe_allow_html=True,
                 )
 
-                # FastMCP Mode A Deep Diagnostic in Custom Tab
+                # FastMCP Mode A: Deep Diagnostic Trigger
                 st.markdown("---")
-                col_mc1, col_mc2 = st.columns([1.8, 3.2])
-                with col_mc1:
-                    btn_mcp_c = st.button(
+                col_mcp_btn, col_mcp_info = st.columns([1.8, 3.2])
+                with col_mcp_btn:
+                    run_mcp_diag = st.button(
                         "🤖 呼叫 FastMCP 顧問深度診斷 (Mode A)",
-                        key=f"btn_mcp_custom_{tab_id}",
+                        key="btn_fastmcp_diag_main",
                         type="primary",
                         width="stretch",
-                        help="以 MBB 顧問框架 (SCQA + MECE Issue Tree + 30-60-90天執行方案) 對本圖表進行深層商業因果歸因診斷",
+                        help="調用 FastMCP 顧問引擎：套用麥肯錫 SCQA + MECE 議題樹 + 30-60-90 天落地方針進行深度數據因果診斷",
                     )
-                with col_mc2:
-                    st.caption("⚡ **FastMCP A 模式**：點擊調用顧問引擎，對本圖表底層數據進行深層歸因診斷。")
+                with col_mcp_info:
+                    st.caption("⚡ **FastMCP A 模式**：圖表生成後，點擊立即呼叫 FastMCP 數據分析顧問對底層數據進行深層歸因診斷。")
 
-                diag_key_c = f"diag_res_custom_{tab_id}"
-                if btn_mcp_c:
-                    with st.spinner("🤖 FastMCP 顧問正在進行因果歸因診斷 (SCQA + MECE)..."):
-                        diag_out = run_fastmcp_chart_diagnostic(
+                diag_res_key = "fastmcp_diag_result_gold_tab4"
+                if run_mcp_diag:
+                    with st.spinner("🤖 FastMCP 顧問正在以 MBB 標準執行深度因果歸因診斷 (SCQA + MECE Issue Tree)..."):
+                        diag_output = run_fastmcp_chart_diagnostic(
                             chart_title=chart_title,
                             df=raw_df,
                             prompt_intent=target_query,
                             gemini_api_key=gemini_key,
                         )
-                        st.session_state[diag_key_c] = diag_out
+                        st.session_state[diag_res_key] = diag_output
 
-                if st.session_state.get(diag_key_c):
+                if st.session_state.get(diag_res_key):
                     render_fastmcp_chat_widget(
-                        unique_key=f"custom_{tab_id}",
+                        unique_key="gold_tab4",
                         chart_title=chart_title,
                         df=raw_df,
-                        initial_diagnostic=st.session_state[diag_key_c],
+                        initial_diagnostic=st.session_state[diag_res_key],
                         gemini_api_key=gemini_key,
                     )
 
-                with st.expander("🔍 點擊展開：檢視底層數據表 (Data Preview)"):
+                with st.expander("🔍 點擊展開：檢視本圖表底層數據表 (Data Preview)"):
                     st.dataframe(raw_df, width="stretch", hide_index=True)
 
-        elif t_meta["type"] == "powerbi_canvas":
+        # --------------------------------------------------------------------------
+        # GOLD TAB 5: 類 Power BI 雙軌自訂視覺化看板
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[4]:
             render_powerbi_studio(
-                df_kpi=filtered_kpi if not filtered_kpi.empty else df_kpi,
-                df_ltv=df_ltv,
-                df_prod=df_prod,
-                key_prefix=f"pbi_custom_{t_meta['id']}",
-                default_dataset_key=t_meta.get("dataset_key", "kpi"),
-            )
+                    df_kpi=filtered_kpi,
+                    df_ltv=df_ltv,
+                    df_prod=df_prod,
+                    key_prefix="pbi_main",
+                )
 
+    elif selected_layer == "silver":
+        # --------------------------------------------------------------------------
+        # SILVER TAB 1: 訂單事實表 (fct_orders)
+        # --------------------------------------------------------------------------
+        if active_tab == base_tab_titles[0]:
+            st.subheader("📦 fct_orders 訂單清洗事實表概覽")
+            if not df_orders.empty:
+                c_s1, c_s2 = st.columns(2)
+                with c_s1:
+                    st.markdown("##### 訂單履約狀態分佈 (Order Status)")
+                    status_counts = df_orders["order_status"].value_counts().reset_index()
+                    status_counts.columns = ["order_status", "count"]
+                    fig_s_status = px.pie(
+                        status_counts,
+                        names="order_status",
+                        values="count",
+                        template="plotly_dark",
+                        hole=0.45,
+                        color_discrete_sequence=["#10b981", "#f59e0b", "#ef4444", "#6366f1"],
+                    )
+                    fig_s_status.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
+                    st.plotly_chart(fig_s_status, width="stretch")
 
-# ==============================================================================
-# TAB ADD: ➕ 新增圖表分頁 (Dynamic Tab Creation Wizard)
-# ==============================================================================
-if active_tab == "➕ 新增圖表分頁":
-    st.subheader("➕ 新增自訂圖表分頁 (Add Custom Analytics Tab)")
-    st.caption("自由擴充儀表板分頁，支援建立獨立的「AI 智能語意圖表」或「類 Power BI 拖曳畫布」")
+                with c_s2:
+                    st.markdown("##### 訂單金額走勢 (Gross vs Net Amount)")
+                    if "created_at" in df_orders.columns:
+                        orders_trend = df_orders.copy()
+                        orders_trend["order_day"] = pd.to_datetime(orders_trend["created_at"]).dt.date
+                        day_agg = orders_trend.groupby("order_day").agg(
+                            gross_sum=("gross_amount", "sum"),
+                            net_sum=("net_amount", "sum"),
+                        ).reset_index()
+                        fig_s_trend = go.Figure()
+                        fig_s_trend.add_trace(go.Bar(x=day_agg["order_day"], y=day_agg["gross_sum"], name="總毛額 (Gross)", marker_color="#6366f1"))
+                        fig_s_trend.add_trace(go.Bar(x=day_agg["order_day"], y=day_agg["net_sum"], name="淨實付額 (Net)", marker_color="#10b981"))
+                        fig_s_trend.update_layout(
+                            barmode="group",
+                            template="plotly_dark",
+                            height=320,
+                            margin={"l": 20, "r": 20, "t": 30, "b": 20},
+                        )
+                        st.plotly_chart(fig_s_trend, width="stretch")
 
-    with st.container():
-        st.markdown(
-            """
-            <div class="metric-card" style="border-left: 4px solid #6366f1; margin-bottom: 1.25rem;">
-                <div style="font-size: 1.05rem; font-weight: 600; color: var(--text-color, #0f172a);">
-                    🛠️ 選擇您想新增的分頁模式與資料來源
-                </div>
-                <div style="font-size: 0.9rem; color: #64748b; margin-top: 0.25rem;">
-                    新增後分頁將立即加入上方分頁列，每個自訂分頁均具備獨立狀態與視覺化配置。
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                st.markdown("##### 📋 訂單事實詳細資料表 (Top 500 筆)")
+                st.dataframe(df_orders, width="stretch", hide_index=True)
+            else:
+                st.info("尚無 fct_orders 銀牌資料。")
 
-        col_new_t1, col_new_t2 = st.columns(2)
-        with col_new_t1:
-            new_tab_type = st.radio(
-                "1. 選擇圖表引擎類型：",
-                options=[
-                    "✨ 自然語言 AI 智能圖表 (Text-to-Chart)",
-                    "🎛️ 視覺化自訂看板 (Power BI / Tableau 拖曳畫布)",
-                ],
-                index=0,
-                key="new_tab_type_radio",
-            )
-            is_ai_type = "AI" in new_tab_type
+        # --------------------------------------------------------------------------
+        # SILVER TAB 2: 訂單品項事實表 (fct_order_items)
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[1]:
+            st.subheader("🛒 fct_order_items 訂單品項事實表明細")
+            if not df_items.empty:
+                c_i1, c_i2 = st.columns(2)
+                with c_i1:
+                    st.markdown("##### 單品售價分佈 (Unit Price Distribution)")
+                    fig_hist = px.histogram(
+                        df_items,
+                        x="unit_price" if "unit_price" in df_items.columns else df_items.columns[0],
+                        nbins=20,
+                        template="plotly_dark",
+                        color_discrete_sequence=["#38bdf8"],
+                    )
+                    fig_hist.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
+                    st.plotly_chart(fig_hist, width="stretch")
 
-        with col_new_t2:
-            if selected_layer == "gold":
-                dataset_options = {
-                    "kpi": "📊 gold_daily_sales_kpi (每日營收、訂單與退款指標)",
-                    "prod": "🏆 gold_product_performance (熱銷商品與分類業績)",
-                    "ltv": "👥 gold_customer_ltv (客戶終身價值與分群)",
-                }
-            elif selected_layer == "silver":
-                dataset_options = {
-                    "orders": "📦 fct_orders (清洗訂單事實表)",
-                    "items": "🛒 fct_order_items (訂單項目明細表)",
-                    "customers": "👥 dim_customers (客戶維度表)",
-                    "products": "🏷️ dim_products (商品維度表)",
-                }
-            else:  # bronze
-                dataset_options = {
-                    "raw_orders": "📥 raw_orders (原始串流訂單事件)",
-                    "raw_items": "🛒 raw_order_items (原始品項流水)",
-                    "raw_cust": "👤 raw_customers (原始客戶快照)",
-                    "dlt_loads": "⚙️ _dlt_loads (dlt 管道日誌)",
-                }
+                with c_i2:
+                    st.markdown("##### 購買數量分佈 (Quantity Breakdown)")
+                    if "quantity" in df_items.columns:
+                        qty_df = df_items["quantity"].value_counts().reset_index()
+                        qty_df.columns = ["quantity", "count"]
+                        fig_qty = px.bar(qty_df, x="quantity", y="count", template="plotly_dark", color_discrete_sequence=["#a855f7"])
+                        fig_qty.update_layout(height=320, margin={"l": 20, "r": 20, "t": 30, "b": 20})
+                        st.plotly_chart(fig_qty, width="stretch")
 
-            new_tab_ds = st.selectbox(
-                "2. 選擇綁定資料來源：",
-                options=list(dataset_options.keys()),
-                format_func=lambda k: dataset_options[k],
-                index=0,
-                key="new_tab_ds_select",
-            )
+                st.markdown("##### 📋 品項事實詳細資料表 (Top 500 筆)")
+                st.dataframe(df_items, width="stretch", hide_index=True)
+            else:
+                st.info("尚無 fct_order_items 銀牌資料。")
 
-        default_name = (
-            f"AI 智能分析 {len(st.session_state.custom_tabs) + 1}"
-            if is_ai_type
-            else f"自訂看板 {len(st.session_state.custom_tabs) + 1}"
-        )
-        new_tab_name = st.text_input(
-            "3. 自訂分頁顯示標題：",
-            value=default_name,
-            key="new_tab_name_input",
-            placeholder="例如：行銷退款專題、品類業績畫布...",
-        )
+        # --------------------------------------------------------------------------
+        # SILVER TAB 3: 客戶維度表 (dim_customers)
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[2]:
+            st.subheader("👥 dim_customers 客戶維度表 (PII 去識別化)")
+            st.caption("🔒 符合資安規範：姓名與信箱透過 SHA-256 雜湊或遮蔽處理")
+            if not df_cust.empty:
+                st.dataframe(df_cust, width="stretch", hide_index=True)
+            else:
+                st.info("尚無 dim_customers 銀牌資料。")
 
-        initial_ai_query = ""
-        if is_ai_type:
-            initial_ai_query = st.text_input(
-                "4. 預設自然語言分析指令（可選）：",
-                value="請畫出各商品品類的銷售佔比圓餅圖",
-                key="new_tab_ai_query_input",
-            )
+        # --------------------------------------------------------------------------
+        # SILVER TAB 4: 商品維度表 (dim_products)
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[3]:
+            st.subheader("🏷️ dim_products 商品維度表")
+            if not df_prod_silver.empty:
+                if "category_name" in df_prod_silver.columns:
+                    cat_counts = df_prod_silver["category_name"].value_counts().reset_index()
+                    cat_counts.columns = ["category_name", "product_count"]
+                    fig_cat = px.bar(
+                        cat_counts,
+                        x="category_name",
+                        y="product_count",
+                        template="plotly_dark",
+                        color="category_name",
+                        title="各商品品類涵蓋之商品項目數",
+                    )
+                    fig_cat.update_layout(height=340, margin={"l": 20, "r": 20, "t": 40, "b": 20})
+                    st.plotly_chart(fig_cat, width="stretch")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚀 立即建立並加入分頁列", type="primary", width="stretch", key="btn_create_custom_tab"):
-            import uuid
-            tab_id = f"custom_{uuid.uuid4().hex[:6]}"
-            new_tab_meta = {
-                "id": tab_id,
-                "title": new_tab_name.strip() or default_name,
-                "type": "ai_chart" if is_ai_type else "powerbi_canvas",
-                "type_label": "自然語言 AI 智能圖表" if is_ai_type else "類 Power BI 拖曳看板",
-                "dataset_key": new_tab_ds,
-                "dataset_name": dataset_options[new_tab_ds],
-                "default_query": initial_ai_query,
+                st.markdown("##### 📋 商品維度明細清單")
+                st.dataframe(df_prod_silver, width="stretch", hide_index=True)
+            else:
+                st.info("尚無 dim_products 銀牌資料。")
+
+        # --------------------------------------------------------------------------
+        # SILVER TAB 5: 銀牌層視覺化畫布 (Power BI 畫布)
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[4]:
+            silver_datasets = {
+                "orders": {"name": "📦 fct_orders (訂單事實表)", "df": df_orders},
+                "items": {"name": "🛒 fct_order_items (品項明細表)", "df": df_items},
+                "customers": {"name": "👥 dim_customers (客戶維度表)", "df": df_cust},
+                "products": {"name": "🏷️ dim_products (商品維度表)", "df": df_prod_silver},
             }
-            st.session_state.custom_tabs.append(new_tab_meta)
-            st.success(f"🎉 分頁「{new_tab_meta['title']}」建立成功！")
-            st.rerun()
+            render_powerbi_studio(
+                key_prefix="pbi_silver",
+                dataset_configs=silver_datasets,
+                default_dataset_key="orders",
+            )
 
-# ==============================================================================
+    else:  # bronze layer
+        # --------------------------------------------------------------------------
+        # BRONZE TAB 1: 原始訂單流 (raw_orders)
+        # --------------------------------------------------------------------------
+        if active_tab == base_tab_titles[0]:
+            st.subheader("📥 raw_orders 原始訂單 Ingestion 串流記錄")
+            st.caption("源自 Platzi Fake Store API 的原始 JSON 解析落地數據，包含 dlt Ingestion 元數據")
+            if not df_raw_orders.empty:
+                st.dataframe(df_raw_orders, width="stretch", hide_index=True)
+            else:
+                st.info("尚無 raw_orders 銅牌資料。")
+
+        # --------------------------------------------------------------------------
+        # BRONZE TAB 2: 原始品項流 (raw_order_items)
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[1]:
+            st.subheader("🛒 raw_order_items 原始品項拆解流水")
+            st.caption("未經彙總與業務規則過濾之原始訂單品項記錄")
+            if not df_raw_items.empty:
+                st.dataframe(df_raw_items, width="stretch", hide_index=True)
+            else:
+                st.info("尚無 raw_order_items 銅牌資料。")
+
+        # --------------------------------------------------------------------------
+        # BRONZE TAB 3: 原始客戶快照 (raw_customers)
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[2]:
+            st.subheader("👤 raw_customers 原始客戶資料快照")
+            st.caption("原始客戶明細，後續由 dbt staging 進行 PII 遮蔽雜湊轉換為銀牌維度")
+            if not df_raw_cust.empty:
+                st.dataframe(df_raw_cust, width="stretch", hide_index=True)
+            else:
+                st.info("尚無 raw_customers 銅牌資料。")
+
+        # --------------------------------------------------------------------------
+        # BRONZE TAB 4: dlt 載入歷程 (_dlt_loads)
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[3]:
+            st.subheader("⚙️ _dlt_loads Ingestion 管道載入歷程日誌")
+            st.caption("記錄每次 dlt pipeline 載入之 load_id、schema 演化版本與載入完成狀態")
+            if not df_dlt.empty:
+                st.dataframe(df_dlt, width="stretch", hide_index=True)
+            else:
+                st.info("尚無 _dlt_loads 管道日誌資料。")
+
+        # --------------------------------------------------------------------------
+        # BRONZE TAB 5: 銅牌層視覺化畫布 (Power BI 畫布)
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[4]:
+            bronze_datasets = {
+                "raw_orders": {"name": "📥 raw_orders (原始訂單串流)", "df": df_raw_orders},
+                "raw_items": {"name": "🛒 raw_order_items (原始品項流水)", "df": df_raw_items},
+                "raw_cust": {"name": "👤 raw_customers (原始客戶快照)", "df": df_raw_cust},
+                "dlt_loads": {"name": "⚙️ _dlt_loads (dlt 載入日誌)", "df": df_dlt},
+            }
+            render_powerbi_studio(
+                key_prefix="pbi_bronze",
+                dataset_configs=bronze_datasets,
+                default_dataset_key="raw_orders",
+            )
+
+
+    # ==============================================================================
+    # DYNAMIC CUSTOM TABS (支援跨層級新增自訂分頁與 FastMCP Mode A)
+    # ==============================================================================
+    for idx, t_meta in enumerate(st.session_state.custom_tabs):
+        if active_tab == f"📌 {t_meta['title']}":
+            with st.container():
+                col_c_title, col_c_del = st.columns([5, 1])
+            with col_c_title:
+                st.subheader(f"📌 {t_meta['title']}")
+                st.caption(f"自訂分頁類型：**{t_meta.get('type_label', '自訂看板')}** · 綁定資料表：`{t_meta.get('dataset_name', 'BigQuery 資料表')}`")
+            with col_c_del:
+                if st.button("🗑️ 移除分頁", key=f"btn_del_tab_{t_meta['id']}", width="stretch", help="點擊從分頁列移除此自訂分頁"):
+                    st.session_state.custom_tabs = [x for x in st.session_state.custom_tabs if x["id"] != t_meta["id"]]
+                    st.rerun()
+
+            st.markdown("---")
+
+            if t_meta["type"] == "ai_chart":
+                tab_id = t_meta["id"]
+                gemini_key = st.session_state.get("sidebar_gemini_api_key", "")
+                col_input, col_submit = st.columns([4, 1])
+                with col_input:
+                    current_nl = st.text_input(
+                        "請輸入圖表生成指令：",
+                        value=st.session_state.get(f"nl_query_{tab_id}", t_meta.get("default_query", "請幫我畫出各品類銷售佔比")),
+                        key=f"input_nl_{tab_id}",
+                        placeholder="例如：畫出前五大商品銷售長條圖、或是每日退款率走勢...",
+                    )
+                with col_submit:
+                    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+                    btn_gen = st.button("生成圖表 🚀", key=f"btn_chart_{tab_id}", type="primary", width="stretch")
+
+                target_query = current_nl if current_nl else t_meta.get("default_query", "請幫我畫出每日營收走勢")
+
+                # Fallback to load gold if in non-gold layer for standard business charts
+                chart_kpi = filtered_kpi if not filtered_kpi.empty else df_kpi
+                if chart_kpi.empty:
+                    chart_kpi, chart_ltv, chart_prod, _ = load_gold_data()
+                else:
+                    chart_ltv = df_ltv
+                    chart_prod = df_prod
+
+                with st.spinner("AI 正在解析自然語言意圖並繪製互動圖表..."):
+                    fig_nl, chart_title, insight_text, raw_df = generate_chart_from_nl(
+                        prompt=target_query,
+                        df_kpi=chart_kpi,
+                        df_prod=chart_prod,
+                        df_ltv=chart_ltv,
+                        gemini_api_key=gemini_key,
+                    )
+
+                st.markdown("---")
+                if fig_nl is None:
+                    st.warning(f"### {chart_title}")
+                    st.markdown(
+                        f"""
+                        <div class="metric-card" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05);">
+                            <div style="font-size: 1.05rem; line-height: 1.6; color: var(--text-color, #0f172a);">
+                                {insight_text}
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.subheader(f"📊 {chart_title}")
+                    st.plotly_chart(fig_nl, width="stretch")
+                    st.markdown(
+                        f"""
+                        <div class="metric-card" style="border-left: 4px solid #6366f1;">
+                            <div class="metric-label">💡 MBB 顧問商業洞察 (Executive Takeaway)</div>
+                            <div style="font-size: 1.05rem; font-weight: 500; color: var(--text-color, #0f172a); margin-top: 0.25rem;">
+                                {insight_text}
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+                    # FastMCP Mode A Deep Diagnostic in Custom Tab
+                    st.markdown("---")
+                    col_mc1, col_mc2 = st.columns([1.8, 3.2])
+                    with col_mc1:
+                        btn_mcp_c = st.button(
+                            "🤖 呼叫 FastMCP 顧問深度診斷 (Mode A)",
+                            key=f"btn_mcp_custom_{tab_id}",
+                            type="primary",
+                            width="stretch",
+                            help="以 MBB 顧問框架 (SCQA + MECE Issue Tree + 30-60-90天執行方案) 對本圖表進行深層商業因果歸因診斷",
+                        )
+                    with col_mc2:
+                        st.caption("⚡ **FastMCP A 模式**：點擊調用顧問引擎，對本圖表底層數據進行深層歸因診斷。")
+
+                    diag_key_c = f"diag_res_custom_{tab_id}"
+                    if btn_mcp_c:
+                        with st.spinner("🤖 FastMCP 顧問正在進行因果歸因診斷 (SCQA + MECE)..."):
+                            diag_out = run_fastmcp_chart_diagnostic(
+                                chart_title=chart_title,
+                                df=raw_df,
+                                prompt_intent=target_query,
+                                gemini_api_key=gemini_key,
+                            )
+                            st.session_state[diag_key_c] = diag_out
+
+                    if st.session_state.get(diag_key_c):
+                        render_fastmcp_chat_widget(
+                            unique_key=f"custom_{tab_id}",
+                            chart_title=chart_title,
+                            df=raw_df,
+                            initial_diagnostic=st.session_state[diag_key_c],
+                            gemini_api_key=gemini_key,
+                        )
+
+                    with st.expander("🔍 點擊展開：檢視底層數據表 (Data Preview)"):
+                        st.dataframe(raw_df, width="stretch", hide_index=True)
+
+            elif t_meta["type"] == "powerbi_canvas":
+                render_powerbi_studio(
+                    df_kpi=filtered_kpi if not filtered_kpi.empty else df_kpi,
+                    df_ltv=df_ltv,
+                    df_prod=df_prod,
+                    key_prefix=f"pbi_custom_{t_meta['id']}",
+                    default_dataset_key=t_meta.get("dataset_key", "kpi"),
+                )
+
+
+    # ==============================================================================
+    # TAB ADD: ➕ 新增圖表分頁 (Dynamic Tab Creation Wizard)
+    # ==============================================================================
+    if active_tab == "➕ 新增圖表分頁":
+        st.subheader("➕ 新增自訂圖表分頁 (Add Custom Analytics Tab)")
+        st.caption("自由擴充儀表板分頁，支援建立獨立的「AI 智能語意圖表」或「類 Power BI 拖曳畫布」")
+
+        with st.container():
+            st.markdown(
+                """
+                <div class="metric-card" style="border-left: 4px solid #6366f1; margin-bottom: 1.25rem;">
+                    <div style="font-size: 1.05rem; font-weight: 600; color: var(--text-color, #0f172a);">
+                        🛠️ 選擇您想新增的分頁模式與資料來源
+                    </div>
+                    <div style="font-size: 0.9rem; color: #64748b; margin-top: 0.25rem;">
+                        新增後分頁將立即加入上方分頁列，每個自訂分頁均具備獨立狀態與視覺化配置。
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            col_new_t1, col_new_t2 = st.columns(2)
+            with col_new_t1:
+                new_tab_type = st.radio(
+                    "1. 選擇圖表引擎類型：",
+                    options=[
+                        "✨ 自然語言 AI 智能圖表 (Text-to-Chart)",
+                        "🎛️ 視覺化自訂看板 (Power BI / Tableau 拖曳畫布)",
+                    ],
+                    index=0,
+                    key="new_tab_type_radio",
+                )
+                is_ai_type = "AI" in new_tab_type
+
+            with col_new_t2:
+                if selected_layer == "gold":
+                    dataset_options = {
+                        "kpi": "📊 gold_daily_sales_kpi (每日營收、訂單與退款指標)",
+                        "prod": "🏆 gold_product_performance (熱銷商品與分類業績)",
+                        "ltv": "👥 gold_customer_ltv (客戶終身價值與分群)",
+                    }
+                elif selected_layer == "silver":
+                    dataset_options = {
+                        "orders": "📦 fct_orders (清洗訂單事實表)",
+                        "items": "🛒 fct_order_items (訂單項目明細表)",
+                        "customers": "👥 dim_customers (客戶維度表)",
+                        "products": "🏷️ dim_products (商品維度表)",
+                    }
+                else:  # bronze
+                    dataset_options = {
+                        "raw_orders": "📥 raw_orders (原始串流訂單事件)",
+                        "raw_items": "🛒 raw_order_items (原始品項流水)",
+                        "raw_cust": "👤 raw_customers (原始客戶快照)",
+                        "dlt_loads": "⚙️ _dlt_loads (dlt 管道日誌)",
+                    }
+
+                new_tab_ds = st.selectbox(
+                    "2. 選擇綁定資料來源：",
+                    options=list(dataset_options.keys()),
+                    format_func=lambda k: dataset_options[k],
+                    index=0,
+                    key="new_tab_ds_select",
+                )
+
+            default_name = (
+                f"AI 智能分析 {len(st.session_state.custom_tabs) + 1}"
+                if is_ai_type
+                else f"自訂看板 {len(st.session_state.custom_tabs) + 1}"
+            )
+            new_tab_name = st.text_input(
+                "3. 自訂分頁顯示標題：",
+                value=default_name,
+                key="new_tab_name_input",
+                placeholder="例如：行銷退款專題、品類業績畫布...",
+            )
+
+            initial_ai_query = ""
+            if is_ai_type:
+                initial_ai_query = st.text_input(
+                    "4. 預設自然語言分析指令（可選）：",
+                    value="請畫出各商品品類的銷售佔比圓餅圖",
+                    key="new_tab_ai_query_input",
+                )
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("🚀 立即建立並加入分頁列", type="primary", width="stretch", key="btn_create_custom_tab"):
+                import uuid
+                tab_id = f"custom_{uuid.uuid4().hex[:6]}"
+                new_tab_meta = {
+                    "id": tab_id,
+                    "title": new_tab_name.strip() or default_name,
+                    "type": "ai_chart" if is_ai_type else "powerbi_canvas",
+                    "type_label": "自然語言 AI 智能圖表" if is_ai_type else "類 Power BI 拖曳看板",
+                    "dataset_key": new_tab_ds,
+                    "dataset_name": dataset_options[new_tab_ds],
+                    "default_query": initial_ai_query,
+                }
+                st.session_state.custom_tabs.append(new_tab_meta)
+                st.success(f"🎉 分頁「{new_tab_meta['title']}」建立成功！")
+                st.rerun()
+
+    # ==============================================================================
 # 6. Render FastMCP AI Advisor Right Collapsible Sidebar (Mode B)
 # ==============================================================================
-if st.session_state.get("show_ai_drawer", False):
-    tab_data_map = {}
-    if selected_layer == "gold":
-        tab_data_map["📈 營收走勢與轉換漏斗"] = {
-            "title": "營收走勢與轉換漏斗",
-            "kpis": {
-                "總銷售額 (GMV)": f"${total_gmv:,.2f}",
-                "實質淨營收 (Net Revenue)": f"${total_net_rev:,.2f}",
-                "總訂單數": f"{total_orders:,}",
-                "完成訂單數": f"{completed_orders:,}",
-                "取消訂單數": f"{cancelled_orders:,}",
-                "退款訂單數": f"{refunded_orders:,}",
-                "客單價 (AOV)": f"${avg_aov:,.2f}",
-                "取消率": f"{cancel_rate:.2f}%",
-                "退款率": f"{refund_rate:.2f}%",
-            },
-            "records_summary": filtered_kpi.tail(25).to_dict(orient="records") if not filtered_kpi.empty else [],
-            "suggested_questions": [
-                "本期 GMV 與實質淨營收主要由哪些項目驅動？",
-                "訂單取消與退款率是否有異常波峰值得注意？",
-                "客單價 (AOV) 走勢與整體利潤結構建議？",
-            ],
-        }
-        tab_data_map["👥 客戶終身價值 (LTV) 分群"] = {
-            "title": "客戶終身價值 (LTV) 分群",
-            "customer_segments_summary": df_ltv.head(30).to_dict(orient="records") if not df_ltv.empty else [],
-            "suggested_questions": [
-                "Platinum 與 Gold VIP 會員的營收貢獻佔比如何？",
-                "流失邊緣（At Risk）客群應採取哪些挽回戰術？",
-                "新客首購與老客復購的平均客單價差異？",
-            ],
-        }
-        cat_summary = (
-            df_prod[["category_name", "completed_sales_amount"]].groupby("category_name").sum().reset_index().to_dict(orient="records")
-            if not df_prod.empty and "category_name" in df_prod.columns
-            else []
-        )
-        tab_data_map["🏆 熱銷商品與類別排行"] = {
-            "title": "熱銷商品與類別排行",
-            "top_products_summary": df_prod.head(15).to_dict(orient="records") if not df_prod.empty else [],
-            "categories_summary": cat_summary,
-            "suggested_questions": [
-                "Top 3 熱銷商品是否過度集中（Pareto 80/20 法則）？",
-                "各商品類別的銷售額與單價分佈是否健康？",
-                "銷量高但毛利低的長尾品項該如何調整定價策略？",
-            ],
-        }
-        tab_data_map["✨ 自然語言 AI 智能圖表"] = {
-            "title": "自然語言 AI 智能圖表",
-            "kpis": {"總銷售額": f"${total_gmv:,.2f}", "總訂單數": f"{total_orders:,}"},
-            "suggested_questions": [
-                "建議在此資料集上探索哪些尚未繪製的維度關係？",
-                "從當前金牌層指標中是否有潛在的異常模式？",
-                "如何進一步向下鑽取 (Drill-down) 挖掘商業洞察？",
-            ],
-        }
-        tab_data_map["🎛️ 視覺化自訂看板 (Power BI 畫布)"] = {
-            "title": "視覺化自訂看板 (Power BI 畫布)",
-            "canvas_sample": df_prod.head(20).to_dict(orient="records") if not df_prod.empty else [],
-            "suggested_questions": [
-                "當前自訂畫布的指標分佈有何關鍵業務洞察？",
-                "建議在此畫布增加哪些維度進行交叉分析？",
-                "如何依據此自訂畫布數據制定 30-60-90 天改善計劃？",
-            ],
-        }
-    elif selected_layer == "silver":
-        tab_data_map["📦 訂單事實表 (fct_orders)"] = {
-            "title": "訂單事實表 (fct_orders)",
-            "records_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
-            "suggested_questions": [
-                "訂單毛額與折扣折讓的比率分佈如何？",
-                "訂單支付狀態的成功率是否有異常？",
-            ],
-        }
-        tab_data_map["🛒 訂單品項事實表 (fct_order_items)"] = {
-            "title": "訂單品項事實表 (fct_order_items)",
-            "records_sample": df_items.head(20).to_dict(orient="records") if not df_items.empty else [],
-            "suggested_questions": [
-                "品項的平均購買件數與單價分佈？",
-                "折扣扣減最高的品項特徵？",
-            ],
-        }
-        tab_data_map["👥 客戶維度表 (dim_customers)"] = {
-            "title": "客戶維度表 (dim_customers)",
-            "records_sample": df_cust.head(20).to_dict(orient="records") if not df_cust.empty else [],
-            "suggested_questions": ["客戶群的註冊時間與活躍度走勢？"],
-        }
-        tab_data_map["🏷️ 商品維度表 (dim_products)"] = {
-            "title": "商品維度表 (dim_products)",
-            "records_sample": df_prod_silver.head(20).to_dict(orient="records") if not df_prod_silver.empty else [],
-            "suggested_questions": ["各類別商品的定價區間與覆蓋度？"],
-        }
-        tab_data_map["🎛️ 銀牌層視覺化畫布 (Power BI 畫布)"] = {
-            "title": "銀牌層視覺化畫布 (Power BI 畫布)",
-            "canvas_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
-            "suggested_questions": ["銀牌層自訂畫布中的關聯特徵洞察？"],
-        }
-    else:  # bronze
-        tab_data_map["📥 原始訂單流 (raw_orders)"] = {
-            "title": "原始訂單流 (raw_orders)",
-            "count": len(df_raw_orders),
-            "suggested_questions": ["原始 Ingestion 批次是否有欄位缺失？"],
-        }
-        tab_data_map["🛒 原始品項流 (raw_order_items)"] = {
-            "title": "原始品項流 (raw_order_items)",
-            "count": len(df_raw_items),
-            "suggested_questions": ["品項流水資料完整度與延遲評估？"],
-        }
-        tab_data_map["👤 原始客戶快照 (raw_customers)"] = {
-            "title": "原始客戶快照 (raw_customers)",
-            "count": len(df_raw_cust),
-            "suggested_questions": ["原始 PII 欄位遮蔽驗證是否合規？"],
-        }
-        tab_data_map["⚙️ dlt 載入歷程 (_dlt_loads)"] = {
-            "title": "dlt 載入歷程 (_dlt_loads)",
-            "count": len(df_dlt),
-            "suggested_questions": ["dlt 管道近期的 Schema 變更歷史？"],
-        }
-        tab_data_map["🎛️ 銅牌層視覺化畫布 (Power BI 畫布)"] = {
-            "title": "銅牌層視覺化畫布 (Power BI 畫布)",
-            "canvas_sample": df_raw_orders.head(20).to_dict(orient="records") if not df_raw_orders.empty else [],
-            "suggested_questions": ["銅牌層資料流的異常檢驗與監控？"],
-        }
+if ai_sidebar_col is not None:
+    with ai_sidebar_col:
+        tab_data_map = {}
+        if selected_layer == "gold":
+            tab_data_map["📈 營收走勢與轉換漏斗"] = {
+                "title": "營收走勢與轉換漏斗",
+                "kpis": {
+                    "總銷售額 (GMV)": f"${total_gmv:,.2f}",
+                    "實質淨營收 (Net Revenue)": f"${total_net_rev:,.2f}",
+                    "總訂單數": f"{total_orders:,}",
+                    "完成訂單數": f"{completed_orders:,}",
+                    "取消訂單數": f"{cancelled_orders:,}",
+                    "退款訂單數": f"{refunded_orders:,}",
+                    "客單價 (AOV)": f"${avg_aov:,.2f}",
+                    "取消率": f"{cancel_rate:.2f}%",
+                    "退款率": f"{refund_rate:.2f}%",
+                },
+                "records_summary": filtered_kpi.tail(25).to_dict(orient="records") if not filtered_kpi.empty else [],
+                "suggested_questions": [
+                    "本期 GMV 與實質淨營收主要由哪些項目驅動？",
+                    "訂單取消與退款率是否有異常波峰值得注意？",
+                    "客單價 (AOV) 走勢與整體利潤結構建議？",
+                ],
+            }
+            tab_data_map["👥 客戶終身價值 (LTV) 分群"] = {
+                "title": "客戶終身價值 (LTV) 分群",
+                "customer_segments_summary": df_ltv.head(30).to_dict(orient="records") if not df_ltv.empty else [],
+                "suggested_questions": [
+                    "Platinum 與 Gold VIP 會員的營收貢獻佔比如何？",
+                    "流失邊緣（At Risk）客群應採取哪些挽回戰術？",
+                    "新客首購與老客復購的平均客單價差異？",
+                ],
+            }
+            cat_summary = (
+                df_prod[["category_name", "completed_sales_amount"]].groupby("category_name").sum().reset_index().to_dict(orient="records")
+                if not df_prod.empty and "category_name" in df_prod.columns
+                else []
+            )
+            tab_data_map["🏆 熱銷商品與類別排行"] = {
+                "title": "熱銷商品與類別排行",
+                "top_products_summary": df_prod.head(15).to_dict(orient="records") if not df_prod.empty else [],
+                "categories_summary": cat_summary,
+                "suggested_questions": [
+                    "Top 3 熱銷商品是否過度集中（Pareto 80/20 法則）？",
+                    "各商品類別的銷售額與單價分佈是否健康？",
+                    "銷量高但毛利低的長尾品項該如何調整定價策略？",
+                ],
+            }
+            tab_data_map["✨ 自然語言 AI 智能圖表"] = {
+                "title": "自然語言 AI 智能圖表",
+                "kpis": {"總銷售額": f"${total_gmv:,.2f}", "總訂單數": f"{total_orders:,}"},
+                "suggested_questions": [
+                    "建議在此資料集上探索哪些尚未繪製的維度關係？",
+                    "從當前金牌層指標中是否有潛在的異常模式？",
+                    "如何進一步向下鑽取 (Drill-down) 挖掘商業洞察？",
+                ],
+            }
+            tab_data_map["🎛️ 視覺化自訂看板 (Power BI 畫布)"] = {
+                "title": "視覺化自訂看板 (Power BI 畫布)",
+                "canvas_sample": df_prod.head(20).to_dict(orient="records") if not df_prod.empty else [],
+                "suggested_questions": [
+                    "當前自訂畫布的指標分佈有何關鍵業務洞察？",
+                    "建議在此畫布增加哪些維度進行交叉分析？",
+                    "如何依據此自訂畫布數據制定 30-60-90 天改善計劃？",
+                ],
+            }
+        elif selected_layer == "silver":
+            tab_data_map["📦 訂單事實表 (fct_orders)"] = {
+                "title": "訂單事實表 (fct_orders)",
+                "records_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
+                "suggested_questions": [
+                    "訂單毛額與折扣折讓的比率分佈如何？",
+                    "訂單支付狀態的成功率是否有異常？",
+                ],
+            }
+            tab_data_map["🛒 訂單品項事實表 (fct_order_items)"] = {
+                "title": "訂單品項事實表 (fct_order_items)",
+                "records_sample": df_items.head(20).to_dict(orient="records") if not df_items.empty else [],
+                "suggested_questions": [
+                    "品項的平均購買件數與單價分佈？",
+                    "折扣扣減最高的品項特徵？",
+                ],
+            }
+            tab_data_map["👥 客戶維度表 (dim_customers)"] = {
+                "title": "客戶維度表 (dim_customers)",
+                "records_sample": df_cust.head(20).to_dict(orient="records") if not df_cust.empty else [],
+                "suggested_questions": ["客戶群的註冊時間與活躍度走勢？"],
+            }
+            tab_data_map["🏷️ 商品維度表 (dim_products)"] = {
+                "title": "商品維度表 (dim_products)",
+                "records_sample": df_prod_silver.head(20).to_dict(orient="records") if not df_prod_silver.empty else [],
+                "suggested_questions": ["各類別商品的定價區間與覆蓋度？"],
+            }
+            tab_data_map["🎛️ 銀牌層視覺化畫布 (Power BI 畫布)"] = {
+                "title": "銀牌層視覺化畫布 (Power BI 畫布)",
+                "canvas_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
+                "suggested_questions": ["銀牌層自訂畫布中的關聯特徵洞察？"],
+            }
+        else:  # bronze
+            tab_data_map["📥 原始訂單流 (raw_orders)"] = {
+                "title": "原始訂單流 (raw_orders)",
+                "count": len(df_raw_orders),
+                "suggested_questions": ["原始 Ingestion 批次是否有欄位缺失？"],
+            }
+            tab_data_map["🛒 原始品項流 (raw_order_items)"] = {
+                "title": "原始品項流 (raw_order_items)",
+                "count": len(df_raw_items),
+                "suggested_questions": ["品項流水資料完整度與延遲評估？"],
+            }
+            tab_data_map["👤 原始客戶快照 (raw_customers)"] = {
+                "title": "原始客戶快照 (raw_customers)",
+                "count": len(df_raw_cust),
+                "suggested_questions": ["原始 PII 欄位遮蔽驗證是否合規？"],
+            }
+            tab_data_map["⚙️ dlt 載入歷程 (_dlt_loads)"] = {
+                "title": "dlt 載入歷程 (_dlt_loads)",
+                "count": len(df_dlt),
+                "suggested_questions": ["dlt 管道近期的 Schema 變更歷史？"],
+            }
+            tab_data_map["🎛️ 銅牌層視覺化畫布 (Power BI 畫布)"] = {
+                "title": "銅牌層視覺化畫布 (Power BI 畫布)",
+                "canvas_sample": df_raw_orders.head(20).to_dict(orient="records") if not df_raw_orders.empty else [],
+                "suggested_questions": ["銅牌層資料流的異常檢驗與監控？"],
+            }
 
-    fastmcp_diagnostic.render_fastmcp_advisor_drawer(
-        current_layer=selected_layer,
-        base_tab_titles=base_tab_titles,
-        tab_data_map=tab_data_map,
-        active_tab_title=active_tab,
-        language="zh",
-    )
+        fastmcp_diagnostic.render_fastmcp_advisor_drawer(
+            current_layer=selected_layer,
+            base_tab_titles=base_tab_titles,
+            tab_data_map=tab_data_map,
+            active_tab_title=active_tab,
+            language="zh",
+        )
 
 
 
