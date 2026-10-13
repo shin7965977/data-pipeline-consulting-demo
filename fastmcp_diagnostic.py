@@ -968,10 +968,11 @@ def render_fastmcp_advisor_drawer(
                 max-height: calc(100vh - 4.8rem) !important;
                 overflow-y: auto !important;
                 z-index: 999 !important;
-                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
-                border: 1px solid rgba(99, 102, 241, 0.35) !important;
-                background-color: #0f172a !important;
-                border-radius: 12px !important;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(99, 102, 241, 0.05) !important;
+                border: 1px solid rgba(226, 232, 240, 0.95) !important;
+                background-color: #ffffff !important;
+                border-radius: 14px !important;
+                color: #0f172a !important;
             }
         }
 
@@ -982,7 +983,52 @@ def render_fastmcp_advisor_drawer(
                 position: relative !important;
                 width: 100% !important;
                 max-width: 100% !important;
+                background-color: #ffffff !important;
+                border: 1px solid rgba(226, 232, 240, 0.95) !important;
+                border-radius: 14px !important;
+                color: #0f172a !important;
             }
+        }
+
+        /* White theme styling for chat messages and containers inside advisor card */
+        .st-key-ai_advisor_sticky_card div[data-testid="stVerticalBlockBorderWrapper"] {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+        }
+
+        .st-key-ai_advisor_sticky_card [data-testid="stChatMessage"] {
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+            color: #1e293b !important;
+        }
+
+        .st-key-ai_advisor_sticky_card [data-testid="stChatMessage"] * {
+            color: #1e293b !important;
+        }
+
+        .st-key-ai_advisor_sticky_card [data-testid="stChatMessage"] strong {
+            color: #0f172a !important;
+        }
+
+        .st-key-ai_advisor_sticky_card [data-testid="stChatMessage"] code {
+            background-color: #f1f5f9 !important;
+            color: #2563eb !important;
+            border-radius: 4px !important;
+            padding: 2px 5px !important;
+        }
+
+        .st-key-ai_advisor_sticky_card [data-testid="stExpander"] {
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+        }
+
+        .st-key-ai_advisor_sticky_card [data-testid="stExpander"] summary span {
+            color: #334155 !important;
+            font-weight: 600 !important;
         }
         </style>
         """,
@@ -1044,13 +1090,13 @@ def render_fastmcp_advisor_drawer(
                 f"""
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
                     <span style="font-size: 1.2rem;">✨</span>
-                    <span style="font-size: 1.1rem; font-weight: 700; color: #f8fafc;">
+                    <span style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">
                         {'AI 決策顧問' if is_zh else 'AI Operations Advisor'}
                     </span>
-                    <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); font-weight: 700; font-family: monospace;">FAST MCP</span>
+                    <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(99, 102, 241, 0.1); color: #4f46e5; border: 1px solid rgba(99, 102, 241, 0.25); font-weight: 700; font-family: monospace;">FAST MCP</span>
                 </div>
-                <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 4px; line-height: 1.4;">
-                    🌐 {'全盤湖倉視野' if is_zh else 'Global Visibility'} · 🎯 {'當前焦點：' if is_zh else 'Focus: '}<strong style="color: #60a5fa;">【{tab_display_title}】</strong>
+                <div style="font-size: 0.76rem; color: #64748b; margin-top: 4px; line-height: 1.4;">
+                    🌐 {'全盤湖倉視野' if is_zh else 'Global Visibility'} · 🎯 {'當前焦點：' if is_zh else 'Focus: '}<strong style="color: #2563eb;">【{tab_display_title}】</strong>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -1065,12 +1111,12 @@ def render_fastmcp_advisor_drawer(
                 st.session_state["show_ai_drawer"] = False
                 st.rerun()
 
-        st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px solid rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
 
         # One-Click Diagnostic Recommendations (Directly matching ERP ai-consultant-drawer.tsx)
         st.markdown(
             f"""
-            <div style="font-size: 0.78rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+            <div style="font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
                 <span>⚡</span> {'一鍵管理診斷推薦：' if is_zh else 'One-Click Quick Diagnostics:'}
             </div>
             """,
