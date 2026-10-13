@@ -219,7 +219,6 @@ def test_tab_scoped_offline_diagnostic():
 def test_global_visibility_with_focus_priority():
     from fastmcp_diagnostic import (
         _execute_tab_scoped_diagnostic,
-        _synthesize_offline_tab_report,
     )
 
     sample_kpis = {
@@ -236,11 +235,15 @@ def test_global_visibility_with_focus_priority():
         "營收走勢與轉換漏斗": sample_payload,
         "熱銷商品與類別排行": {
             "title": "熱銷商品與類別排行",
-            "top_products_summary": [{"product_title": "Pro Laptop", "completed_sales_amount": 150000}],
+            "top_products_summary": [
+                {"product_title": "Pro Laptop", "completed_sales_amount": 150000}
+            ],
         },
         "客戶終身價值 (LTV) 分群": {
             "title": "客戶終身價值 (LTV) 分群",
-            "customer_segments_summary": [{"tier": "Platinum", "lifetime_net_revenue": 85000}],
+            "customer_segments_summary": [
+                {"tier": "Platinum", "lifetime_net_revenue": 85000}
+            ],
         },
     }
 
@@ -260,3 +263,70 @@ def test_global_visibility_with_focus_priority():
     assert "客戶終身價值 (LTV) 分群" in report
 
 
+def test_render_fastmcp_advisor_drawer_signature():
+    """Verify render_fastmcp_advisor_drawer parameter contracts for top-level columns layout."""
+    import inspect
+
+    from fastmcp_diagnostic import render_fastmcp_advisor_drawer
+
+    sig = inspect.signature(render_fastmcp_advisor_drawer)
+    params = list(sig.parameters.keys())
+    assert "current_layer" in params
+    assert "base_tab_titles" in params
+    assert "tab_data_map" in params
+    assert "active_tab_title" in params
+    assert "language" in params
+    assert sig.parameters["language"].default == "zh"
+
+
+def test_execute_tab_scoped_diagnostic_english_and_fallback():
+    """Verify Global Lakehouse Visibility + Current Focus Priority in English."""
+    from fastmcp_diagnostic import _execute_tab_scoped_diagnostic
+
+    sample_payload = {
+        "title": "Revenue Trends & Funnel",
+        "kpis": {
+            "Total GMV": "$1,200,000.00",
+            "Net Revenue": "$980,000.00",
+            "Cancellation Rate": "4.2%",
+            "Refund Rate": "2.8%",
+        },
+    }
+    all_tabs = {
+        "Revenue Trends & Funnel": sample_payload,
+        "Customer Lifetime Value (LTV)": {
+            "title": "Customer Lifetime Value (LTV)",
+            "customer_segments_summary": [{"tier": "VIP", "revenue": 500000}],
+        },
+    }
+
+    report_en = _execute_tab_scoped_diagnostic(
+        user_query="Evaluate revenue leakage across customer cohorts",
+        tab_title="Revenue Trends & Funnel",
+        tab_payload=sample_payload,
+        all_tabs_payload=all_tabs,
+        api_key="",
+        language="en",
+    )
+
+    assert "MBB Executive Action Title" in report_en
+    assert "Current Focus Weighted" in report_en
+    assert "Global Lakehouse Visibility" in report_en
+    assert "Customer Lifetime Value (LTV)" in report_en
+
+
+def test_execute_tab_scoped_diagnostic_empty_payload_resilience():
+    """Verify diagnostic engine degrades gracefully when payload is empty or malformed."""
+    from fastmcp_diagnostic import _execute_tab_scoped_diagnostic
+
+    report = _execute_tab_scoped_diagnostic(
+        user_query="分析指標",
+        tab_title="",
+        tab_payload={},
+        all_tabs_payload=None,
+        api_key="",
+        language="zh",
+    )
+
+    assert "MBB 核心診斷 Action Title" in report
+    assert "30-60-90 天落地藍圖" in report

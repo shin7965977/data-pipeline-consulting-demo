@@ -773,11 +773,28 @@ def _synthesize_offline_tab_report(
             if t_k != tab_title and isinstance(t_v, dict):
                 sub_t = t_v.get("title", t_k)
                 if "top_products_summary" in t_v:
-                    cross_insights.append(f"【{sub_t}】：高銷售額主力商品呈現 80/20 集中效應")
+                    cross_insights.append(
+                        f"【{sub_t}】：高銷售額主力商品呈現 80/20 集中效應"
+                        if is_zh
+                        else f"【{sub_t}】: Top revenue drivers show 80/20 Pareto concentration"
+                    )
                 elif "customer_segments_summary" in t_v:
-                    cross_insights.append(f"【{sub_t}】：Platinum VIP 與 At-Risk 客群回購分化加劇")
+                    cross_insights.append(
+                        f"【{sub_t}】：Platinum VIP 與 At-Risk 客群回購分化加劇"
+                        if is_zh
+                        else f"【{sub_t}】: Divergence between Platinum VIP and At-Risk cohorts"
+                    )
 
-    cross_notes = ("\n  - **跨維度全盤視野**：" + "；".join(cross_insights)) if cross_insights else ""
+    cross_notes = (
+        ("\n  - **跨維度全盤視野**：" + "；".join(cross_insights))
+        if cross_insights
+        else ""
+    )
+    cross_notes_en = (
+        ("\n  - **Global Lakehouse Visibility**: " + "; ".join(cross_insights))
+        if cross_insights
+        else ""
+    )
 
     if is_zh:
         return f"""### 📌 【MBB 核心診斷 Action Title】
@@ -799,7 +816,7 @@ def _synthesize_offline_tab_report(
 
 #### 1. MECE Profitability Tree Decomposition (Current Focus Weighted)
 - **Baseline Metrics**: GMV {gmv_val}, Net Revenue {net_val}, AOV {aov_val} (Cancellation {cancel_val}, Refund {refund_val}).
-- **Key Bottlenecks**: High refund frequency on bulky categories and excessive promotional markdowns.
+- **Key Bottlenecks**: High refund frequency on bulky categories and excessive promotional markdowns.{cross_notes_en}
 
 #### 2. 30-60-90 Day Tactical Roadmap for: "{user_query}"
 - **Day 1-30 (Quick Wins)**: Audit checkout drop-offs and optimize freight charges on return-prone items.

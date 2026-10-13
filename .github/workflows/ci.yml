@@ -43,10 +43,14 @@ jobs:
           sqlfluff lint transform_dbt/models/
 
       - name: 'Principle 3: Schema DAG & Breaking Changes Check (dbt parse)'
+        env:
+          DBT_TARGET: duckdb
         run: |
           dbt deps --project-dir transform_dbt --profiles-dir transform_dbt
           dbt parse --project-dir transform_dbt --profiles-dir transform_dbt
 
       - name: 'Principle 2 & 5: Business Logic Invariants & Data Contracts (Pytest & dbt test)'
+        env:
+          DBT_TARGET: duckdb
         run: |
           pytest tests/ -v
