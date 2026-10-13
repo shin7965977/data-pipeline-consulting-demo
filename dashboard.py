@@ -832,11 +832,11 @@ with st.sidebar:
     st.caption("AI Operations Lakehouse Copilot · ⚡ Live")
     is_drawer_active = st.session_state.get("show_ai_drawer", False)
     if st.button(
-        "» 收納 AI 顧問" if is_drawer_active else "✨ 開啟 AI 顧問工作台",
+        "» 收起 AI 顧問" if is_drawer_active else "✨ 開啟 AI 顧問側欄",
         type="secondary" if is_drawer_active else "primary",
         key="sidebar_open_ai_drawer_btn",
         width="stretch",
-        help="於右側並排展開/收納分頁專屬 MBB 智慧診斷工作台（自適應雙欄，僅讀取本頁數據）",
+        help="於右側展開/收起對稱式獨立 AI 顧問邊欄（全盤湖倉視野 ＋ 當前焦點加權）",
     ):
         st.session_state["show_ai_drawer"] = not is_drawer_active
         st.rerun()
@@ -880,11 +880,11 @@ with header_col2:
     with c_ai_btn:
         is_ai_open = st.session_state.get("show_ai_drawer", False)
         if st.button(
-            "» 收納顧問" if is_ai_open else "✨ AI 顧問",
+            "» 收起顧問" if is_ai_open else "✨ AI 顧問",
             type="secondary" if is_ai_open else "primary",
             key="top_bar_ai_toggle",
             width="stretch",
-            help="點擊展開/收納右側 FastMCP 智慧營運顧問工作台（自適應雙欄，僅讀取本頁數據）",
+            help="點擊展開/收起對稱式獨立右側邊欄（全盤湖倉視野 ＋ 當前焦點加權）",
         ):
             st.session_state["show_ai_drawer"] = not is_ai_open
             st.rerun()
@@ -1091,15 +1091,7 @@ else:  # bronze
 custom_tab_titles = [f"📌 {t['title']}" for t in st.session_state.custom_tabs]
 all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ 新增圖表分頁"]
 
-is_ai_open = st.session_state.get("show_ai_drawer", False)
-
-if is_ai_open:
-    main_tab_col, ai_drawer_col = st.columns([6.8, 3.2], gap="large")
-    tab_parent = main_tab_col
-else:
-    main_tab_col = None
-    tab_parent = st.container()
-    ai_drawer_col = None
+tab_parent = st.container()
 
 with tab_parent:
     active_tab_nav_key = f"active_tab_nav_{selected_layer}"
@@ -1885,140 +1877,139 @@ if active_tab == "➕ 新增圖表分頁":
             st.rerun()
 
 # ==============================================================================
-# 6. Render FastMCP AI Advisor Drawer in Right Column (Mode B)
+# 6. Render FastMCP AI Advisor Right Collapsible Sidebar (Mode B)
 # ==============================================================================
-if ai_drawer_col is not None:
-    with ai_drawer_col:
-        tab_data_map = {}
-        if selected_layer == "gold":
-            tab_data_map["📈 營收走勢與轉換漏斗"] = {
-                "title": "營收走勢與轉換漏斗",
-                "kpis": {
-                    "總銷售額 (GMV)": f"${total_gmv:,.2f}",
-                    "實質淨營收 (Net Revenue)": f"${total_net_rev:,.2f}",
-                    "總訂單數": f"{total_orders:,}",
-                    "完成訂單數": f"{completed_orders:,}",
-                    "取消訂單數": f"{cancelled_orders:,}",
-                    "退款訂單數": f"{refunded_orders:,}",
-                    "客單價 (AOV)": f"${avg_aov:,.2f}",
-                    "取消率": f"{cancel_rate:.2f}%",
-                    "退款率": f"{refund_rate:.2f}%",
-                },
-                "records_summary": filtered_kpi.tail(25).to_dict(orient="records") if not filtered_kpi.empty else [],
-                "suggested_questions": [
-                    "本期 GMV 與實質淨營收主要由哪些項目驅動？",
-                    "訂單取消與退款率是否有異常波峰值得注意？",
-                    "客單價 (AOV) 走勢與整體利潤結構建議？",
-                ],
-            }
-            tab_data_map["👥 客戶終身價值 (LTV) 分群"] = {
-                "title": "客戶終身價值 (LTV) 分群",
-                "customer_segments_summary": df_ltv.head(30).to_dict(orient="records") if not df_ltv.empty else [],
-                "suggested_questions": [
-                    "Platinum 與 Gold VIP 會員的營收貢獻佔比如何？",
-                    "流失邊緣（At Risk）客群應採取哪些挽回戰術？",
-                    "新客首購與老客復購的平均客單價差異？",
-                ],
-            }
-            cat_summary = (
-                df_prod[["category_name", "completed_sales_amount"]].groupby("category_name").sum().reset_index().to_dict(orient="records")
-                if not df_prod.empty and "category_name" in df_prod.columns
-                else []
-            )
-            tab_data_map["🏆 熱銷商品與類別排行"] = {
-                "title": "熱銷商品與類別排行",
-                "top_products_summary": df_prod.head(15).to_dict(orient="records") if not df_prod.empty else [],
-                "categories_summary": cat_summary,
-                "suggested_questions": [
-                    "Top 3 熱銷商品是否過度集中（Pareto 80/20 法則）？",
-                    "各商品類別的銷售額與單價分佈是否健康？",
-                    "銷量高但毛利低的長尾品項該如何調整定價策略？",
-                ],
-            }
-            tab_data_map["✨ 自然語言 AI 智能圖表"] = {
-                "title": "自然語言 AI 智能圖表",
-                "kpis": {"總銷售額": f"${total_gmv:,.2f}", "總訂單數": f"{total_orders:,}"},
-                "suggested_questions": [
-                    "建議在此資料集上探索哪些尚未繪製的維度關係？",
-                    "從當前金牌層指標中是否有潛在的異常模式？",
-                    "如何進一步向下鑽取 (Drill-down) 挖掘商業洞察？",
-                ],
-            }
-            tab_data_map["🎛️ 視覺化自訂看板 (Power BI 畫布)"] = {
-                "title": "視覺化自訂看板 (Power BI 畫布)",
-                "canvas_sample": df_prod.head(20).to_dict(orient="records") if not df_prod.empty else [],
-                "suggested_questions": [
-                    "當前自訂畫布的指標分佈有何關鍵業務洞察？",
-                    "建議在此畫布增加哪些維度進行交叉分析？",
-                    "如何依據此自訂畫布數據制定 30-60-90 天改善計劃？",
-                ],
-            }
-        elif selected_layer == "silver":
-            tab_data_map["📦 訂單事實表 (fct_orders)"] = {
-                "title": "訂單事實表 (fct_orders)",
-                "records_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
-                "suggested_questions": [
-                    "訂單毛額與折扣折讓的比率分佈如何？",
-                    "訂單支付狀態的成功率是否有異常？",
-                ],
-            }
-            tab_data_map["🛒 訂單品項事實表 (fct_order_items)"] = {
-                "title": "訂單品項事實表 (fct_order_items)",
-                "records_sample": df_items.head(20).to_dict(orient="records") if not df_items.empty else [],
-                "suggested_questions": [
-                    "品項的平均購買件數與單價分佈？",
-                    "折扣扣減最高的品項特徵？",
-                ],
-            }
-            tab_data_map["👥 客戶維度表 (dim_customers)"] = {
-                "title": "客戶維度表 (dim_customers)",
-                "records_sample": df_cust.head(20).to_dict(orient="records") if not df_cust.empty else [],
-                "suggested_questions": ["客戶群的註冊時間與活躍度走勢？"],
-            }
-            tab_data_map["🏷️ 商品維度表 (dim_products)"] = {
-                "title": "商品維度表 (dim_products)",
-                "records_sample": df_prod_silver.head(20).to_dict(orient="records") if not df_prod_silver.empty else [],
-                "suggested_questions": ["各類別商品的定價區間與覆蓋度？"],
-            }
-            tab_data_map["🎛️ 銀牌層視覺化畫布 (Power BI 畫布)"] = {
-                "title": "銀牌層視覺化畫布 (Power BI 畫布)",
-                "canvas_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
-                "suggested_questions": ["銀牌層自訂畫布中的關聯特徵洞察？"],
-            }
-        else:  # bronze
-            tab_data_map["📥 原始訂單流 (raw_orders)"] = {
-                "title": "原始訂單流 (raw_orders)",
-                "count": len(df_raw_orders),
-                "suggested_questions": ["原始 Ingestion 批次是否有欄位缺失？"],
-            }
-            tab_data_map["🛒 原始品項流 (raw_order_items)"] = {
-                "title": "原始品項流 (raw_order_items)",
-                "count": len(df_raw_items),
-                "suggested_questions": ["品項流水資料完整度與延遲評估？"],
-            }
-            tab_data_map["👤 原始客戶快照 (raw_customers)"] = {
-                "title": "原始客戶快照 (raw_customers)",
-                "count": len(df_raw_cust),
-                "suggested_questions": ["原始 PII 欄位遮蔽驗證是否合規？"],
-            }
-            tab_data_map["⚙️ dlt 載入歷程 (_dlt_loads)"] = {
-                "title": "dlt 載入歷程 (_dlt_loads)",
-                "count": len(df_dlt),
-                "suggested_questions": ["dlt 管道近期的 Schema 變更歷史？"],
-            }
-            tab_data_map["🎛️ 銅牌層視覺化畫布 (Power BI 畫布)"] = {
-                "title": "銅牌層視覺化畫布 (Power BI 畫布)",
-                "canvas_sample": df_raw_orders.head(20).to_dict(orient="records") if not df_raw_orders.empty else [],
-                "suggested_questions": ["銅牌層資料流的異常檢驗與監控？"],
-            }
-
-        fastmcp_diagnostic.render_fastmcp_advisor_drawer(
-            current_layer=selected_layer,
-            base_tab_titles=base_tab_titles,
-            tab_data_map=tab_data_map,
-            active_tab_title=active_tab,
-            language="zh",
+if st.session_state.get("show_ai_drawer", False):
+    tab_data_map = {}
+    if selected_layer == "gold":
+        tab_data_map["📈 營收走勢與轉換漏斗"] = {
+            "title": "營收走勢與轉換漏斗",
+            "kpis": {
+                "總銷售額 (GMV)": f"${total_gmv:,.2f}",
+                "實質淨營收 (Net Revenue)": f"${total_net_rev:,.2f}",
+                "總訂單數": f"{total_orders:,}",
+                "完成訂單數": f"{completed_orders:,}",
+                "取消訂單數": f"{cancelled_orders:,}",
+                "退款訂單數": f"{refunded_orders:,}",
+                "客單價 (AOV)": f"${avg_aov:,.2f}",
+                "取消率": f"{cancel_rate:.2f}%",
+                "退款率": f"{refund_rate:.2f}%",
+            },
+            "records_summary": filtered_kpi.tail(25).to_dict(orient="records") if not filtered_kpi.empty else [],
+            "suggested_questions": [
+                "本期 GMV 與實質淨營收主要由哪些項目驅動？",
+                "訂單取消與退款率是否有異常波峰值得注意？",
+                "客單價 (AOV) 走勢與整體利潤結構建議？",
+            ],
+        }
+        tab_data_map["👥 客戶終身價值 (LTV) 分群"] = {
+            "title": "客戶終身價值 (LTV) 分群",
+            "customer_segments_summary": df_ltv.head(30).to_dict(orient="records") if not df_ltv.empty else [],
+            "suggested_questions": [
+                "Platinum 與 Gold VIP 會員的營收貢獻佔比如何？",
+                "流失邊緣（At Risk）客群應採取哪些挽回戰術？",
+                "新客首購與老客復購的平均客單價差異？",
+            ],
+        }
+        cat_summary = (
+            df_prod[["category_name", "completed_sales_amount"]].groupby("category_name").sum().reset_index().to_dict(orient="records")
+            if not df_prod.empty and "category_name" in df_prod.columns
+            else []
         )
+        tab_data_map["🏆 熱銷商品與類別排行"] = {
+            "title": "熱銷商品與類別排行",
+            "top_products_summary": df_prod.head(15).to_dict(orient="records") if not df_prod.empty else [],
+            "categories_summary": cat_summary,
+            "suggested_questions": [
+                "Top 3 熱銷商品是否過度集中（Pareto 80/20 法則）？",
+                "各商品類別的銷售額與單價分佈是否健康？",
+                "銷量高但毛利低的長尾品項該如何調整定價策略？",
+            ],
+        }
+        tab_data_map["✨ 自然語言 AI 智能圖表"] = {
+            "title": "自然語言 AI 智能圖表",
+            "kpis": {"總銷售額": f"${total_gmv:,.2f}", "總訂單數": f"{total_orders:,}"},
+            "suggested_questions": [
+                "建議在此資料集上探索哪些尚未繪製的維度關係？",
+                "從當前金牌層指標中是否有潛在的異常模式？",
+                "如何進一步向下鑽取 (Drill-down) 挖掘商業洞察？",
+            ],
+        }
+        tab_data_map["🎛️ 視覺化自訂看板 (Power BI 畫布)"] = {
+            "title": "視覺化自訂看板 (Power BI 畫布)",
+            "canvas_sample": df_prod.head(20).to_dict(orient="records") if not df_prod.empty else [],
+            "suggested_questions": [
+                "當前自訂畫布的指標分佈有何關鍵業務洞察？",
+                "建議在此畫布增加哪些維度進行交叉分析？",
+                "如何依據此自訂畫布數據制定 30-60-90 天改善計劃？",
+            ],
+        }
+    elif selected_layer == "silver":
+        tab_data_map["📦 訂單事實表 (fct_orders)"] = {
+            "title": "訂單事實表 (fct_orders)",
+            "records_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
+            "suggested_questions": [
+                "訂單毛額與折扣折讓的比率分佈如何？",
+                "訂單支付狀態的成功率是否有異常？",
+            ],
+        }
+        tab_data_map["🛒 訂單品項事實表 (fct_order_items)"] = {
+            "title": "訂單品項事實表 (fct_order_items)",
+            "records_sample": df_items.head(20).to_dict(orient="records") if not df_items.empty else [],
+            "suggested_questions": [
+                "品項的平均購買件數與單價分佈？",
+                "折扣扣減最高的品項特徵？",
+            ],
+        }
+        tab_data_map["👥 客戶維度表 (dim_customers)"] = {
+            "title": "客戶維度表 (dim_customers)",
+            "records_sample": df_cust.head(20).to_dict(orient="records") if not df_cust.empty else [],
+            "suggested_questions": ["客戶群的註冊時間與活躍度走勢？"],
+        }
+        tab_data_map["🏷️ 商品維度表 (dim_products)"] = {
+            "title": "商品維度表 (dim_products)",
+            "records_sample": df_prod_silver.head(20).to_dict(orient="records") if not df_prod_silver.empty else [],
+            "suggested_questions": ["各類別商品的定價區間與覆蓋度？"],
+        }
+        tab_data_map["🎛️ 銀牌層視覺化畫布 (Power BI 畫布)"] = {
+            "title": "銀牌層視覺化畫布 (Power BI 畫布)",
+            "canvas_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
+            "suggested_questions": ["銀牌層自訂畫布中的關聯特徵洞察？"],
+        }
+    else:  # bronze
+        tab_data_map["📥 原始訂單流 (raw_orders)"] = {
+            "title": "原始訂單流 (raw_orders)",
+            "count": len(df_raw_orders),
+            "suggested_questions": ["原始 Ingestion 批次是否有欄位缺失？"],
+        }
+        tab_data_map["🛒 原始品項流 (raw_order_items)"] = {
+            "title": "原始品項流 (raw_order_items)",
+            "count": len(df_raw_items),
+            "suggested_questions": ["品項流水資料完整度與延遲評估？"],
+        }
+        tab_data_map["👤 原始客戶快照 (raw_customers)"] = {
+            "title": "原始客戶快照 (raw_customers)",
+            "count": len(df_raw_cust),
+            "suggested_questions": ["原始 PII 欄位遮蔽驗證是否合規？"],
+        }
+        tab_data_map["⚙️ dlt 載入歷程 (_dlt_loads)"] = {
+            "title": "dlt 載入歷程 (_dlt_loads)",
+            "count": len(df_dlt),
+            "suggested_questions": ["dlt 管道近期的 Schema 變更歷史？"],
+        }
+        tab_data_map["🎛️ 銅牌層視覺化畫布 (Power BI 畫布)"] = {
+            "title": "銅牌層視覺化畫布 (Power BI 畫布)",
+            "canvas_sample": df_raw_orders.head(20).to_dict(orient="records") if not df_raw_orders.empty else [],
+            "suggested_questions": ["銅牌層資料流的異常檢驗與監控？"],
+        }
+
+    fastmcp_diagnostic.render_fastmcp_advisor_drawer(
+        current_layer=selected_layer,
+        base_tab_titles=base_tab_titles,
+        tab_data_map=tab_data_map,
+        active_tab_title=active_tab,
+        language="zh",
+    )
 
 
 

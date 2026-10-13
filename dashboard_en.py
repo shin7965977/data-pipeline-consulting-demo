@@ -790,7 +790,7 @@ def main():
                 type="secondary" if is_ai_open_en else "primary",
                 key="top_bar_ai_toggle_en",
                 width="stretch",
-                help="Toggle FastMCP AI Operations Advisor (Docked side-by-side, tab-scoped)",
+                help="Toggle Right Collapsible AI Advisor Sidebar (Global Visibility + Focus Priority)",
             ):
                 st.session_state["show_ai_drawer"] = not is_ai_open_en
                 st.rerun()
@@ -995,15 +995,7 @@ def main():
     custom_tab_titles = [f"📌 {t['title']}" for t in st.session_state.custom_tabs_en]
     all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ Add Custom Tab"]
 
-    is_ai_open = st.session_state.get("show_ai_drawer", False)
-
-    if is_ai_open:
-        main_tab_col, ai_drawer_col = st.columns([6.8, 3.2], gap="large")
-        tab_parent = main_tab_col
-    else:
-        main_tab_col = None
-        tab_parent = st.container()
-        ai_drawer_col = None
+    tab_parent = st.container()
 
     with tab_parent:
         active_tab_nav_key = f"active_tab_nav_en_{selected_layer}"
@@ -1746,10 +1738,9 @@ def main():
                 st.rerun()
 
     # ==========================================================================
-    # Render FastMCP AI Advisor Drawer in Right Column (Mode B)
+    # Render FastMCP AI Advisor Right Collapsible Sidebar (Mode B)
     # ==========================================================================
-    if ai_drawer_col is not None:
-        with ai_drawer_col:
+    if st.session_state.get("show_ai_drawer", False):
             tab_data_map_en = {}
             if selected_layer == "gold":
                 tab_data_map_en["📈 Revenue Trends & Funnel"] = {

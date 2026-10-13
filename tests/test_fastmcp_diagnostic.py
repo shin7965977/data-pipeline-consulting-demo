@@ -215,3 +215,48 @@ def test_tab_scoped_offline_diagnostic():
     assert "MBB Executive Action Title" in report_en
     assert "30-60-90 Day Tactical Roadmap" in report_en
 
+
+def test_global_visibility_with_focus_priority():
+    from fastmcp_diagnostic import (
+        _execute_tab_scoped_diagnostic,
+        _synthesize_offline_tab_report,
+    )
+
+    sample_kpis = {
+        "總銷售額 (GMV)": "$800,000.00",
+        "實質淨營收 (Net Revenue)": "$710,000.00",
+        "取消率": "3.5%",
+        "退款率": "2.1%",
+    }
+    sample_payload = {
+        "title": "營收走勢與轉換漏斗",
+        "kpis": sample_kpis,
+    }
+    all_tabs = {
+        "營收走勢與轉換漏斗": sample_payload,
+        "熱銷商品與類別排行": {
+            "title": "熱銷商品與類別排行",
+            "top_products_summary": [{"product_title": "Pro Laptop", "completed_sales_amount": 150000}],
+        },
+        "客戶終身價值 (LTV) 分群": {
+            "title": "客戶終身價值 (LTV) 分群",
+            "customer_segments_summary": [{"tier": "Platinum", "lifetime_net_revenue": 85000}],
+        },
+    }
+
+    report = _execute_tab_scoped_diagnostic(
+        user_query="跨分頁評估退款與主力品項及高價值客群之因果關聯",
+        tab_title="營收走勢與轉換漏斗",
+        tab_payload=sample_payload,
+        all_tabs_payload=all_tabs,
+        api_key="",
+        language="zh",
+    )
+
+    assert "MBB 核心診斷 Action Title" in report
+    assert "當前焦點加權" in report
+    assert "跨維度全盤視野" in report
+    assert "熱銷商品與類別排行" in report
+    assert "客戶終身價值 (LTV) 分群" in report
+
+

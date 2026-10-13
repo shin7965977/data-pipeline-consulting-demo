@@ -756,24 +756,38 @@ def _synthesize_offline_tab_report(
     tab_title: str,
     kpis: dict[str, Any],
     tab_payload: dict[str, Any],
+    all_tabs_payload: dict[str, Any] | None = None,
     is_zh: bool = True,
 ) -> str:
-    """Offline rule-based MBB diagnostic synthesis grounded on the provided tab dataset."""
+    """Offline rule-based MBB diagnostic synthesis grounded on full visibility with current focus priority."""
     gmv_val = kpis.get("總銷售額 (GMV)", kpis.get("gmv", "$1,248,500.00"))
     net_val = kpis.get("實質淨營收 (Net Revenue)", kpis.get("net_revenue", "$1,085,200.00"))
     aov_val = kpis.get("客單價 (AOV)", kpis.get("aov", "$85.50"))
     cancel_val = kpis.get("取消率", "4.2%")
     refund_val = kpis.get("退款率", "2.8%")
 
+    # Optional cross-tab metadata enrichment
+    cross_insights = []
+    if all_tabs_payload:
+        for t_k, t_v in all_tabs_payload.items():
+            if t_k != tab_title and isinstance(t_v, dict):
+                sub_t = t_v.get("title", t_k)
+                if "top_products_summary" in t_v:
+                    cross_insights.append(f"【{sub_t}】：高銷售額主力商品呈現 80/20 集中效應")
+                elif "customer_segments_summary" in t_v:
+                    cross_insights.append(f"【{sub_t}】：Platinum VIP 與 At-Risk 客群回購分化加劇")
+
+    cross_notes = ("\n  - **跨維度全盤視野**：" + "；".join(cross_insights)) if cross_insights else ""
+
     if is_zh:
         return f"""### 📌 【MBB 核心診斷 Action Title】
-**【{tab_title}】業務走勢顯示實質淨營收為 {net_val}，當前取消/退款漏斗耗損約 {cancel_val} / {refund_val}；建議聚焦「高毛利品搭售」與「精準定價治理」。**
+**【{tab_title}】業務走勢顯示實質淨營收為 {net_val}，當前取消/退款漏斗耗損約 {cancel_val} / {refund_val}；全盤分析建議聚焦「高毛利品搭售」與「精準定價治理」。**
 
-#### 1. MECE 獲利樹漏斗分解 (Profitability Decomposition)
-- **當前分頁指標基線**：GMV 為 {gmv_val}，折損後實質淨額為 {net_val}（平均客單價 {aov_val}）。
+#### 1. MECE 獲利樹漏斗分解 (Profitability Decomposition · 當前焦點加權)
+- **當前焦點指標基線**：GMV 為 {gmv_val}，折損後實質淨額為 {net_val}（平均客單價 {aov_val}）。
 - **關鍵議題樹癥結**：
   - **體積與運費漏斗**：大件品項若退貨成本過高，侵蝕邊際貢獻毛利率。
-  - **高價值客群黏著度**：核心 VIP 客群貢獻超過 60% 營收，需避免全面促銷折讓傷害品牌價值。
+  - **高價值客群黏著度**：核心 VIP 客群貢獻超過 60% 營收，需避免全面促銷折讓傷害品牌價值。{cross_notes}
 
 #### 2. 針對提問「{user_query}」之 30-60-90 天落地藍圖
 - **Day 1~30 (速贏止血 Quick Wins)**：排查結帳取消高發環節，檢視異常訂單並建立專屬防漏機制。
@@ -781,9 +795,9 @@ def _synthesize_offline_tab_report(
 - **Day 61~90 (戰略穩固 Strategic Scale)**：建立常態性退款與毛利預警雷達，鎖定供應商階梯折讓以降低單位成本。
 """
     return f"""### 📌 【MBB Executive Action Title】
-**Net Revenue in 【{tab_title}】 stands at {net_val}; recommended immediate focus on high-margin cross-selling and refund leakage mitigation.**
+**Net Revenue in 【{tab_title}】 stands at {net_val}; recommended immediate focus on high-margin cross-selling and refund leakage mitigation across full lakehouse metrics.**
 
-#### 1. MECE Profitability Tree Decomposition
+#### 1. MECE Profitability Tree Decomposition (Current Focus Weighted)
 - **Baseline Metrics**: GMV {gmv_val}, Net Revenue {net_val}, AOV {aov_val} (Cancellation {cancel_val}, Refund {refund_val}).
 - **Key Bottlenecks**: High refund frequency on bulky categories and excessive promotional markdowns.
 
@@ -798,11 +812,12 @@ def _execute_tab_scoped_diagnostic(
     user_query: str,
     tab_title: str,
     tab_payload: dict[str, Any],
+    all_tabs_payload: dict[str, Any] | None = None,
     api_key: str = "",
     preferred_model: str = "auto",
     language: str = "zh",
 ) -> str:
-    """Execute MBB consulting diagnosis scoped strictly to the current tab dataset."""
+    """Execute MBB consulting diagnosis with Global Lakehouse Visibility + Current Visual Focus Priority."""
     import json
     import os
 
@@ -811,7 +826,15 @@ def _execute_tab_scoped_diagnostic(
 
     system_instruction = (
         "你是擁有麥肯錫 (McKinsey) / 貝恩 (Bain) / BCG 資深合夥人（Senior Partner）水準的頂級管理顧問，"
-        "專精於零售電商數據診斷與營運獲利優化。\n\n"
+        "專精於現代零售電商與現代數據架構（Lakehouse）全盤商業診斷與營運獲利優化。\n\n"
+        "【分析架構規範：全盤視野 ＋ 當前焦點加權】：\n"
+        "1. 全盤視野 (Global Lakehouse Visibility)：\n"
+        "   - 你擁有當前資料層的全盤數據視角（涵蓋營收走勢、訂單狀態、商品類別排行、客戶 LTV 分群、資料工程管線等全維度指標）。\n"
+        "   - 鼓勵且主動進行跨分頁、跨維度的綜合交叉歸因（例如：若探討營收漏斗退款，可直接關聯熱銷商品分類退貨、高風險客群流失等全盤維度）。\n"
+        "   - 嚴禁以「我看不到其他分頁數據」或「請先切換至該分頁」等受限理由拒答！只要全盤數據字典中有相應指標，均應積極綜合推演。\n"
+        f"2. 當前焦點加權 (Current Visual Focus Priority)：\n"
+        f"   - 使用者當前正在查看的分頁為【當前視覺焦點：{tab_title}】。\n"
+        "   - 若使用者提出廣義問題或未指明特定圖表，請給予當前視覺焦點最高權重（約 60-70%），並以其核心指標為論述主軸，輔以全盤其他維度（約 30-40%）作為交叉論證，提供立體且縱深的商業診斷。\n\n"
         "【你的核心方法論規範（源自 claude-skill-management-consultant-B1 知識庫）】：\n"
         "1. 嚴格通過「顧問三大檢驗」：\n"
         "   - So What?（提煉高階商業洞察，而非單純復述或朗讀數據）\n"
@@ -826,21 +849,24 @@ def _execute_tab_scoped_diagnostic(
         "4. 30-60-90 天戰術落地路徑 (Actionable 30-60-90 Day Roadmap)：\n"
         "   - Day 1~30 (速贏止血 Quick Wins)\n"
         "   - Day 31~60 (系統優化 Structural Plays)\n"
-        "   - Day 61~90 (戰略穩固 Strategic Scale)\n"
-        "【重要資料邊界】：\n"
-        f"你正在分析的分頁是【{tab_title}】。請嚴格僅基於提供給你的本分頁數據指標進行回答，切勿調用或虛構未提供之數據！"
+        "   - Day 61~90 (戰略穩固 Strategic Scale)"
         if is_zh
         else (
             "You are an MBB Senior Partner management consultant specializing in e-commerce profitability and unit economics.\n"
-            "Apply Pyramid Principle: Action Title first in bold, MECE decomposition, and 30-60-90 day tactical roadmap.\n"
-            f"You are strictly analyzing the isolated dataset of tab: 【{tab_title}】."
+            "Framework: Global Lakehouse Visibility + Current Visual Focus Priority.\n"
+            f"- Current Visual Focus (Primary Weight ~60-70%): 【{tab_title}】.\n"
+            "- Global Lakehouse Visibility: You have full access to all layer dimensions (revenue, products, customer cohorts, pipeline logs). "
+            "Cross-correlate insights freely; never refuse questions or claim data from other tabs is unavailable.\n"
+            "Apply Pyramid Principle: Action Title first in bold, MECE decomposition, and 30-60-90 day tactical roadmap."
         )
     )
 
     prompt_content = (
         f"【使用者業務問題】：{user_query}\n\n"
-        f"【當前分頁 ({tab_title}) 數據指標與摘要（僅讀取本分頁）】：\n"
-        f"```json\n{json.dumps(tab_payload, ensure_ascii=False, indent=2, default=str)}\n```"
+        f"【當前視覺焦點（最高權重主軸）：{tab_title}】指標數據：\n"
+        f"```json\n{json.dumps(tab_payload, ensure_ascii=False, indent=2, default=str)}\n```\n\n"
+        f"【全盤湖倉視野（可跨分頁自由交叉推演）】全維度數據字典：\n"
+        f"```json\n{json.dumps(all_tabs_payload or {}, ensure_ascii=False, indent=2, default=str)}\n```"
     )
 
     if clean_key:
@@ -862,7 +888,7 @@ def _execute_tab_scoped_diagnostic(
                         ),
                     )
                     if resp and resp.text:
-                        badge = f"✨ **[模型：`{cand}` · 鎖定本頁數據]**\n\n"
+                        badge = f"✨ **[模型：`{cand}` · 全盤視野 ＋ 當前焦點加權]**\n\n"
                         return badge + resp.text
                 except Exception as e:
                     err_msg = str(e)
@@ -872,9 +898,9 @@ def _execute_tab_scoped_diagnostic(
         except Exception:  # noqa: BLE001
             pass
 
-    # Offline Fallback MBB synthesis based on tab_payload
+    # Offline Fallback MBB synthesis based on tab_payload + all_tabs_payload
     kpis = tab_payload.get("kpis", {})
-    return _synthesize_offline_tab_report(user_query, tab_title, kpis, tab_payload, is_zh)
+    return _synthesize_offline_tab_report(user_query, tab_title, kpis, tab_payload, all_tabs_payload, is_zh)
 
 
 def render_fastmcp_advisor_drawer(
@@ -884,10 +910,14 @@ def render_fastmcp_advisor_drawer(
     active_tab_title: str | None = None,
     language: str = "zh",
 ) -> None:
-    """Render the docked side-by-side AI Advisor panel (Mode B).
+    """Render the symmetrical Right Collapsible Sidebar (Right Sidebar / Mode B).
 
-    Referenced directly from Gong-Si-ERP-CMQi-Ye-Xi-Tong AIConsultantDrawer,
-    adapted into pure dynamic adaptive dual-column layout with ZERO overlay/mask.
+    Engineered as an independent app-level right sidebar matching Streamlit's left st.sidebar:
+    - Fixed full height (100vh), anchored to the right viewport.
+    - Zero overlay / zero backdrop mask.
+    - Dynamic margin-push on .main .block-container so the main dashboard resizes side-by-side.
+    - Symmetrical collapse button '>>' mirroring the left sidebar's '<<'.
+    - Global lakehouse visibility with current focus priority weighting.
     """
     import os
     import re
@@ -912,32 +942,78 @@ def render_fastmcp_advisor_drawer(
     tab_display_title = tab_payload.get("title", active_scope)
     safe_scope_id = re.sub(r"[^a-zA-Z0-9_\u4e00-\u9fff]", "", active_scope or "default")
 
-    # Native bordered card container - NO custom CSS, NO backdrop, NO overlay
+    # Inject Symmetrical Right Sidebar CSS (Margin-Push + Full-Height Viewport Dock)
+    st.markdown(
+        """
+        <style>
+        /* 1. Symmetrical Right Collapsible Sidebar (App-Level Independent Dock) */
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(#right-ai-sidebar-marker) {
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 390px !important;
+            height: 100vh !important;
+            z-index: 99990 !important;
+            background: linear-gradient(180deg, #0b1120 0%, #0f172a 100%) !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-top: none !important;
+            border-bottom: none !important;
+            border-right: none !important;
+            border-radius: 0 !important;
+            box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5) !important;
+            overflow-y: auto !important;
+            padding: 1.25rem 1rem !important;
+            box-sizing: border-box !important;
+        }
+
+        /* 2. Margin-Push on Main Canvas: ZERO Overlay, Dynamic Adaptive Resize */
+        @media (min-width: 992px) {
+            .main .block-container {
+                max-width: calc(100% - 400px) !important;
+                margin-right: 400px !important;
+                transition: max-width 0.25s ease-out, margin-right 0.25s ease-out !important;
+            }
+        }
+        @media (max-width: 991px) {
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#right-ai-sidebar-marker) {
+                width: 100% !important;
+                max-width: 390px !important;
+            }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Render inside border container matching CSS selector
     with st.container(border=True):
-        # Header section: Title, FAST MCP badge, active scope & Collapse button
-        head_col, close_col = st.columns([3.4, 1.6])
+        st.markdown('<div id="right-ai-sidebar-marker"></div>', unsafe_allow_html=True)
+
+        # Header section: Title, FAST MCP badge, active scope & Symmetrical Collapse button '>>'
+        head_col, close_col = st.columns([3.8, 1.2])
         with head_col:
             st.markdown(
                 f"""
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
-                    <span style="font-size: 1.25rem;">✨</span>
-                    <span style="font-size: 1.15rem; font-weight: 700; color: #f8fafc;">
+                    <span style="font-size: 1.2rem;">✨</span>
+                    <span style="font-size: 1.1rem; font-weight: 700; color: #f8fafc;">
                         {'AI 決策顧問' if is_zh else 'AI Operations Advisor'}
                     </span>
-                    <span style="font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); font-weight: 700; font-family: monospace;">FAST MCP</span>
+                    <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); font-weight: 700; font-family: monospace;">FAST MCP</span>
                 </div>
-                <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">
-                    🔒 {'當前上下文：' if is_zh else 'Scope: '}<strong>【{tab_display_title}】</strong>
+                <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 4px; line-height: 1.4;">
+                    🌐 {'全盤湖倉視野' if is_zh else 'Global Visibility'} · 🎯 {'當前焦點：' if is_zh else 'Focus: '}<strong style="color: #60a5fa;">【{tab_display_title}】</strong>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
         with close_col:
             if st.button(
-                "» 收起" if is_zh else "» Collapse",
+                ">>",
                 key=f"btn_collapse_advisor_{safe_scope_id}",
                 width="stretch",
-                help="收起 AI 顧問工作台（回歸單欄全寬）" if is_zh else "Collapse advisor panel",
+                help="收起 AI 顧問右側邊欄 (>>)" if is_zh else "Collapse Right Sidebar (>>)",
             ):
                 st.session_state["show_ai_drawer"] = False
                 st.rerun()
@@ -957,9 +1033,9 @@ def render_fastmcp_advisor_drawer(
         quick_prompts = [
             {
                 "label": "🔍 診斷指標異常" if is_zh else "🔍 Metric Anomalies",
-                "query": f"請以麥肯錫 SCQA 結構診斷【{tab_display_title}】目前是否有隱匿的毛利、訂單或營運異常？"
+                "query": f"請以麥肯錫 SCQA 結構診斷【{tab_display_title}】目前是否有隱匿的毛利、訂單或營運異常，並結合全盤指標給予歸因？"
                 if is_zh
-                else f"Diagnose latent anomalies in 【{tab_display_title}】 using McKinsey SCQA framework.",
+                else f"Diagnose latent anomalies in 【{tab_display_title}】 using McKinsey SCQA framework with cross-chart correlation.",
             },
             {
                 "label": "🔮 預測營運風險" if is_zh else "🔮 Forecast Risk",
@@ -988,10 +1064,14 @@ def render_fastmcp_advisor_drawer(
         if hist_key not in st.session_state:
             welcome_intro = (
                 f"您好！我是您的 **MBB 商業管理諮詢顧問 AI**（基於 Gemini 與 FAST MCP）。\n\n"
-                f"我已經自動載入您當前瀏覽的 **【{tab_display_title}】** 專屬數據。您可以直接提問，或點選上方快捷診斷建議。"
+                f"🌐 **全盤視野**：我已同步載入當前資料層之所有業務指標與維度字典，支援跨分頁全域因果歸因。\n"
+                f"🎯 **當前焦點**：當前視覺焦點鎖定在 **【{tab_display_title}】**，提問將優先以本維度為主軸進行深度診斷。\n\n"
+                f"您可以直接提問（例：指標異常、跨品類退款歸因、或預測風險），或點選上方一鍵快捷診斷。"
                 if is_zh
                 else f"Hello! I am your **MBB Management Consulting Advisor AI** (Powered by Gemini & FastMCP).\n\n"
-                f"Loaded data for **【{tab_display_title}】**. Ask any business diagnostic question or click the quick prompts above!"
+                f"🌐 **Global Visibility**: Full layer metrics loaded for cross-chart root-cause correlation.\n"
+                f"🎯 **Current Focus**: Anchored on **【{tab_display_title}】**.\n\n"
+                f"Ask any question or click the quick diagnostics above!"
             )
             st.session_state[hist_key] = [{"role": "assistant", "content": welcome_intro}]
 
@@ -1025,6 +1105,7 @@ def render_fastmcp_advisor_drawer(
                     user_query=query_to_run,
                     tab_title=tab_display_title,
                     tab_payload=tab_payload,
+                    all_tabs_payload=tab_data_map,
                     api_key=st.session_state.get("gemini_api_key", ""),
                     preferred_model=st.session_state.get("drawer_selected_model", "auto"),
                     language=language,
