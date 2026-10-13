@@ -1276,6 +1276,7 @@ def main():
                         df_prod=df_prod,
                         df_ltv=df_ltv,
                         gemini_api_key=gemini_key,
+                        language="en",
                     )
 
                 st.markdown("---")
@@ -1572,6 +1573,7 @@ def main():
                             df_prod=chart_prod,
                             df_ltv=chart_ltv,
                             gemini_api_key=gemini_key,
+                            language="en",
                         )
 
                     st.markdown("---")

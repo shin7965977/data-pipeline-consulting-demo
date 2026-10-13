@@ -104,3 +104,47 @@ def test_generate_chart_rejects_irrelevant_query(sample_data):
     )
     assert fig2 is None
     assert "無關" in insight2
+
+
+def test_generate_chart_english_query(sample_data):
+    """Verify English prompt auto-detection and English chart title/insight."""
+    df_kpi, df_prod, df_ltv = sample_data
+    fig, title, insight, _ = generate_chart_from_nl(
+        "Could you show me a sales by product category bar chart in english?",
+        df_kpi,
+        df_prod,
+        df_ltv,
+    )
+    assert fig is not None
+    assert "Category" in title or "Product" in title
+    assert "highest" in insight.lower() or "revenue" in insight.lower()
+
+
+def test_generate_chart_english_language_param(sample_data):
+    """Verify explicit language='en' parameter produces English titles."""
+    df_kpi, df_prod, df_ltv = sample_data
+    fig, title, insight, _ = generate_chart_from_nl(
+        "daily revenue trend",
+        df_kpi,
+        df_prod,
+        df_ltv,
+        language="en",
+    )
+    assert fig is not None
+    assert "GMV" in title or "Revenue" in title
+    assert "GMV" in insight or "revenue" in insight.lower()
+
+
+def test_generate_chart_rejects_irrelevant_english_query(sample_data):
+    """Guardrail test: Non-business English query is rejected with English message."""
+    df_kpi, df_prod, df_ltv = sample_data
+    fig, title, insight, _ = generate_chart_from_nl(
+        "Who is the president of France?",
+        df_kpi,
+        df_prod,
+        df_ltv,
+        language="en",
+    )
+    assert fig is None
+    assert "Domain Scope" in title or "Guardrail" in title
+    assert "unrelated" in insight.lower()
