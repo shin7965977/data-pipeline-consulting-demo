@@ -977,7 +977,7 @@ def render_fastmcp_advisor_drawer(
                 border-left: 1px solid rgba(226, 232, 240, 0.95) !important;
                 background-color: #ffffff !important;
                 border-radius: 0 !important;
-                padding: 1.5rem 1.25rem !important;
+                padding: 3.85rem 1.25rem 1.5rem 1.25rem !important;
                 box-sizing: border-box !important;
                 color: #0f172a !important;
             }
@@ -995,6 +995,7 @@ def render_fastmcp_advisor_drawer(
                 background-color: #ffffff !important;
                 border: 1px solid rgba(226, 232, 240, 0.95) !important;
                 border-radius: 14px !important;
+                padding: 1.25rem !important;
                 color: #0f172a !important;
             }
         }
@@ -1008,9 +1009,9 @@ def render_fastmcp_advisor_drawer(
 
         /* Dynamic vertical stretch for chat messages container */
         .st-key-ai_advisor_sticky_card div[data-testid="stVerticalBlockBorderWrapper"]:has([data-testid="stChatMessage"]) {
-            height: calc(100vh - 360px) !important;
-            max-height: calc(100vh - 360px) !important;
-            min-height: 450px !important;
+            height: calc(100vh - 395px) !important;
+            max-height: calc(100vh - 395px) !important;
+            min-height: 420px !important;
         }
 
         .st-key-ai_advisor_sticky_card [data-testid="stChatMessage"] {
@@ -1084,6 +1085,8 @@ def render_fastmcp_advisor_drawer(
                         card.style.borderTop = 'none';
                         card.style.borderBottom = 'none';
                         card.style.borderRight = 'none';
+                        card.style.paddingTop = '3.85rem';
+                        card.style.boxSizing = 'border-box';
                     }
                 } catch(e) {}
             }
