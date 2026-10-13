@@ -942,39 +942,99 @@ def render_fastmcp_advisor_drawer(
     tab_display_title = tab_payload.get("title", active_scope)
     safe_scope_id = re.sub(r"[^a-zA-Z0-9_\u4e00-\u9fff]", "", active_scope or "default")
 
-    # Inject Sticky Floating Pinning CSS for AI Advisor Right Column
+    # Inject Pinned Floating Viewport-Following CSS for AI Advisor Right Column
     st.markdown(
         """
         <style>
-        /* 1. Ensure top-level two-column layout stretches to full page height */
-        div[data-testid="stHorizontalBlock"]:has(#right-ai-sidebar-marker) {
+        /* 1. Ensure top-level two-column layout stretches cleanly */
+        div[data-testid="stHorizontalBlock"]:has(#right-ai-sidebar-marker),
+        div[data-testid="stHorizontalBlock"]:has(.st-key-ai_advisor_sticky_card) {
             align-items: stretch !important;
-            overflow: visible !important;
         }
 
-        div[data-testid="stHorizontalBlock"]:has(#right-ai-sidebar-marker) > div[data-testid="column"] {
-            overflow: visible !important;
+        /* 2. Pinned Viewport Following: AI Advisor stays pinned in viewport when user scrolls down */
+        @media (min-width: 992px) {
+            .st-key-ai_advisor_sticky_card,
+            div.st-key-ai_advisor_sticky_card,
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#right-ai-sidebar-marker),
+            div[data-testid="column"]:has(#right-ai-sidebar-marker) > div[data-testid="stVerticalBlock"] > div.element-container:has(#right-ai-sidebar-marker) + div,
+            div[data-testid="column"]:has(#right-ai-sidebar-marker) div[data-testid="stVerticalBlockBorderWrapper"] {
+                position: fixed !important;
+                top: 3.6rem !important;
+                right: 2rem !important;
+                width: 25.5vw !important;
+                max-width: 440px !important;
+                min-width: 320px !important;
+                max-height: calc(100vh - 4.8rem) !important;
+                overflow-y: auto !important;
+                z-index: 999 !important;
+                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
+                border: 1px solid rgba(99, 102, 241, 0.35) !important;
+                background-color: #0f172a !important;
+                border-radius: 12px !important;
+            }
         }
 
-        /* 2. Sticky Floating Pinning: Smoothly follow down when user scrolls */
-        div[data-testid="stHorizontalBlock"]:has(#right-ai-sidebar-marker) > div[data-testid="column"]:nth-child(2) > div,
-        div[data-testid="stVerticalBlockBorderWrapper"]:has(#right-ai-sidebar-marker),
-        div:has(> div > #right-ai-sidebar-marker) {
-            position: sticky !important;
-            top: 3.6rem !important;
-            max-height: calc(100vh - 4.5rem) !important;
-            overflow-y: auto !important;
-            z-index: 99 !important;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
-            border-color: rgba(99, 102, 241, 0.3) !important;
+        @media (max-width: 991px) {
+            .st-key-ai_advisor_sticky_card,
+            div.st-key-ai_advisor_sticky_card,
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(#right-ai-sidebar-marker) {
+                position: relative !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    # Right Sidebar Container (Sticky pinned within top-level right column)
-    with st.container(border=True):
+    st.html(
+        """
+        <script>
+        (function() {
+            function syncAdvisorPosition() {
+                try {
+                    const doc = window.parent.document || document;
+                    const marker = doc.getElementById('right-ai-sidebar-marker');
+                    if (!marker) return;
+                    
+                    const card = marker.closest('[data-testid="stVerticalBlockBorderWrapper"]') || 
+                                 marker.closest('.st-key-ai_advisor_sticky_card') ||
+                                 doc.querySelector('.st-key-ai_advisor_sticky_card');
+                    
+                    const col = marker.closest('[data-testid="column"]') || 
+                                doc.querySelector('[data-testid="column"]:has(#right-ai-sidebar-marker)');
+                    
+                    if (card && col && window.innerWidth >= 992) {
+                        const colRect = col.getBoundingClientRect();
+                        if (colRect.width > 100) {
+                            card.style.position = 'fixed';
+                            card.style.top = '3.6rem';
+                            card.style.left = colRect.left + 'px';
+                            card.style.width = colRect.width + 'px';
+                            card.style.maxHeight = 'calc(100vh - 4.8rem)';
+                            card.style.overflowY = 'auto';
+                            card.style.zIndex = '999';
+                        }
+                    }
+                } catch(e) {}
+            }
+            syncAdvisorPosition();
+            setTimeout(syncAdvisorPosition, 80);
+            setTimeout(syncAdvisorPosition, 250);
+            setTimeout(syncAdvisorPosition, 600);
+            window.addEventListener('resize', syncAdvisorPosition);
+            if (window.parent && window.parent !== window) {
+                window.parent.addEventListener('resize', syncAdvisorPosition);
+            }
+        })();
+        </script>
+        """
+    )
+
+    # Right Sidebar Container (Fixed viewport-pinned within top-level right column)
+    with st.container(key="ai_advisor_sticky_card", border=True):
         st.markdown('<div id="right-ai-sidebar-marker"></div>', unsafe_allow_html=True)
 
         # Header section: Title, FAST MCP badge, active scope & Symmetrical Collapse button '>>'
