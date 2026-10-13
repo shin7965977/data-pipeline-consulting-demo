@@ -942,21 +942,40 @@ def render_fastmcp_advisor_drawer(
     tab_display_title = tab_payload.get("title", active_scope)
     safe_scope_id = re.sub(r"[^a-zA-Z0-9_\u4e00-\u9fff]", "", active_scope or "default")
 
-    # Right Sidebar Container (Rendered cleanly within top-level right column)
+    # Inject Sticky Floating Pinning CSS for AI Advisor Right Column
+    st.markdown(
+        """
+        <style>
+        /* 1. Ensure top-level two-column layout stretches to full page height */
+        div[data-testid="stHorizontalBlock"]:has(#right-ai-sidebar-marker) {
+            align-items: stretch !important;
+            overflow: visible !important;
+        }
+
+        div[data-testid="stHorizontalBlock"]:has(#right-ai-sidebar-marker) > div[data-testid="column"] {
+            overflow: visible !important;
+        }
+
+        /* 2. Sticky Floating Pinning: Smoothly follow down when user scrolls */
+        div[data-testid="stHorizontalBlock"]:has(#right-ai-sidebar-marker) > div[data-testid="column"]:nth-child(2) > div,
+        div[data-testid="stVerticalBlockBorderWrapper"]:has(#right-ai-sidebar-marker),
+        div:has(> div > #right-ai-sidebar-marker) {
+            position: sticky !important;
+            top: 3.6rem !important;
+            max-height: calc(100vh - 4.5rem) !important;
+            overflow-y: auto !important;
+            z-index: 99 !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+            border-color: rgba(99, 102, 241, 0.3) !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Right Sidebar Container (Sticky pinned within top-level right column)
     with st.container(border=True):
-        st.markdown(
-            """
-            <style>
-            div[data-testid="stVerticalBlock"]:has(> #right-ai-sidebar-marker) {
-                position: sticky;
-                top: 0.8rem;
-                z-index: 100;
-            }
-            </style>
-            <div id="right-ai-sidebar-marker"></div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.markdown('<div id="right-ai-sidebar-marker"></div>', unsafe_allow_html=True)
 
         # Header section: Title, FAST MCP badge, active scope & Symmetrical Collapse button '>>'
         head_col, close_col = st.columns([3.8, 1.2])
