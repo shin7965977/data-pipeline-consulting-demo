@@ -1312,11 +1312,13 @@ if selected_layer == "gold":
             if st.button("👥 會員等級價值分佈圖", key="btn_nl_6", width="stretch"):
                 set_gold_chart_query("用圓餅圖呈現不同會員等級 (Customer Tiers) 的營收貢獻")
 
+        if "nl_chart_input_field" not in st.session_state:
+            st.session_state["nl_chart_input_field"] = "請幫我畫出每日 GMV 與實質淨營收的對比走勢圖"
+
         col_input, col_submit = st.columns([4, 1])
         with col_input:
             current_nl = st.text_input(
                 "請輸入圖表生成指令：",
-                value=st.session_state.get("nl_chart_input_field", st.session_state.get("nl_chart_query", "請幫我畫出每日 GMV 與實質淨營收的對比走勢圖")),
                 key="nl_chart_input_field",
                 placeholder="例如：畫出前五大商品銷售長條圖、或是每日退款率走勢...",
             )
@@ -1870,17 +1872,22 @@ if ai_drawer_col is not None:
             }
             tab_data_map["👥 客戶終身價值 (LTV) 分群"] = {
                 "title": "客戶終身價值 (LTV) 分群",
-                "customer_segments_summary": df_rfm.head(30).to_dict(orient="records") if not df_rfm.empty else [],
+                "customer_segments_summary": df_ltv.head(30).to_dict(orient="records") if not df_ltv.empty else [],
                 "suggested_questions": [
                     "Platinum 與 Gold VIP 會員的營收貢獻佔比如何？",
                     "流失邊緣（At Risk）客群應採取哪些挽回戰術？",
                     "新客首購與老客復購的平均客單價差異？",
                 ],
             }
+            cat_summary = (
+                df_prod[["category_name", "completed_sales_amount"]].groupby("category_name").sum().reset_index().to_dict(orient="records")
+                if not df_prod.empty and "category_name" in df_prod.columns
+                else []
+            )
             tab_data_map["🏆 熱銷商品與類別排行"] = {
                 "title": "熱銷商品與類別排行",
-                "top_products_summary": df_products.head(15).to_dict(orient="records") if not df_products.empty else [],
-                "categories_summary": df_categories.to_dict(orient="records") if not df_categories.empty else [],
+                "top_products_summary": df_prod.head(15).to_dict(orient="records") if not df_prod.empty else [],
+                "categories_summary": cat_summary,
                 "suggested_questions": [
                     "Top 3 熱銷商品是否過度集中（Pareto 80/20 法則）？",
                     "各商品類別的銷售額與單價分佈是否健康？",
@@ -1898,7 +1905,7 @@ if ai_drawer_col is not None:
             }
             tab_data_map["🎛️ 視覺化自訂看板 (Power BI 畫布)"] = {
                 "title": "視覺化自訂看板 (Power BI 畫布)",
-                "canvas_sample": walker_df.head(20).to_dict(orient="records") if not walker_df.empty else [],
+                "canvas_sample": df_prod.head(20).to_dict(orient="records") if not df_prod.empty else [],
                 "suggested_questions": [
                     "當前自訂畫布的指標分佈有何關鍵業務洞察？",
                     "建議在此畫布增加哪些維度進行交叉分析？",
@@ -1908,7 +1915,7 @@ if ai_drawer_col is not None:
         elif selected_layer == "silver":
             tab_data_map["📦 訂單事實表 (fct_orders)"] = {
                 "title": "訂單事實表 (fct_orders)",
-                "records_sample": df_fct_orders.head(20).to_dict(orient="records") if not df_fct_orders.empty else [],
+                "records_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
                 "suggested_questions": [
                     "訂單毛額與折扣折讓的比率分佈如何？",
                     "訂單支付狀態的成功率是否有異常？",
@@ -1916,7 +1923,7 @@ if ai_drawer_col is not None:
             }
             tab_data_map["🛒 訂單品項事實表 (fct_order_items)"] = {
                 "title": "訂單品項事實表 (fct_order_items)",
-                "records_sample": df_fct_items.head(20).to_dict(orient="records") if not df_fct_items.empty else [],
+                "records_sample": df_items.head(20).to_dict(orient="records") if not df_items.empty else [],
                 "suggested_questions": [
                     "品項的平均購買件數與單價分佈？",
                     "折扣扣減最高的品項特徵？",
@@ -1924,17 +1931,17 @@ if ai_drawer_col is not None:
             }
             tab_data_map["👥 客戶維度表 (dim_customers)"] = {
                 "title": "客戶維度表 (dim_customers)",
-                "records_sample": df_dim_cust.head(20).to_dict(orient="records") if not df_dim_cust.empty else [],
+                "records_sample": df_cust.head(20).to_dict(orient="records") if not df_cust.empty else [],
                 "suggested_questions": ["客戶群的註冊時間與活躍度走勢？"],
             }
             tab_data_map["🏷️ 商品維度表 (dim_products)"] = {
                 "title": "商品維度表 (dim_products)",
-                "records_sample": df_dim_prod.head(20).to_dict(orient="records") if not df_dim_prod.empty else [],
+                "records_sample": df_prod_silver.head(20).to_dict(orient="records") if not df_prod_silver.empty else [],
                 "suggested_questions": ["各類別商品的定價區間與覆蓋度？"],
             }
             tab_data_map["🎛️ 銀牌層視覺化畫布 (Power BI 畫布)"] = {
                 "title": "銀牌層視覺化畫布 (Power BI 畫布)",
-                "canvas_sample": walker_df.head(20).to_dict(orient="records") if not walker_df.empty else [],
+                "canvas_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
                 "suggested_questions": ["銀牌層自訂畫布中的關聯特徵洞察？"],
             }
         else:  # bronze
@@ -1960,7 +1967,7 @@ if ai_drawer_col is not None:
             }
             tab_data_map["🎛️ 銅牌層視覺化畫布 (Power BI 畫布)"] = {
                 "title": "銅牌層視覺化畫布 (Power BI 畫布)",
-                "canvas_sample": walker_df.head(20).to_dict(orient="records") if not walker_df.empty else [],
+                "canvas_sample": df_raw_orders.head(20).to_dict(orient="records") if not df_raw_orders.empty else [],
                 "suggested_questions": ["銅牌層資料流的異常檢驗與監控？"],
             }
 

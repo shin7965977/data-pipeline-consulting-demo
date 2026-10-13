@@ -1209,11 +1209,13 @@ def main():
                 if st.button("👥 Customer Tier Revenue Share", key="btn_nl_6_en", width="stretch"):
                     set_gold_chart_query_en("Display customer tiers revenue contribution in a pie chart")
 
+            if "nl_chart_input_field_en" not in st.session_state:
+                st.session_state["nl_chart_input_field_en"] = "Compare daily GMV against realized Net Revenue over time"
+
             col_input, col_submit = st.columns([4, 1])
             with col_input:
                 current_nl = st.text_input(
                     "Enter chart visualization prompt:",
-                    value=st.session_state.get("nl_chart_input_field_en", st.session_state.get("nl_chart_query_en", "Compare daily GMV against realized Net Revenue over time")),
                     key="nl_chart_input_field_en",
                     placeholder="e.g. Draw a bar chart of top 5 selling products, or daily refund rate trend...",
                 )
@@ -1735,17 +1737,22 @@ def main():
                 }
                 tab_data_map_en["👥 Customer Lifetime Value (LTV)"] = {
                     "title": "Customer Lifetime Value (LTV)",
-                    "customer_segments_summary": df_rfm.head(30).to_dict(orient="records") if not df_rfm.empty else [],
+                    "customer_segments_summary": df_ltv.head(30).to_dict(orient="records") if not df_ltv.empty else [],
                     "suggested_questions": [
                         "What is the revenue contribution of Platinum VIP customers?",
                         "What targeted plays can rescue At-Risk customer segments?",
                         "What is the LTV gap between first-time and repeat buyers?",
                     ],
                 }
+                cat_summary_en = (
+                    df_prod[["category_name", "completed_sales_amount"]].groupby("category_name").sum().reset_index().to_dict(orient="records")
+                    if not df_prod.empty and "category_name" in df_prod.columns
+                    else []
+                )
                 tab_data_map_en["🏆 Product & Category Performance"] = {
                     "title": "Product & Category Performance",
-                    "top_products_summary": df_products.head(15).to_dict(orient="records") if not df_products.empty else [],
-                    "categories_summary": df_categories.to_dict(orient="records") if not df_categories.empty else [],
+                    "top_products_summary": df_prod.head(15).to_dict(orient="records") if not df_prod.empty else [],
+                    "categories_summary": cat_summary_en,
                     "suggested_questions": [
                         "Does revenue exhibit Pareto 80/20 concentration across Top 3 SKUs?",
                         "How healthy are category-level pricing and sales volumes?",
@@ -1763,7 +1770,7 @@ def main():
                 }
                 tab_data_map_en["🎛️ Custom BI Studio (Power BI Canvas)"] = {
                     "title": "Custom BI Studio (Power BI Canvas)",
-                    "canvas_sample": walker_df.head(20).to_dict(orient="records") if not walker_df.empty else [],
+                    "canvas_sample": df_prod.head(20).to_dict(orient="records") if not df_prod.empty else [],
                     "suggested_questions": [
                         "What operational insights emerge from the custom canvas layout?",
                         "Which additional dimensions are recommended for cross-analysis?",
@@ -1773,27 +1780,27 @@ def main():
             elif selected_layer == "silver":
                 tab_data_map_en["📦 Orders Fact (fct_orders)"] = {
                     "title": "Orders Fact (fct_orders)",
-                    "records_sample": df_fct_orders.head(20).to_dict(orient="records") if not df_fct_orders.empty else [],
+                    "records_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
                     "suggested_questions": ["What is the breakdown between gross and promotional discounts?"],
                 }
                 tab_data_map_en["🛒 Line Items Fact (fct_order_items)"] = {
                     "title": "Line Items Fact (fct_order_items)",
-                    "records_sample": df_fct_items.head(20).to_dict(orient="records") if not df_fct_items.empty else [],
+                    "records_sample": df_items.head(20).to_dict(orient="records") if not df_items.empty else [],
                     "suggested_questions": ["What are the unit price distributions across order items?"],
                 }
                 tab_data_map_en["👥 Customers Dimension (dim_customers)"] = {
                     "title": "Customers Dimension (dim_customers)",
-                    "records_sample": df_dim_cust.head(20).to_dict(orient="records") if not df_dim_cust.empty else [],
+                    "records_sample": df_cust.head(20).to_dict(orient="records") if not df_cust.empty else [],
                     "suggested_questions": ["What are customer registration and retention cohorts?"],
                 }
                 tab_data_map_en["🏷️ Products Dimension (dim_products)"] = {
                     "title": "Products Dimension (dim_products)",
-                    "records_sample": df_dim_prod.head(20).to_dict(orient="records") if not df_dim_prod.empty else [],
+                    "records_sample": df_prod_silver.head(20).to_dict(orient="records") if not df_prod_silver.empty else [],
                     "suggested_questions": ["What is the active product price range coverage?"],
                 }
                 tab_data_map_en["🎛️ Silver BI Studio (Power BI Canvas)"] = {
                     "title": "Silver BI Studio (Power BI Canvas)",
-                    "canvas_sample": walker_df.head(20).to_dict(orient="records") if not walker_df.empty else [],
+                    "canvas_sample": df_orders.head(20).to_dict(orient="records") if not df_orders.empty else [],
                     "suggested_questions": ["What correlations emerge from silver level data?"],
                 }
             else:  # bronze
@@ -1819,7 +1826,7 @@ def main():
                 }
                 tab_data_map_en["🎛️ Bronze BI Studio (Power BI Canvas)"] = {
                     "title": "Bronze BI Studio (Power BI Canvas)",
-                    "canvas_sample": walker_df.head(20).to_dict(orient="records") if not walker_df.empty else [],
+                    "canvas_sample": df_raw_orders.head(20).to_dict(orient="records") if not df_raw_orders.empty else [],
                     "suggested_questions": ["How clean is the bronze pipeline flow?"],
                 }
 
