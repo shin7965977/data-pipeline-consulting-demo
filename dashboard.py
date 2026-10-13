@@ -832,11 +832,11 @@ with st.sidebar:
     st.caption("AI Operations Lakehouse Copilot · ⚡ Live")
     is_drawer_active = st.session_state.get("show_ai_drawer", False)
     if st.button(
-        "✕ 關閉 AI 顧問面板" if is_drawer_active else "✨ 開啟 AI 顧問工作台",
+        "» 收納 AI 顧問" if is_drawer_active else "✨ 開啟 AI 顧問工作台",
         type="secondary" if is_drawer_active else "primary",
         key="sidebar_open_ai_drawer_btn",
         width="stretch",
-        help="於右側開啟分頁專屬 MBB 智慧診斷工作台（自適應雙欄，僅讀取本頁數據）",
+        help="於右側並排展開/收納分頁專屬 MBB 智慧診斷工作台（自適應雙欄，僅讀取本頁數據）",
     ):
         st.session_state["show_ai_drawer"] = not is_drawer_active
         st.rerun()
@@ -880,11 +880,11 @@ with header_col2:
     with c_ai_btn:
         is_ai_open = st.session_state.get("show_ai_drawer", False)
         if st.button(
-            "✕ 關閉顧問" if is_ai_open else "✨ AI 顧問",
+            "» 收納顧問" if is_ai_open else "✨ AI 顧問",
             type="secondary" if is_ai_open else "primary",
             key="top_bar_ai_toggle",
             width="stretch",
-            help="點擊展開右側 FastMCP 智慧營運顧問工作台（自適應雙欄，僅讀取本頁數據）",
+            help="點擊展開/收納右側 FastMCP 智慧營運顧問工作台（自適應雙欄，僅讀取本頁數據）",
         ):
             st.session_state["show_ai_drawer"] = not is_ai_open
             st.rerun()
@@ -1092,15 +1092,14 @@ custom_tab_titles = [f"📌 {t['title']}" for t in st.session_state.custom_tabs]
 all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ 新增圖表分頁"]
 
 is_ai_open = st.session_state.get("show_ai_drawer", False)
-drawer_mode = st.session_state.get("drawer_mode", "overlay")
 
-if is_ai_open and drawer_mode == "split":
+if is_ai_open:
     main_tab_col, ai_drawer_col = st.columns([6.8, 3.2], gap="large")
     tab_parent = main_tab_col
 else:
     main_tab_col = None
     tab_parent = st.container()
-    ai_drawer_col = st.container() if is_ai_open else None
+    ai_drawer_col = None
 
 with tab_parent:
     active_tab_nav_key = f"active_tab_nav_{selected_layer}"

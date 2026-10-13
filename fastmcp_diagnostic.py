@@ -884,88 +884,46 @@ def render_fastmcp_advisor_drawer(
     active_tab_title: str | None = None,
     language: str = "zh",
 ) -> None:
-    """Render the slide-over AI Advisor side panel (Mode B: Floating Overlay & Adaptive Split View).
+    """Render the docked side-by-side AI Advisor panel (Mode B).
 
     Features:
-    1. Automatic Context Binding: Directly binds to the currently active tab without manual selection.
-    2. Dual Display Modes: Seamlessly supports both Floating Overlay Drawer (with backdrop blur) and Adaptive Split View.
-    3. LocalStorage Persistence: Allows user to choose whether to remember API key in browser.
-    4. Multi-turn Conversational MBB Diagnostic: Action Title, Pyramid Principle, MECE breakdown, 30-60-90 day plan.
-    5. Suggested question chips aligned with current tab's metric signals.
+    1. Docked Layout: Seamlessly docked on the right side alongside tabs, without floating overlays or dimming backdrops.
+    2. Freely Collapsible: Top-right collapse button (» 收納顧問) to easily hide/show the panel.
+    3. Prominent Chat Window: Conversation container and chat input are front-and-center, immediately visible upon opening.
+    4. Auto-locked Context Binding: Directly binds to the currently active tab without manual selection.
+    5. LocalStorage Persistence: Allows user to choose whether to remember API key in browser (settings collapsed by default).
+    6. Multi-turn Conversational MBB Diagnostic: Action Title, Pyramid Principle, MECE breakdown, 30-60-90 day plan.
+    7. Suggested question chips aligned with current tab's metric signals.
     """
     import os
     import streamlit as st
 
     is_zh = language == "zh"
-    drawer_mode = st.session_state.get("drawer_mode", "overlay")
 
-    # In overlay mode, inject floating fixed-drawer styling and backdrop
-    if drawer_mode == "overlay":
-        st.markdown(
-            """
-            <div class="ai-drawer-overlay-backdrop"></div>
-            <div class="ai-drawer-floating-marker"></div>
-            <style>
-            .ai-drawer-overlay-backdrop {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: rgba(15, 23, 42, 0.65);
-                backdrop-filter: blur(5px);
-                -webkit-backdrop-filter: blur(5px);
-                z-index: 999980;
-                pointer-events: auto;
-            }
-            div[data-testid="stVerticalBlock"]:has(div.ai-drawer-floating-marker),
-            div[data-testid="stVerticalBlockBorderWrapper"]:has(div.ai-drawer-floating-marker) {
-                position: fixed !important;
-                top: 0 !important;
-                right: 0 !important;
-                width: min(520px, 94vw) !important;
-                height: 100vh !important;
-                max-height: 100vh !important;
-                background: #0f172a !important;
-                border-left: 1px solid rgba(99, 102, 241, 0.35) !important;
-                box-shadow: -12px 0 45px rgba(0, 0, 0, 0.75) !important;
-                z-index: 999999 !important;
-                overflow-y: auto !important;
-                padding: 1.5rem !important;
-                animation: drawerSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-            }
-            @keyframes drawerSlideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            """
-            <div class="ai-drawer-split-marker"></div>
-            <style>
-            div[data-testid="stVerticalBlock"]:has(div.ai-drawer-split-marker) {
-                background: rgba(15, 23, 42, 0.85);
-                border: 1px solid rgba(99, 102, 241, 0.3);
-                border-radius: 14px;
-                padding: 1.25rem !important;
-                box-shadow: 0 4px 25px rgba(0, 0, 0, 0.3);
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
+    # Docked panel styling matching modern dark theme & sidebar aesthetics
+    st.markdown(
+        """
+        <div class="ai-advisor-panel-marker"></div>
+        <style>
+        div[data-testid="stVerticalBlock"]:has(div.ai-advisor-panel-marker) {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(99, 102, 241, 0.28);
+            border-radius: 14px;
+            padding: 1.25rem !important;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.35);
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    # Header section with title, mode toggle, and close button
-    head_col, mode_col, close_col = st.columns([2.6, 1.2, 1.2])
+    # Header section with title and collapse button (matching sidebar's collapse behavior)
+    head_col, close_col = st.columns([3.3, 1.7])
     with head_col:
         st.markdown(
             f"""
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem;">
-                <span style="font-size: 1.3rem;">✨</span>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem;">
+                <span style="font-size: 1.25rem;">✨</span>
                 <span style="font-size: 1.15rem; font-weight: 700; color: #f8fafc;">
                     {'AI 經營顧問' if is_zh else 'AI Operations Advisor'}
                 </span>
@@ -973,21 +931,9 @@ def render_fastmcp_advisor_drawer(
             """,
             unsafe_allow_html=True,
         )
-        st.caption(
-            f"{'AI Operations Lakehouse' if is_zh else 'AI Operations Lakehouse'} · "
-            f"{'🪟 浮動遮罩' if drawer_mode == 'overlay' else '📌 雙欄並排'}"
-        )
-    with mode_col:
-        if drawer_mode == "overlay":
-            if st.button("📌 雙欄" if is_zh else "📌 Split", key="btn_mode_toggle", help="切換為動態自適應雙欄並排模式" if is_zh else "Switch to adaptive split columns view", width="stretch"):
-                st.session_state["drawer_mode"] = "split"
-                st.rerun()
-        else:
-            if st.button("🪟 浮動" if is_zh else "🪟 Float", key="btn_mode_toggle", help="切換為浮動遮罩抽屜層模式" if is_zh else "Switch to floating overlay drawer mode", width="stretch"):
-                st.session_state["drawer_mode"] = "overlay"
-                st.rerun()
+        st.caption("AI Operations Lakehouse Copilot · ⚡ Live")
     with close_col:
-        if st.button("✕ 關閉" if is_zh else "✕ Close", key="btn_drawer_close_top", width="stretch", type="secondary"):
+        if st.button("» 收納顧問" if is_zh else "» Collapse", key="btn_drawer_collapse_top", width="stretch", help="收納右側 AI 顧問面板" if is_zh else "Collapse advisor panel"):
             st.session_state["show_ai_drawer"] = False
             st.rerun()
 
@@ -1023,15 +969,81 @@ def render_fastmcp_advisor_drawer(
         unsafe_allow_html=True,
     )
 
-    # Gemini Key & Model Settings (Collapsible Expander)
+    scope_hash = abs(hash(active_scope)) % 10000000
+
+    # Chat history state for active tab scope
+    hist_key = f"drawer_chat_hist_{scope_hash}"
+    if hist_key not in st.session_state:
+        welcome_intro = (
+            f"您好！我是您的 **AI 經營顧問**。\n\n"
+            f"已為您加載 **【{tab_display_title}】** 的專屬資料。您可以直接點選下方建議引導卡片，或於下方輸入框提出商業診斷問題！"
+            if is_zh
+            else f"Hello! I am your **AI Operations Advisor**.\n\n"
+            f"Loaded dataset for **【{tab_display_title}】**. Click any suggested question or type your query below!"
+        )
+        st.session_state[hist_key] = [{"role": "assistant", "content": welcome_intro}]
+
+    # Render Conversation Container (Prominently placed at the top for immediate visibility)
+    chat_container = st.container(height=380)
+    with chat_container:
+        for msg in st.session_state[hist_key]:
+            avatar = "🤖" if msg["role"] == "assistant" else "👤"
+            with st.chat_message(msg["role"], avatar=avatar):
+                st.markdown(msg["content"])
+
+    # Chat Input Form (Directly below conversation window)
+    with st.form(key=f"drawer_input_form_{scope_hash}", clear_on_submit=True):
+        f_inp, f_btn = st.columns([4.2, 1.3])
+        with f_inp:
+            form_query = st.text_input(
+                "針對本頁數據提問...",
+                placeholder="針對本頁數據提問..." if is_zh else "Ask about this page...",
+                label_visibility="collapsed",
+                key=f"drawer_text_input_{scope_hash}",
+            )
+        with f_btn:
+            submit_btn = st.form_submit_button("送出 🚀" if is_zh else "Send 🚀", type="primary", width="stretch")
+
+    # Suggested Prompts Chips
+    st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
+    suggested_list = tab_payload.get("suggested_questions", [
+        "本期損益主要由哪些項目驅動？" if is_zh else "What key drivers explain current net profitability?",
+        "營運指標有哪些異常值得注意？" if is_zh else "Are there noticeable anomalies in current operational KPIs?",
+        "如何制定接下來 30-60-90 天的改善方針？" if is_zh else "What is the recommended 30-60-90 day tactical roadmap?",
+    ])
+
+    chip_clicked_query = None
+    with st.expander("💡 快速診斷建議引導" if is_zh else "💡 Suggested Questions", expanded=True):
+        for idx, q_text in enumerate(suggested_list):
+            if st.button(f"👉 {q_text}", key=f"chip_q_{idx}_{scope_hash}", width="stretch"):
+                chip_clicked_query = q_text
+
+    user_query_to_run = chip_clicked_query or (form_query.strip() if submit_btn and form_query.strip() else None)
+
+    if user_query_to_run:
+        st.session_state[hist_key].append({"role": "user", "content": user_query_to_run})
+
+        with st.spinner("🤖 AI 顧問正在審視本頁數據並生成 MBB 診斷報告..." if is_zh else "🤖 Advisor evaluating page data..."):
+            reply_report = _execute_tab_scoped_diagnostic(
+                user_query=user_query_to_run,
+                tab_title=tab_display_title,
+                tab_payload=tab_payload,
+                api_key=st.session_state.get("gemini_api_key", ""),
+                preferred_model=st.session_state.get("drawer_selected_model", "auto"),
+                language=language,
+            )
+            st.session_state[hist_key].append({"role": "assistant", "content": reply_report})
+        st.rerun()
+
+    # Gemini Key & Model Settings (Collapsible Expander, collapsed by default so it never blocks chat)
     current_key = st.session_state.get("gemini_api_key", "") or os.getenv("GEMINI_API_KEY", "")
     expander_title = (
-        f"⚙️ 顧問模型與金鑰設定 {'(已連線)' if current_key else '(未設定金鑰)'}"
+        f"⚙️ 顧問模型與金鑰設定 {'(已連線)' if current_key else '(未設定金鑰·點此展開)'}"
         if is_zh
-        else f"⚙️ Model & API Key Settings {'(Connected)' if current_key else '(No Key Set)'}"
+        else f"⚙️ Model & API Key Settings {'(Connected)' if current_key else '(No Key Set · Expand)'}"
     )
 
-    with st.expander(expander_title, expanded=not bool(current_key)):
+    with st.expander(expander_title, expanded=False):
         # JavaScript LocalStorage Auto-loader
         st.html(
             """
@@ -1135,74 +1147,6 @@ def render_fastmcp_advisor_drawer(
             }.get(x, x),
             key="drawer_selected_model",
         )
-
-    st.markdown("---")
-
-    # Suggested Prompts (Matching Image 2)
-    st.markdown("##### 💡 建議引導" if is_zh else "##### 💡 Suggested Questions")
-    suggested_list = tab_payload.get("suggested_questions", [
-        "本期損益主要由哪些項目驅動？" if is_zh else "What key drivers explain current net profitability?",
-        "營運指標有哪些異常值得注意？" if is_zh else "Are there noticeable anomalies in current operational KPIs?",
-        "如何制定接下來 30-60-90 天的改善方針？" if is_zh else "What is the recommended 30-60-90 day tactical roadmap?",
-    ])
-
-    chip_clicked_query = None
-    scope_hash = abs(hash(active_scope)) % 10000000
-    for idx, q_text in enumerate(suggested_list):
-        if st.button(f"👉 {q_text}", key=f"chip_q_{idx}_{scope_hash}", width="stretch"):
-            chip_clicked_query = q_text
-
-    st.markdown("---")
-
-    # Chat history state for active tab scope
-    hist_key = f"drawer_chat_hist_{scope_hash}"
-    if hist_key not in st.session_state:
-        welcome_intro = (
-            f"您好！我是您的 **AI 經營顧問**。\n\n"
-            f"已為您加載 **【{tab_display_title}】** 的專屬資料。您可以直接點選上方「建議引導」卡片，或於下方輸入框提出商業診斷問題！"
-            if is_zh
-            else f"Hello! I am your **AI Operations Advisor**.\n\n"
-            f"Loaded dataset for **【{tab_display_title}】**. Click any suggested question above or type your query below!"
-        )
-        st.session_state[hist_key] = [{"role": "assistant", "content": welcome_intro}]
-
-    # Render Conversation Container
-    chat_container = st.container(height=380)
-    with chat_container:
-        for msg in st.session_state[hist_key]:
-            avatar = "🤖" if msg["role"] == "assistant" else "👤"
-            with st.chat_message(msg["role"], avatar=avatar):
-                st.markdown(msg["content"])
-
-    # Bottom Chat Input Form (Matching Image 2 bottom)
-    with st.form(key=f"drawer_input_form_{scope_hash}", clear_on_submit=True):
-        f_inp, f_btn = st.columns([4.2, 1.3])
-        with f_inp:
-            form_query = st.text_input(
-                "針對本頁數據提問...",
-                placeholder="針對本頁數據提問..." if is_zh else "Ask about this page...",
-                label_visibility="collapsed",
-                key=f"drawer_text_input_{scope_hash}",
-            )
-        with f_btn:
-            submit_btn = st.form_submit_button("送出 🚀" if is_zh else "Send 🚀", type="primary", width="stretch")
-
-    user_query_to_run = chip_clicked_query or (form_query.strip() if submit_btn and form_query.strip() else None)
-
-    if user_query_to_run:
-        st.session_state[hist_key].append({"role": "user", "content": user_query_to_run})
-
-        with st.spinner("🤖 AI 顧問正在審視本頁數據並生成 MBB 診斷報告..." if is_zh else "🤖 Advisor evaluating page data..."):
-            reply_report = _execute_tab_scoped_diagnostic(
-                user_query=user_query_to_run,
-                tab_title=tab_display_title,
-                tab_payload=tab_payload,
-                api_key=st.session_state.get("gemini_api_key", ""),
-                preferred_model=st.session_state.get("drawer_selected_model", "auto"),
-                language=language,
-            )
-            st.session_state[hist_key].append({"role": "assistant", "content": reply_report})
-        st.rerun()
 
     # Reset Chat Button
     if len(st.session_state[hist_key]) > 1:

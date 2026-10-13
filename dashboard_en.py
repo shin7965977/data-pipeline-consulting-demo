@@ -738,11 +738,11 @@ def main():
         st.caption("AI Operations Lakehouse Copilot · ⚡ Live")
         is_drawer_active_en = st.session_state.get("show_ai_drawer", False)
         if st.button(
-            "✕ Close AI Advisor Panel" if is_drawer_active_en else "✨ Open AI Advisor Studio",
+            "» Collapse AI Advisor" if is_drawer_active_en else "✨ Open AI Advisor Studio",
             type="secondary" if is_drawer_active_en else "primary",
             key="sidebar_open_ai_drawer_btn_en",
             width="stretch",
-            help="Open tab-scoped MBB Diagnostic Studio on the right",
+            help="Toggle docked side-by-side MBB Diagnostic Studio on the right",
         ):
             st.session_state["show_ai_drawer"] = not is_drawer_active_en
             st.rerun()
@@ -786,11 +786,11 @@ def main():
         with c_ai_btn:
             is_ai_open_en = st.session_state.get("show_ai_drawer", False)
             if st.button(
-                "✕ Close Advisor" if is_ai_open_en else "✨ AI Advisor",
+                "» Collapse" if is_ai_open_en else "✨ AI Advisor",
                 type="secondary" if is_ai_open_en else "primary",
                 key="top_bar_ai_toggle_en",
                 width="stretch",
-                help="Open FastMCP AI Operations Advisor on the right (Adaptive Dual-Column, Tab Scoped)",
+                help="Toggle FastMCP AI Operations Advisor (Docked side-by-side, tab-scoped)",
             ):
                 st.session_state["show_ai_drawer"] = not is_ai_open_en
                 st.rerun()
@@ -996,15 +996,14 @@ def main():
     all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ Add Custom Tab"]
 
     is_ai_open = st.session_state.get("show_ai_drawer", False)
-    drawer_mode = st.session_state.get("drawer_mode", "overlay")
 
-    if is_ai_open and drawer_mode == "split":
+    if is_ai_open:
         main_tab_col, ai_drawer_col = st.columns([6.8, 3.2], gap="large")
         tab_parent = main_tab_col
     else:
         main_tab_col = None
         tab_parent = st.container()
-        ai_drawer_col = st.container() if is_ai_open else None
+        ai_drawer_col = None
 
     with tab_parent:
         active_tab_nav_key = f"active_tab_nav_en_{selected_layer}"
