@@ -1288,6 +1288,12 @@ def render_fastmcp_advisor_drawer(
                 help="輸入您的 Gemini API Key 啟用雲端即時 LLM 推論。未輸入時自動啟用內建 MBB 諮詢引擎。",
             )
 
+            st.markdown(
+                "👉 [點此前往 Google AI Studio 免費獲取 API Key](https://aistudio.google.com/app/apikey)"
+                if is_zh
+                else "👉 [Get a Free Gemini API Key on Google AI Studio](https://aistudio.google.com/app/apikey)"
+            )
+
             if user_input_key:
                 st.session_state["gemini_api_key"] = user_input_key.strip()
                 clean_k = user_input_key.strip()
@@ -1322,6 +1328,12 @@ def render_fastmcp_advisor_drawer(
                     </script>
                     """
                 )
+
+            st.caption(
+                "🔒 **安全保障（BYOK 模式）**：系統絕不儲存金鑰，亦不使用開發者帳號付費。"
+                if is_zh
+                else "🔒 **BYOK Security**: Keys remain strictly within your browser."
+            )
 
             st.selectbox(
                 "⚡ 偏好 Gemini 模型：" if is_zh else "⚡ Preferred Model:",
