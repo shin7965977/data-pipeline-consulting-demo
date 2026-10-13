@@ -886,58 +886,14 @@ def render_fastmcp_advisor_drawer(
 ) -> None:
     """Render the docked side-by-side AI Advisor panel (Mode B).
 
-    Features:
-    1. Docked Layout: Seamlessly docked on the right side alongside tabs, without floating overlays or dimming backdrops.
-    2. Freely Collapsible: Top-right collapse button (» 收納顧問) to easily hide/show the panel.
-    3. Prominent Chat Window: Conversation container and chat input are front-and-center, immediately visible upon opening.
-    4. Auto-locked Context Binding: Directly binds to the currently active tab without manual selection.
-    5. LocalStorage Persistence: Allows user to choose whether to remember API key in browser (settings collapsed by default).
-    6. Multi-turn Conversational MBB Diagnostic: Action Title, Pyramid Principle, MECE breakdown, 30-60-90 day plan.
-    7. Suggested question chips aligned with current tab's metric signals.
+    Referenced directly from Gong-Si-ERP-CMQi-Ye-Xi-Tong AIConsultantDrawer,
+    adapted into pure dynamic adaptive dual-column layout with ZERO overlay/mask.
     """
     import os
+    import re
     import streamlit as st
 
     is_zh = language == "zh"
-
-    # Docked panel styling matching modern dark theme & sidebar aesthetics
-    st.markdown(
-        """
-        <div class="ai-advisor-panel-marker"></div>
-        <style>
-        div[data-testid="stVerticalBlock"]:has(div.ai-advisor-panel-marker) {
-            background: rgba(15, 23, 42, 0.75);
-            border: 1px solid rgba(99, 102, 241, 0.28);
-            border-radius: 14px;
-            padding: 1.25rem !important;
-            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.35);
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Header section with title and collapse button (matching sidebar's collapse behavior)
-    head_col, close_col = st.columns([3.3, 1.7])
-    with head_col:
-        st.markdown(
-            f"""
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem;">
-                <span style="font-size: 1.25rem;">✨</span>
-                <span style="font-size: 1.15rem; font-weight: 700; color: #f8fafc;">
-                    {'AI 經營顧問' if is_zh else 'AI Operations Advisor'}
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.caption("AI Operations Lakehouse Copilot · ⚡ Live")
-    with close_col:
-        if st.button("» 收納顧問" if is_zh else "» Collapse", key="btn_drawer_collapse_top", width="stretch", help="收納右側 AI 顧問面板" if is_zh else "Collapse advisor panel"):
-            st.session_state["show_ai_drawer"] = False
-            st.rerun()
-
-    st.markdown("---")
 
     # Determine Active Tab Context Scope automatically
     active_scope = None
@@ -954,203 +910,219 @@ def render_fastmcp_advisor_drawer(
 
     tab_payload = tab_data_map.get(active_scope, {})
     tab_display_title = tab_payload.get("title", active_scope)
+    safe_scope_id = re.sub(r"[^a-zA-Z0-9_\u4e00-\u9fff]", "", active_scope or "default")
 
-    # Render Auto-Locked Scope Badge (Directly binds to current tab without manual selection)
-    st.markdown(
-        f"""
-        <div style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-            <div>
-                <div style="font-size: 0.74rem; color: #a5b4fc; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">🔒 {'當前分析分頁上下文（已自動鎖定）' if is_zh else 'Active Tab Scope (Auto-locked)'}</div>
-                <div style="font-size: 0.95rem; color: #ffffff; font-weight: 700; margin-top: 3px;">{tab_display_title}</div>
-            </div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.72rem; padding: 3px 8px; border-radius: 12px; font-weight: 600;">{'即時同步' if is_zh else 'Synced'}</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    scope_hash = abs(hash(active_scope)) % 10000000
-
-    # Chat history state for active tab scope
-    hist_key = f"drawer_chat_hist_{scope_hash}"
-    if hist_key not in st.session_state:
-        welcome_intro = (
-            f"您好！我是您的 **AI 經營顧問**。\n\n"
-            f"已為您加載 **【{tab_display_title}】** 的專屬資料。您可以直接點選下方建議引導卡片，或於下方輸入框提出商業診斷問題！"
-            if is_zh
-            else f"Hello! I am your **AI Operations Advisor**.\n\n"
-            f"Loaded dataset for **【{tab_display_title}】**. Click any suggested question or type your query below!"
-        )
-        st.session_state[hist_key] = [{"role": "assistant", "content": welcome_intro}]
-
-    # Render Conversation Container (Prominently placed at the top for immediate visibility)
-    chat_container = st.container(height=380)
-    with chat_container:
-        for msg in st.session_state[hist_key]:
-            avatar = "🤖" if msg["role"] == "assistant" else "👤"
-            with st.chat_message(msg["role"], avatar=avatar):
-                st.markdown(msg["content"])
-
-    # Chat Input Form (Directly below conversation window)
-    with st.form(key=f"drawer_input_form_{scope_hash}", clear_on_submit=True):
-        f_inp, f_btn = st.columns([4.2, 1.3])
-        with f_inp:
-            form_query = st.text_input(
-                "針對本頁數據提問...",
-                placeholder="針對本頁數據提問..." if is_zh else "Ask about this page...",
-                label_visibility="collapsed",
-                key=f"drawer_text_input_{scope_hash}",
-            )
-        with f_btn:
-            submit_btn = st.form_submit_button("送出 🚀" if is_zh else "Send 🚀", type="primary", width="stretch")
-
-    # Suggested Prompts Chips
-    st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
-    suggested_list = tab_payload.get("suggested_questions", [
-        "本期損益主要由哪些項目驅動？" if is_zh else "What key drivers explain current net profitability?",
-        "營運指標有哪些異常值得注意？" if is_zh else "Are there noticeable anomalies in current operational KPIs?",
-        "如何制定接下來 30-60-90 天的改善方針？" if is_zh else "What is the recommended 30-60-90 day tactical roadmap?",
-    ])
-
-    chip_clicked_query = None
-    with st.expander("💡 快速診斷建議引導" if is_zh else "💡 Suggested Questions", expanded=True):
-        for idx, q_text in enumerate(suggested_list):
-            if st.button(f"👉 {q_text}", key=f"chip_q_{idx}_{scope_hash}", width="stretch"):
-                chip_clicked_query = q_text
-
-    user_query_to_run = chip_clicked_query or (form_query.strip() if submit_btn and form_query.strip() else None)
-
-    if user_query_to_run:
-        st.session_state[hist_key].append({"role": "user", "content": user_query_to_run})
-
-        with st.spinner("🤖 AI 顧問正在審視本頁數據並生成 MBB 診斷報告..." if is_zh else "🤖 Advisor evaluating page data..."):
-            reply_report = _execute_tab_scoped_diagnostic(
-                user_query=user_query_to_run,
-                tab_title=tab_display_title,
-                tab_payload=tab_payload,
-                api_key=st.session_state.get("gemini_api_key", ""),
-                preferred_model=st.session_state.get("drawer_selected_model", "auto"),
-                language=language,
-            )
-            st.session_state[hist_key].append({"role": "assistant", "content": reply_report})
-        st.rerun()
-
-    # Gemini Key & Model Settings (Collapsible Expander, collapsed by default so it never blocks chat)
-    current_key = st.session_state.get("gemini_api_key", "") or os.getenv("GEMINI_API_KEY", "")
-    expander_title = (
-        f"⚙️ 顧問模型與金鑰設定 {'(已連線)' if current_key else '(未設定金鑰·點此展開)'}"
-        if is_zh
-        else f"⚙️ Model & API Key Settings {'(Connected)' if current_key else '(No Key Set · Expand)'}"
-    )
-
-    with st.expander(expander_title, expanded=False):
-        # JavaScript LocalStorage Auto-loader
-        st.html(
-            """
-            <script>
-            (function() {
-                try {
-                    const saved = localStorage.getItem("platzi_gemini_api_key");
-                    if (saved) {
-                        const inputs = window.parent.document.querySelectorAll('input[type="password"]');
-                        inputs.forEach(inp => {
-                            if (!inp.value) {
-                                inp.value = saved;
-                                inp.dispatchEvent(new Event('input', { bubbles: true }));
-                                inp.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                        });
-                    }
-                } catch(e) {}
-            })();
-            </script>
-            """
-        )
-
-        user_input_key = st.text_input(
-            "輸入您的 Google Gemini API Key" if is_zh else "Enter Google Gemini API Key",
-            type="password",
-            value=current_key,
-            placeholder="AIzaSy...",
-            key="drawer_gemini_key_input",
-            help="請輸入您自己的 Google Gemini API Key（可於 Google AI Studio 免費申請）。",
-        )
-
-        if user_input_key:
-            st.session_state["gemini_api_key"] = user_input_key.strip()
-            clean_k = user_input_key.strip()
-            if clean_k.startswith("AQ.") or clean_k.startswith("ya29."):
-                st.error(
-                    "❌ **金鑰格式錯誤**：這是 Google OAuth 臨時憑證，非 Gemini API Key！"
-                    if is_zh
-                    else "❌ **Invalid Key**: This is an OAuth token, not a Gemini API Key!"
-                )
-            elif not clean_k.startswith("AIza"):
-                st.warning(
-                    "⚠️ **提醒**：Gemini 官方 API Key 通常以 `AIzaSy...` 開頭。"
-                    if is_zh
-                    else "⚠️ Notice: Gemini API Keys usually start with `AIzaSy...`."
-                )
-            else:
-                st.success("✅ 金鑰格式正確 (AIzaSy...)" if is_zh else "✅ Valid API Key format (AIzaSy...)")
-
-        # Checkbox: Remember Key in browser (交由使用者決定)
-        remember_key = st.checkbox(
-            "💾 在此瀏覽器記住金鑰 (LocalStorage)" if is_zh else "💾 Remember Key in this browser (LocalStorage)",
-            value=st.session_state.get("remember_gemini_key", False),
-            key="drawer_remember_key_checkbox",
-            help=(
-                "勾選後將保存在您本地瀏覽器的 LocalStorage，下次開啟本頁無需重新輸入。系統伺服器絕不儲存金鑰。"
-                if is_zh
-                else "When checked, saves securely in your browser's LocalStorage. The server never stores your key."
-            ),
-        )
-
-        if remember_key and user_input_key:
-            st.session_state["remember_gemini_key"] = True
-            st.html(
+    # Native bordered card container - NO custom CSS, NO backdrop, NO overlay
+    with st.container(border=True):
+        # Header section: Title, FAST MCP badge, active scope & Collapse button
+        head_col, close_col = st.columns([3.4, 1.6])
+        with head_col:
+            st.markdown(
                 f"""
-                <script>
-                try {{
-                    localStorage.setItem("platzi_gemini_api_key", "{user_input_key.strip()}");
-                }} catch(e) {{}}
-                </script>
-                """
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                    <span style="font-size: 1.25rem;">✨</span>
+                    <span style="font-size: 1.15rem; font-weight: 700; color: #f8fafc;">
+                        {'AI 決策顧問' if is_zh else 'AI Operations Advisor'}
+                    </span>
+                    <span style="font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); font-weight: 700; font-family: monospace;">FAST MCP</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">
+                    🔒 {'當前上下文：' if is_zh else 'Scope: '}<strong>【{tab_display_title}】</strong>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-        elif not remember_key:
-            st.session_state["remember_gemini_key"] = False
+        with close_col:
+            if st.button(
+                "» 收起" if is_zh else "» Collapse",
+                key=f"btn_collapse_advisor_{safe_scope_id}",
+                width="stretch",
+                help="收起 AI 顧問工作台（回歸單欄全寬）" if is_zh else "Collapse advisor panel",
+            ):
+                st.session_state["show_ai_drawer"] = False
+                st.rerun()
+
+        st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px solid rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
+
+        # One-Click Diagnostic Recommendations (Directly matching ERP ai-consultant-drawer.tsx)
+        st.markdown(
+            f"""
+            <div style="font-size: 0.78rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                <span>⚡</span> {'一鍵管理診斷推薦：' if is_zh else 'One-Click Quick Diagnostics:'}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        quick_prompts = [
+            {
+                "label": "🔍 診斷指標異常" if is_zh else "🔍 Metric Anomalies",
+                "query": f"請以麥肯錫 SCQA 結構診斷【{tab_display_title}】目前是否有隱匿的毛利、訂單或營運異常？"
+                if is_zh
+                else f"Diagnose latent anomalies in 【{tab_display_title}】 using McKinsey SCQA framework.",
+            },
+            {
+                "label": "🔮 預測營運風險" if is_zh else "🔮 Forecast Risk",
+                "query": f"依據當前數據模型，請評估未來 90 天【{tab_display_title}】可能面臨的風險與對應策略方案。"
+                if is_zh
+                else f"Forecast next 90-day risks and tactical counter-measures for 【{tab_display_title}】.",
+            },
+            {
+                "label": "📋 C-Level 清單" if is_zh else "📋 C-Level Action",
+                "query": f"請依金字塔原理列出【{tab_display_title}】優先級最高 3 項管理改善建議、負責人與追蹤指標。"
+                if is_zh
+                else f"List top 3 C-Level actionable interventions and KPIs for 【{tab_display_title}】 via Pyramid Principle.",
+            },
+        ]
+
+        clicked_prompt_query = None
+        qp_col1, qp_col2, qp_col3 = st.columns(3)
+        cols = [qp_col1, qp_col2, qp_col3]
+        for idx, p in enumerate(quick_prompts):
+            with cols[idx]:
+                if st.button(p["label"], key=f"quick_prompt_{idx}_{safe_scope_id}", width="stretch", help=p["query"]):
+                    clicked_prompt_query = p["query"]
+
+        # Chat history state for active tab scope
+        hist_key = f"ai_advisor_chat_hist_{safe_scope_id}"
+        if hist_key not in st.session_state:
+            welcome_intro = (
+                f"您好！我是您的 **MBB 商業管理諮詢顧問 AI**（基於 Gemini 與 FAST MCP）。\n\n"
+                f"我已經自動載入您當前瀏覽的 **【{tab_display_title}】** 專屬數據。您可以直接提問，或點選上方快捷診斷建議。"
+                if is_zh
+                else f"Hello! I am your **MBB Management Consulting Advisor AI** (Powered by Gemini & FastMCP).\n\n"
+                f"Loaded data for **【{tab_display_title}】**. Ask any business diagnostic question or click the quick prompts above!"
+            )
+            st.session_state[hist_key] = [{"role": "assistant", "content": welcome_intro}]
+
+        # Chat conversation messages container
+        with st.container(height=380, border=True):
+            for msg in st.session_state[hist_key]:
+                avatar = "🤖" if msg["role"] == "assistant" else "👤"
+                with st.chat_message(msg["role"], avatar=avatar):
+                    st.markdown(msg["content"])
+
+        # Chat Input Form
+        with st.form(key=f"advisor_form_{safe_scope_id}", clear_on_submit=True):
+            f_inp, f_btn = st.columns([4.2, 1.2])
+            with f_inp:
+                form_text = st.text_input(
+                    "向 AI 顧問提問...",
+                    placeholder="向 AI 顧問提問（例：分析指標異常、制定改善策略...）" if is_zh else "Ask AI Advisor...",
+                    label_visibility="collapsed",
+                    key=f"inp_text_{safe_scope_id}",
+                )
+            with f_btn:
+                form_submitted = st.form_submit_button("送出 🚀" if is_zh else "Send 🚀", type="primary", width="stretch")
+
+        query_to_run = clicked_prompt_query or (form_text.strip() if form_submitted and form_text.strip() else None)
+
+        if query_to_run:
+            st.session_state[hist_key].append({"role": "user", "content": query_to_run})
+
+            with st.spinner("🤖 Gemini 正在調用 MBB 顧問框架推演模型..." if is_zh else "🤖 Gemini analyzing with MBB consulting framework..."):
+                reply_report = _execute_tab_scoped_diagnostic(
+                    user_query=query_to_run,
+                    tab_title=tab_display_title,
+                    tab_payload=tab_payload,
+                    api_key=st.session_state.get("gemini_api_key", ""),
+                    preferred_model=st.session_state.get("drawer_selected_model", "auto"),
+                    language=language,
+                )
+                st.session_state[hist_key].append({"role": "assistant", "content": reply_report})
+            st.rerun()
+
+        # Collapsible Settings Expander (Matching ERP's API key toggle, collapsed by default)
+        current_key = st.session_state.get("gemini_api_key", "") or os.getenv("GEMINI_API_KEY", "")
+        expander_title = (
+            f"⚙️ 設定 Gemini API Key {'(✅ 已連線即時模型)' if current_key else '(💡 使用內建 MBB 推演·可點此填寫金鑰)'}"
+            if is_zh
+            else f"⚙️ Gemini API Key Settings {'(Connected)' if current_key else '(Offline MBB Engine)'}"
+        )
+
+        with st.expander(expander_title, expanded=False):
+            # LocalStorage Auto-loader
             st.html(
                 """
                 <script>
-                try {
-                    localStorage.removeItem("platzi_gemini_api_key");
-                } catch(e) {}
+                (function() {
+                    try {
+                        const saved = localStorage.getItem("platzi_gemini_api_key");
+                        if (saved) {
+                            const inputs = window.parent.document.querySelectorAll('input[type="password"]');
+                            inputs.forEach(inp => {
+                                if (!inp.value) {
+                                    inp.value = saved;
+                                    inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                    inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            });
+                        }
+                    } catch(e) {}
+                })();
                 </script>
                 """
             )
 
-        st.caption(
-            "🔒 **BYOK 安全模式**：金鑰僅保留於您的個人瀏覽器中。[👉 點此免費獲取 API Key](https://aistudio.google.com/app/apikey)"
-            if is_zh
-            else "🔒 **BYOK Security**: Keys remain strictly on your local browser. [👉 Get a Free API Key](https://aistudio.google.com/app/apikey)"
-        )
+            user_input_key = st.text_input(
+                "輸入 Google Gemini API Key" if is_zh else "Enter Google Gemini API Key",
+                type="password",
+                value=current_key,
+                placeholder="AIzaSy...",
+                key=f"key_input_{safe_scope_id}",
+                help="輸入您的 Gemini API Key 啟用雲端即時 LLM 推論。未輸入時自動啟用內建 MBB 諮詢引擎。",
+            )
 
-        # Model Selection
-        st.selectbox(
-            "⚡ 選擇偏好 Gemini 模型版本：" if is_zh else "⚡ Preferred Gemini Model:",
-            options=["auto", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-3.8-flash"],
-            format_func=lambda x: {
-                "auto": "🚀 自動最適配（遇負載自動降級 3.8 ➔ 3.6 ➔ 2.5）" if is_zh else "🚀 Auto Adaptive (Cascade 3.8 -> 3.6 -> 2.5)",
-                "gemini-3.6-flash": "⚡ Gemini 3.6 Flash（高可用推薦）" if is_zh else "⚡ Gemini 3.6 Flash (Recommended High Availability)",
-                "gemini-2.5-flash": "🛡️ Gemini 2.5 Flash（穩定基準）" if is_zh else "🛡️ Gemini 2.5 Flash (Stable Baseline)",
-                "gemini-3.8-flash": "⭐ Gemini 3.8 Flash（最新旗艦前沿）" if is_zh else "⭐ Gemini 3.8 Flash (Latest Flagship)",
-            }.get(x, x),
-            key="drawer_selected_model",
-        )
+            if user_input_key:
+                st.session_state["gemini_api_key"] = user_input_key.strip()
+                clean_k = user_input_key.strip()
+                if clean_k.startswith("AIza"):
+                    st.success("✅ 金鑰格式正確 (AIzaSy...)" if is_zh else "✅ Valid API Key format")
+                elif clean_k.startswith("AQ.") or clean_k.startswith("ya29."):
+                    st.error("❌ OAuth 憑證，非 Gemini API Key" if is_zh else "❌ OAuth token, not Gemini Key")
+                else:
+                    st.warning("⚠️ 提醒：通常以 AIzaSy 開頭" if is_zh else "⚠️ Notice: Usually starts with AIzaSy")
 
-    # Reset Chat Button
-    if len(st.session_state[hist_key]) > 1:
-        if st.button("🗑️ 清空對話記錄" if is_zh else "🗑️ Clear Chat History", key=f"clear_hist_{scope_hash}", width="stretch", type="secondary"):
-            del st.session_state[hist_key]
-            st.rerun()
+            remember_key = st.checkbox(
+                "💾 在此瀏覽器記住金鑰 (LocalStorage)" if is_zh else "💾 Remember Key in browser",
+                value=st.session_state.get("remember_gemini_key", False),
+                key=f"remember_key_cb_{safe_scope_id}",
+            )
+
+            if remember_key and user_input_key:
+                st.session_state["remember_gemini_key"] = True
+                st.html(
+                    f"""
+                    <script>
+                    try {{ localStorage.setItem("platzi_gemini_api_key", "{user_input_key.strip()}"); }} catch(e) {{}}
+                    </script>
+                    """
+                )
+            elif not remember_key:
+                st.session_state["remember_gemini_key"] = False
+                st.html(
+                    """
+                    <script>
+                    try { localStorage.removeItem("platzi_gemini_api_key"); } catch(e) {}
+                    </script>
+                    """
+                )
+
+            st.selectbox(
+                "⚡ 偏好 Gemini 模型：" if is_zh else "⚡ Preferred Model:",
+                options=["auto", "gemini-2.5-flash", "gemini-3.6-flash", "gemini-3.8-flash"],
+                format_func=lambda x: {
+                    "auto": "🚀 自動最適配（遇負載自動降級）" if is_zh else "🚀 Auto Adaptive",
+                    "gemini-2.5-flash": "🛡️ Gemini 2.5 Flash（穩定推薦）" if is_zh else "🛡️ Gemini 2.5 Flash",
+                    "gemini-3.6-flash": "⚡ Gemini 3.6 Flash" if is_zh else "⚡ Gemini 3.6 Flash",
+                    "gemini-3.8-flash": "⭐ Gemini 3.8 Flash" if is_zh else "⭐ Gemini 3.8 Flash",
+                }.get(x, x),
+                key=f"model_sel_{safe_scope_id}",
+            )
+
+        # Clear Chat History Button
+        if len(st.session_state[hist_key]) > 1:
+            if st.button("🗑️ 清空對話記錄" if is_zh else "🗑️ Clear Chat History", key=f"clear_hist_{safe_scope_id}", width="stretch", type="secondary"):
+                del st.session_state[hist_key]
+                st.rerun()
 
