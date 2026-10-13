@@ -162,3 +162,56 @@ def test_get_gemini_candidate_models():
     )
     assert cands_36[0] == "gemini-3.6-flash"
     assert "gemini-2.5-flash" in cands_36
+
+
+def test_tab_scoped_offline_diagnostic():
+    from fastmcp_diagnostic import (
+        _execute_tab_scoped_diagnostic,
+        _synthesize_offline_tab_report,
+    )
+
+    sample_kpis = {
+        "總銷售額 (GMV)": "$500,000.00",
+        "實質淨營收 (Net Revenue)": "$420,000.00",
+        "取消率": "5.1%",
+        "退款率": "3.2%",
+    }
+    sample_payload = {
+        "title": "營收走勢與轉換漏斗",
+        "kpis": sample_kpis,
+    }
+
+    report = _synthesize_offline_tab_report(
+        user_query="分析本期淨營收折損原因",
+        tab_title="營收走勢與轉換漏斗",
+        kpis=sample_kpis,
+        tab_payload=sample_payload,
+        is_zh=True,
+    )
+
+    assert "MBB 核心診斷 Action Title" in report
+    assert "MECE 獲利樹漏斗分解" in report
+    assert "30-60-90 天落地藍圖" in report
+    assert "$420,000.00" in report
+
+    # Test execute wrapper
+    wrapped_report = _execute_tab_scoped_diagnostic(
+        user_query="分析本期淨營收折損原因",
+        tab_title="營收走勢與轉換漏斗",
+        tab_payload=sample_payload,
+        api_key="",
+        language="zh",
+    )
+    assert "MBB 核心診斷 Action Title" in wrapped_report
+
+    # Test english version
+    report_en = _synthesize_offline_tab_report(
+        user_query="Analyze net revenue leakage",
+        tab_title="Revenue Trends & Funnel",
+        kpis=sample_kpis,
+        tab_payload=sample_payload,
+        is_zh=False,
+    )
+    assert "MBB Executive Action Title" in report_en
+    assert "30-60-90 Day Tactical Roadmap" in report_en
+

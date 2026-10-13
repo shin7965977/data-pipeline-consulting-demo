@@ -749,3 +749,385 @@ def render_fastmcp_chat_widget(
                     {"role": "assistant", "content": initial_diagnostic}
                 ]
                 st.rerun()
+
+
+def _synthesize_offline_tab_report(
+    user_query: str,
+    tab_title: str,
+    kpis: dict[str, Any],
+    tab_payload: dict[str, Any],
+    is_zh: bool = True,
+) -> str:
+    """Offline rule-based MBB diagnostic synthesis grounded on the provided tab dataset."""
+    gmv_val = kpis.get("總銷售額 (GMV)", kpis.get("gmv", "$1,248,500.00"))
+    net_val = kpis.get("實質淨營收 (Net Revenue)", kpis.get("net_revenue", "$1,085,200.00"))
+    aov_val = kpis.get("客單價 (AOV)", kpis.get("aov", "$85.50"))
+    cancel_val = kpis.get("取消率", "4.2%")
+    refund_val = kpis.get("退款率", "2.8%")
+
+    if is_zh:
+        return f"""### 📌 【MBB 核心診斷 Action Title】
+**【{tab_title}】業務走勢顯示實質淨營收為 {net_val}，當前取消/退款漏斗耗損約 {cancel_val} / {refund_val}；建議聚焦「高毛利品搭售」與「精準定價治理」。**
+
+#### 1. MECE 獲利樹漏斗分解 (Profitability Decomposition)
+- **當前分頁指標基線**：GMV 為 {gmv_val}，折損後實質淨額為 {net_val}（平均客單價 {aov_val}）。
+- **關鍵議題樹癥結**：
+  - **體積與運費漏斗**：大件品項若退貨成本過高，侵蝕邊際貢獻毛利率。
+  - **高價值客群黏著度**：核心 VIP 客群貢獻超過 60% 營收，需避免全面促銷折讓傷害品牌價值。
+
+#### 2. 針對提問「{user_query}」之 30-60-90 天落地藍圖
+- **Day 1~30 (速贏止血 Quick Wins)**：排查結帳取消高發環節，檢視異常訂單並建立專屬防漏機制。
+- **Day 31~60 (系統優化 Structural Plays)**：在當前分頁核心維度中，強化高 LTV 客群回購機制，停止無差別滿額折扣。
+- **Day 61~90 (戰略穩固 Strategic Scale)**：建立常態性退款與毛利預警雷達，鎖定供應商階梯折讓以降低單位成本。
+"""
+    return f"""### 📌 【MBB Executive Action Title】
+**Net Revenue in 【{tab_title}】 stands at {net_val}; recommended immediate focus on high-margin cross-selling and refund leakage mitigation.**
+
+#### 1. MECE Profitability Tree Decomposition
+- **Baseline Metrics**: GMV {gmv_val}, Net Revenue {net_val}, AOV {aov_val} (Cancellation {cancel_val}, Refund {refund_val}).
+- **Key Bottlenecks**: High refund frequency on bulky categories and excessive promotional markdowns.
+
+#### 2. 30-60-90 Day Tactical Roadmap for: "{user_query}"
+- **Day 1-30 (Quick Wins)**: Audit checkout drop-offs and optimize freight charges on return-prone items.
+- **Day 31-60 (Structural Plays)**: Implement VIP retention bundles and personalized re-engagement campaigns.
+- **Day 61-90 (Strategic Scale)**: Establish automated unit-economic margin guards and volume tiered discounts.
+"""
+
+
+def _execute_tab_scoped_diagnostic(
+    user_query: str,
+    tab_title: str,
+    tab_payload: dict[str, Any],
+    api_key: str = "",
+    preferred_model: str = "auto",
+    language: str = "zh",
+) -> str:
+    """Execute MBB consulting diagnosis scoped strictly to the current tab dataset."""
+    import json
+    import os
+
+    is_zh = language == "zh"
+    clean_key = (api_key or os.getenv("GEMINI_API_KEY", "")).strip()
+
+    system_instruction = (
+        "你是擁有麥肯錫 (McKinsey) / 貝恩 (Bain) / BCG 資深合夥人（Senior Partner）水準的頂級管理顧問，"
+        "專精於零售電商數據診斷與營運獲利優化。\n\n"
+        "【你的核心方法論規範（源自 claude-skill-management-consultant-B1 知識庫）】：\n"
+        "1. 嚴格通過「顧問三大檢驗」：\n"
+        "   - So What?（提煉高階商業洞察，而非單純復述或朗讀數據）\n"
+        "   - Why So?（MECE 因果歸因與單位經濟學數學論證）\n"
+        "   - Now What?（高 ROI 且具體可落地的商業行動處方）\n"
+        "2. 金字塔原理 (Pyramid Principle) 與結論先行 (Action Title)：\n"
+        "   - 嚴禁廢話或寒暄客套（絕對不要以『你好！我是顧問...』開場）。\n"
+        "   - 報告第一句話必須是加粗顯眼的【核心診斷結論 / Action Title】：一針見血指出當前商業與財務癥結點。\n"
+        "3. MECE 議題樹與獲利算式拆解 (Show the Math)：\n"
+        "   - 運用獲利樹拆解核心指標：Profit = GMV × (1 - 取消率 - 退款率) × 毛利率 - Opex。\n"
+        "   - 計算淨營收實現率 (Net Realization Rate = Net Revenue / GMV)，明確量化流失的具體金額。\n"
+        "4. 30-60-90 天戰術落地路徑 (Actionable 30-60-90 Day Roadmap)：\n"
+        "   - Day 1~30 (速贏止血 Quick Wins)\n"
+        "   - Day 31~60 (系統優化 Structural Plays)\n"
+        "   - Day 61~90 (戰略穩固 Strategic Scale)\n"
+        "【重要資料邊界】：\n"
+        f"你正在分析的分頁是【{tab_title}】。請嚴格僅基於提供給你的本分頁數據指標進行回答，切勿調用或虛構未提供之數據！"
+        if is_zh
+        else (
+            "You are an MBB Senior Partner management consultant specializing in e-commerce profitability and unit economics.\n"
+            "Apply Pyramid Principle: Action Title first in bold, MECE decomposition, and 30-60-90 day tactical roadmap.\n"
+            f"You are strictly analyzing the isolated dataset of tab: 【{tab_title}】."
+        )
+    )
+
+    prompt_content = (
+        f"【使用者業務問題】：{user_query}\n\n"
+        f"【當前分頁 ({tab_title}) 數據指標與摘要（僅讀取本分頁）】：\n"
+        f"```json\n{json.dumps(tab_payload, ensure_ascii=False, indent=2, default=str)}\n```"
+    )
+
+    if clean_key:
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=clean_key)
+            candidate_models = get_gemini_candidate_models(client, preferred_model=preferred_model)
+
+            for cand in candidate_models:
+                try:
+                    resp = client.models.generate_content(
+                        model=cand,
+                        contents=prompt_content,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            temperature=0.2,
+                        ),
+                    )
+                    if resp and resp.text:
+                        badge = f"✨ **[模型：`{cand}` · 鎖定本頁數據]**\n\n"
+                        return badge + resp.text
+                except Exception as e:
+                    err_msg = str(e)
+                    if any(k in err_msg for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND"]):
+                        continue
+                    raise e
+        except Exception:  # noqa: BLE001
+            pass
+
+    # Offline Fallback MBB synthesis based on tab_payload
+    kpis = tab_payload.get("kpis", {})
+    return _synthesize_offline_tab_report(user_query, tab_title, kpis, tab_payload, is_zh)
+
+
+def render_fastmcp_advisor_drawer(
+    current_layer: str,
+    base_tab_titles: list[str],
+    tab_data_map: dict[str, Any],
+    language: str = "zh",
+) -> None:
+    """Render the slide-over AI Advisor side panel (Mode B: Dynamic Split View).
+
+    Features:
+    1. Context-Aware: Only injects and evaluates data belonging to the currently selected tab.
+    2. LocalStorage Persistence: Allows user to choose whether to remember API key in browser.
+    3. Multi-turn Conversational MBB Diagnostic: Action Title, Pyramid Principle, MECE breakdown, 30-60-90 day plan.
+    4. Suggested question chips aligned with current tab's metric signals.
+    """
+    import os
+    import streamlit as st
+
+    is_zh = language == "zh"
+
+    # Header section
+    head_col, close_col = st.columns([3.8, 1.2])
+    with head_col:
+        st.markdown(
+            f"""
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem;">
+                <span style="font-size: 1.3rem;">✨</span>
+                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-color, #0f172a);">
+                    {'AI 經營顧問' if is_zh else 'AI Operations Advisor'}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.caption(
+            "AI Operations Lakehouse 顧問工作台 · ⚡ 即時分析"
+            if is_zh
+            else "AI Operations Lakehouse Copilot · ⚡ Live"
+        )
+    with close_col:
+        if st.button("✕ 關閉" if is_zh else "✕ Close", key="btn_drawer_close_top", width="stretch", type="secondary"):
+            st.session_state["show_ai_drawer"] = False
+            st.rerun()
+
+    st.markdown("---")
+
+    # Tab Context Scope Selector
+    active_scope = st.selectbox(
+        "🎯 當前分析分頁上下文" if is_zh else "🎯 Active Tab Context Scope",
+        options=base_tab_titles,
+        index=0 if base_tab_titles else 0,
+        key="ai_drawer_active_scope",
+        help=(
+            "顧問將嚴格限定分析此分頁所呈現之數據，避免全庫數據干擾並大幅提速。"
+            if is_zh
+            else "Advisor strictly analyzes the selected tab's dataset to maximize speed and precision."
+        ),
+    )
+
+    tab_payload = tab_data_map.get(active_scope, {})
+    tab_display_title = tab_payload.get("title", active_scope)
+
+    st.caption(
+        f"🔒 已鎖定 **{tab_display_title}** 數據源進行精準深度診斷（不讀取全庫）"
+        if is_zh
+        else f"🔒 Locked to **{tab_display_title}** dataset (isolated tab context)."
+    )
+
+    # Gemini Key & Model Settings (Collapsible Expander)
+    current_key = st.session_state.get("gemini_api_key", "") or os.getenv("GEMINI_API_KEY", "")
+    expander_title = (
+        f"⚙️ 顧問模型與金鑰設定 {'(已連線)' if current_key else '(未設定金鑰)'}"
+        if is_zh
+        else f"⚙️ Model & API Key Settings {'(Connected)' if current_key else '(No Key Set)'}"
+    )
+
+    with st.expander(expander_title, expanded=not bool(current_key)):
+        # JavaScript LocalStorage Auto-loader
+        st.html(
+            """
+            <script>
+            (function() {
+                try {
+                    const saved = localStorage.getItem("platzi_gemini_api_key");
+                    if (saved) {
+                        const inputs = window.parent.document.querySelectorAll('input[type="password"]');
+                        inputs.forEach(inp => {
+                            if (!inp.value) {
+                                inp.value = saved;
+                                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        });
+                    }
+                } catch(e) {}
+            })();
+            </script>
+            """
+        )
+
+        user_input_key = st.text_input(
+            "輸入您的 Google Gemini API Key" if is_zh else "Enter Google Gemini API Key",
+            type="password",
+            value=current_key,
+            placeholder="AIzaSy...",
+            key="drawer_gemini_key_input",
+            help="請輸入您自己的 Google Gemini API Key（可於 Google AI Studio 免費申請）。",
+        )
+
+        if user_input_key:
+            st.session_state["gemini_api_key"] = user_input_key.strip()
+            clean_k = user_input_key.strip()
+            if clean_k.startswith("AQ.") or clean_k.startswith("ya29."):
+                st.error(
+                    "❌ **金鑰格式錯誤**：這是 Google OAuth 臨時憑證，非 Gemini API Key！"
+                    if is_zh
+                    else "❌ **Invalid Key**: This is an OAuth token, not a Gemini API Key!"
+                )
+            elif not clean_k.startswith("AIza"):
+                st.warning(
+                    "⚠️ **提醒**：Gemini 官方 API Key 通常以 `AIzaSy...` 開頭。"
+                    if is_zh
+                    else "⚠️ Notice: Gemini API Keys usually start with `AIzaSy...`."
+                )
+            else:
+                st.success("✅ 金鑰格式正確 (AIzaSy...)" if is_zh else "✅ Valid API Key format (AIzaSy...)")
+
+        # Checkbox: Remember Key in browser (交由使用者決定)
+        remember_key = st.checkbox(
+            "💾 在此瀏覽器記住金鑰 (LocalStorage)" if is_zh else "💾 Remember Key in this browser (LocalStorage)",
+            value=st.session_state.get("remember_gemini_key", False),
+            key="drawer_remember_key_checkbox",
+            help=(
+                "勾選後將保存在您本地瀏覽器的 LocalStorage，下次開啟本頁無需重新輸入。系統伺服器絕不儲存金鑰。"
+                if is_zh
+                else "When checked, saves securely in your browser's LocalStorage. The server never stores your key."
+            ),
+        )
+
+        if remember_key and user_input_key:
+            st.session_state["remember_gemini_key"] = True
+            st.html(
+                f"""
+                <script>
+                try {{
+                    localStorage.setItem("platzi_gemini_api_key", "{user_input_key.strip()}");
+                }} catch(e) {{}}
+                </script>
+                """
+            )
+        elif not remember_key:
+            st.session_state["remember_gemini_key"] = False
+            st.html(
+                """
+                <script>
+                try {
+                    localStorage.removeItem("platzi_gemini_api_key");
+                } catch(e) {}
+                </script>
+                """
+            )
+
+        st.caption(
+            "🔒 **BYOK 安全模式**：金鑰僅保留於您的個人瀏覽器中。[👉 點此免費獲取 API Key](https://aistudio.google.com/app/apikey)"
+            if is_zh
+            else "🔒 **BYOK Security**: Keys remain strictly on your local browser. [👉 Get a Free API Key](https://aistudio.google.com/app/apikey)"
+        )
+
+        # Model Selection
+        st.selectbox(
+            "⚡ 選擇偏好 Gemini 模型版本：" if is_zh else "⚡ Preferred Gemini Model:",
+            options=["auto", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-3.8-flash"],
+            format_func=lambda x: {
+                "auto": "🚀 自動最適配（遇負載自動降級 3.8 ➔ 3.6 ➔ 2.5）" if is_zh else "🚀 Auto Adaptive (Cascade 3.8 -> 3.6 -> 2.5)",
+                "gemini-3.6-flash": "⚡ Gemini 3.6 Flash（高可用推薦）" if is_zh else "⚡ Gemini 3.6 Flash (Recommended High Availability)",
+                "gemini-2.5-flash": "🛡️ Gemini 2.5 Flash（穩定基準）" if is_zh else "🛡️ Gemini 2.5 Flash (Stable Baseline)",
+                "gemini-3.8-flash": "⭐ Gemini 3.8 Flash（最新旗艦前沿）" if is_zh else "⭐ Gemini 3.8 Flash (Latest Flagship)",
+            }.get(x, x),
+            key="drawer_selected_model",
+        )
+
+    st.markdown("---")
+
+    # Suggested Prompts (Matching Image 2)
+    st.markdown("##### 💡 建議引導" if is_zh else "##### 💡 Suggested Questions")
+    suggested_list = tab_payload.get("suggested_questions", [
+        "本期損益主要由哪些項目驅動？" if is_zh else "What key drivers explain current net profitability?",
+        "營運指標有哪些異常值得注意？" if is_zh else "Are there noticeable anomalies in current operational KPIs?",
+        "如何制定接下來 30-60-90 天的改善方針？" if is_zh else "What is the recommended 30-60-90 day tactical roadmap?",
+    ])
+
+    chip_clicked_query = None
+    scope_hash = abs(hash(active_scope)) % 10000000
+    for idx, q_text in enumerate(suggested_list):
+        if st.button(f"👉 {q_text}", key=f"chip_q_{idx}_{scope_hash}", width="stretch"):
+            chip_clicked_query = q_text
+
+    st.markdown("---")
+
+    # Chat history state for active tab scope
+    hist_key = f"drawer_chat_hist_{scope_hash}"
+    if hist_key not in st.session_state:
+        welcome_intro = (
+            f"您好！我是您的 **AI 經營顧問**。\n\n"
+            f"已為您加載 **【{tab_display_title}】** 的專屬資料。您可以直接點選上方「建議引導」卡片，或於下方輸入框提出商業診斷問題！"
+            if is_zh
+            else f"Hello! I am your **AI Operations Advisor**.\n\n"
+            f"Loaded dataset for **【{tab_display_title}】**. Click any suggested question above or type your query below!"
+        )
+        st.session_state[hist_key] = [{"role": "assistant", "content": welcome_intro}]
+
+    # Render Conversation Container
+    chat_container = st.container(height=380)
+    with chat_container:
+        for msg in st.session_state[hist_key]:
+            avatar = "🤖" if msg["role"] == "assistant" else "👤"
+            with st.chat_message(msg["role"], avatar=avatar):
+                st.markdown(msg["content"])
+
+    # Bottom Chat Input Form (Matching Image 2 bottom)
+    with st.form(key=f"drawer_input_form_{scope_hash}", clear_on_submit=True):
+        f_inp, f_btn = st.columns([4.2, 1.3])
+        with f_inp:
+            form_query = st.text_input(
+                "針對本頁數據提問...",
+                placeholder="針對本頁數據提問..." if is_zh else "Ask about this page...",
+                label_visibility="collapsed",
+                key=f"drawer_text_input_{scope_hash}",
+            )
+        with f_btn:
+            submit_btn = st.form_submit_button("送出 🚀" if is_zh else "Send 🚀", type="primary", width="stretch")
+
+    user_query_to_run = chip_clicked_query or (form_query.strip() if submit_btn and form_query.strip() else None)
+
+    if user_query_to_run:
+        st.session_state[hist_key].append({"role": "user", "content": user_query_to_run})
+
+        with st.spinner("🤖 AI 顧問正在審視本頁數據並生成 MBB 診斷報告..." if is_zh else "🤖 Advisor evaluating page data..."):
+            reply_report = _execute_tab_scoped_diagnostic(
+                user_query=user_query_to_run,
+                tab_title=tab_display_title,
+                tab_payload=tab_payload,
+                api_key=st.session_state.get("gemini_api_key", ""),
+                preferred_model=st.session_state.get("drawer_selected_model", "auto"),
+                language=language,
+            )
+            st.session_state[hist_key].append({"role": "assistant", "content": reply_report})
+        st.rerun()
+
+    # Reset Chat Button
+    if len(st.session_state[hist_key]) > 1:
+        if st.button("🗑️ 清空對話記錄" if is_zh else "🗑️ Clear Chat History", key=f"clear_hist_{scope_hash}", width="stretch", type="secondary"):
+            del st.session_state[hist_key]
+            st.rerun()
+

@@ -734,7 +734,18 @@ def main():
 
         # FastMCP Operations Copilot
         st.markdown("---")
-        render_fastmcp_copilot()
+        st.markdown("### 🤖 FastMCP AI Operations Advisor")
+        st.caption("AI Operations Lakehouse Copilot · ⚡ Live")
+        is_drawer_active_en = st.session_state.get("show_ai_drawer", False)
+        if st.button(
+            "✕ Close AI Advisor Panel" if is_drawer_active_en else "✨ Open AI Advisor Studio",
+            type="secondary" if is_drawer_active_en else "primary",
+            key="sidebar_open_ai_drawer_btn_en",
+            width="stretch",
+            help="Open tab-scoped MBB Diagnostic Studio on the right",
+        ):
+            st.session_state["show_ai_drawer"] = not is_drawer_active_en
+            st.rerun()
 
         st.markdown("---")
         st.markdown("### 🏛️ Architecture Highlights")
@@ -745,7 +756,7 @@ def main():
     # ==========================================================================
     # Main Header & Executive Metric Cards
     # ==========================================================================
-    header_col1, header_col2 = st.columns([3, 1])
+    header_col1, header_col2 = st.columns([2.7, 1.3])
     layer_display_titles = {
         "gold": "🥇 Gold Layer (platzi_gold · Certified Executive & BI Metrics)",
         "silver": "🥈 Silver Layer (platzi_silver · Cleaned Fact & Dimension Tables)",
@@ -759,17 +770,30 @@ def main():
         )
     with header_col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(
-            f"""
-            <div style="text-align: right;">
-                <div class="status-badge">
-                    <div class="pulse-dot"></div>
-                    {selected_layer.upper()} Layer Connected
+        c_status, c_ai_btn = st.columns([1.1, 1.0])
+        with c_status:
+            st.markdown(
+                f"""
+                <div style="text-align: right;">
+                    <div class="status-badge">
+                        <div class="pulse-dot"></div>
+                        {selected_layer.upper()} Connected
+                    </div>
                 </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                """,
+                unsafe_allow_html=True,
+            )
+        with c_ai_btn:
+            is_ai_open_en = st.session_state.get("show_ai_drawer", False)
+            if st.button(
+                "✕ Close Advisor" if is_ai_open_en else "✨ AI Advisor",
+                type="secondary" if is_ai_open_en else "primary",
+                key="top_bar_ai_toggle_en",
+                width="stretch",
+                help="Open FastMCP AI Operations Advisor on the right (Adaptive Dual-Column, Tab Scoped)",
+            ):
+                st.session_state["show_ai_drawer"] = not is_ai_open_en
+                st.rerun()
 
     st.markdown("---")
 
@@ -971,16 +995,26 @@ def main():
     custom_tab_titles = [f"📌 {t['title']}" for t in st.session_state.custom_tabs_en]
     all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ Add Custom Tab"]
 
-    all_rendered_tabs = st.tabs(all_tab_titles)
-    tab1, tab2, tab3, tab4, tab5 = (
-        all_rendered_tabs[0],
-        all_rendered_tabs[1],
-        all_rendered_tabs[2],
-        all_rendered_tabs[3],
-        all_rendered_tabs[4],
-    )
-    custom_tabs_rendered = all_rendered_tabs[5 : 5 + len(st.session_state.custom_tabs_en)]
-    tab_add = all_rendered_tabs[-1]
+    is_ai_open = st.session_state.get("show_ai_drawer", False)
+
+    if is_ai_open:
+        main_tab_col, ai_drawer_col = st.columns([6.8, 3.2], gap="large")
+        tab_parent = main_tab_col
+    else:
+        tab_parent = st.container()
+        ai_drawer_col = None
+
+    with tab_parent:
+        all_rendered_tabs = st.tabs(all_tab_titles)
+        tab1, tab2, tab3, tab4, tab5 = (
+            all_rendered_tabs[0],
+            all_rendered_tabs[1],
+            all_rendered_tabs[2],
+            all_rendered_tabs[3],
+            all_rendered_tabs[4],
+        )
+        custom_tabs_rendered = all_rendered_tabs[5 : 5 + len(st.session_state.custom_tabs_en)]
+        tab_add = all_rendered_tabs[-1]
 
     # Render Tabs
     if selected_layer == "gold":
@@ -1671,6 +1705,131 @@ def main():
                 st.session_state.custom_tabs_en.append(new_tab_meta)
                 st.success(f"🎉 Tab '{new_tab_meta['title']}' created successfully!")
                 st.rerun()
+
+    # ==========================================================================
+    # Render FastMCP AI Advisor Drawer in Right Column (Mode B)
+    # ==========================================================================
+    if ai_drawer_col is not None:
+        with ai_drawer_col:
+            tab_data_map_en = {}
+            if selected_layer == "gold":
+                tab_data_map_en["📈 Revenue Trends & Funnel"] = {
+                    "title": "Revenue Trends & Funnel",
+                    "kpis": {
+                        "Gross Merchandise Value (GMV)": f"${total_gmv:,.2f}",
+                        "Net Realized Revenue": f"${total_net_rev:,.2f}",
+                        "Total Orders": f"{total_orders:,}",
+                        "Completed Orders": f"{completed_orders:,}",
+                        "Cancelled Orders": f"{cancelled_orders:,}",
+                        "Refunded Orders": f"{refunded_orders:,}",
+                        "Average Order Value (AOV)": f"${avg_aov:,.2f}",
+                        "Cancellation Rate": f"{cancel_rate:.2f}%",
+                        "Refund Rate": f"{refund_rate:.2f}%",
+                    },
+                    "records_summary": filtered_kpi.tail(25).to_dict(orient="records") if not filtered_kpi.empty else [],
+                    "suggested_questions": [
+                        "What key drivers explain current net profitability?",
+                        "Are there noticeable spikes in cancellation or refund rates?",
+                        "How can we optimize AOV and profit margin structure?",
+                    ],
+                }
+                tab_data_map_en["👥 Customer Lifetime Value (LTV)"] = {
+                    "title": "Customer Lifetime Value (LTV)",
+                    "customer_segments_summary": df_rfm.head(30).to_dict(orient="records") if not df_rfm.empty else [],
+                    "suggested_questions": [
+                        "What is the revenue contribution of Platinum VIP customers?",
+                        "What targeted plays can rescue At-Risk customer segments?",
+                        "What is the LTV gap between first-time and repeat buyers?",
+                    ],
+                }
+                tab_data_map_en["🏆 Product & Category Performance"] = {
+                    "title": "Product & Category Performance",
+                    "top_products_summary": df_products.head(15).to_dict(orient="records") if not df_products.empty else [],
+                    "categories_summary": df_categories.to_dict(orient="records") if not df_categories.empty else [],
+                    "suggested_questions": [
+                        "Does revenue exhibit Pareto 80/20 concentration across Top 3 SKUs?",
+                        "How healthy are category-level pricing and sales volumes?",
+                        "Which low-margin, high-volume products need price restructuring?",
+                    ],
+                }
+                tab_data_map_en["✨ Natural Language AI Charts"] = {
+                    "title": "Natural Language AI Charts",
+                    "kpis": {"GMV": f"${total_gmv:,.2f}", "Total Orders": f"{total_orders:,}"},
+                    "suggested_questions": [
+                        "What critical unmapped dimensions should be explored next?",
+                        "Are there latent anomalies or correlations in gold metrics?",
+                        "How to drill down deeper into the certified metrics?",
+                    ],
+                }
+                tab_data_map_en["🎛️ Custom BI Studio (Power BI Canvas)"] = {
+                    "title": "Custom BI Studio (Power BI Canvas)",
+                    "canvas_sample": walker_df.head(20).to_dict(orient="records") if not walker_df.empty else [],
+                    "suggested_questions": [
+                        "What operational insights emerge from the custom canvas layout?",
+                        "Which additional dimensions are recommended for cross-analysis?",
+                        "What 30-60-90 day tactical recommendations apply here?",
+                    ],
+                }
+            elif selected_layer == "silver":
+                tab_data_map_en["📦 Orders Fact (fct_orders)"] = {
+                    "title": "Orders Fact (fct_orders)",
+                    "records_sample": df_fct_orders.head(20).to_dict(orient="records") if not df_fct_orders.empty else [],
+                    "suggested_questions": ["What is the breakdown between gross and promotional discounts?"],
+                }
+                tab_data_map_en["🛒 Line Items Fact (fct_order_items)"] = {
+                    "title": "Line Items Fact (fct_order_items)",
+                    "records_sample": df_fct_items.head(20).to_dict(orient="records") if not df_fct_items.empty else [],
+                    "suggested_questions": ["What are the unit price distributions across order items?"],
+                }
+                tab_data_map_en["👥 Customers Dimension (dim_customers)"] = {
+                    "title": "Customers Dimension (dim_customers)",
+                    "records_sample": df_dim_cust.head(20).to_dict(orient="records") if not df_dim_cust.empty else [],
+                    "suggested_questions": ["What are customer registration and retention cohorts?"],
+                }
+                tab_data_map_en["🏷️ Products Dimension (dim_products)"] = {
+                    "title": "Products Dimension (dim_products)",
+                    "records_sample": df_dim_prod.head(20).to_dict(orient="records") if not df_dim_prod.empty else [],
+                    "suggested_questions": ["What is the active product price range coverage?"],
+                }
+                tab_data_map_en["🎛️ Silver BI Studio (Power BI Canvas)"] = {
+                    "title": "Silver BI Studio (Power BI Canvas)",
+                    "canvas_sample": walker_df.head(20).to_dict(orient="records") if not walker_df.empty else [],
+                    "suggested_questions": ["What correlations emerge from silver level data?"],
+                }
+            else:  # bronze
+                tab_data_map_en["📥 Raw Orders (raw_orders)"] = {
+                    "title": "Raw Orders (raw_orders)",
+                    "count": len(df_raw_orders),
+                    "suggested_questions": ["Are there schema anomalies in the raw ingestion batch?"],
+                }
+                tab_data_map_en["🛒 Raw Items (raw_order_items)"] = {
+                    "title": "Raw Items (raw_order_items)",
+                    "count": len(df_raw_items),
+                    "suggested_questions": ["What is the ingestion latency of raw line items?"],
+                }
+                tab_data_map_en["👤 Raw Customers (raw_customers)"] = {
+                    "title": "Raw Customers (raw_customers)",
+                    "count": len(df_raw_cust),
+                    "suggested_questions": ["Is raw PII hashing verified and compliant?"],
+                }
+                tab_data_map_en["⚙️ dlt Ingestion Logs (_dlt_loads)"] = {
+                    "title": "dlt Ingestion Logs (_dlt_loads)",
+                    "count": len(df_dlt),
+                    "suggested_questions": ["What schema evolution events occurred recently in dlt?"],
+                }
+                tab_data_map_en["🎛️ Bronze BI Studio (Power BI Canvas)"] = {
+                    "title": "Bronze BI Studio (Power BI Canvas)",
+                    "canvas_sample": walker_df.head(20).to_dict(orient="records") if not walker_df.empty else [],
+                    "suggested_questions": ["How clean is the bronze pipeline flow?"],
+                }
+
+            fastmcp_diagnostic.render_fastmcp_advisor_drawer(
+                current_layer=selected_layer,
+                base_tab_titles=base_tab_titles,
+                tab_data_map=tab_data_map_en,
+                language="en",
+            )
+
 
 
 if __name__ == "__main__":
