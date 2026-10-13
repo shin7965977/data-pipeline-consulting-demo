@@ -1,7 +1,7 @@
 import logging
 import random
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
@@ -67,7 +67,7 @@ class PlatziStoreAdapter:
                                 "price": float(item["price"]),
                                 "category_id": category.get("id", 1),
                                 "category_name": category.get("name", "General"),
-                                "updated_at": datetime.now(timezone.utc).isoformat(),
+                                "updated_at": datetime.now(UTC).isoformat(),
                             }
                         )
                     if products:
@@ -86,7 +86,7 @@ class PlatziStoreAdapter:
                 "price": 25.0,
                 "category_id": 1,
                 "category_name": "Clothes",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             },
             {
                 "product_id": 2,
@@ -94,7 +94,7 @@ class PlatziStoreAdapter:
                 "price": 60.0,
                 "category_id": 1,
                 "category_name": "Clothes",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             },
             {
                 "product_id": 3,
@@ -102,7 +102,7 @@ class PlatziStoreAdapter:
                 "price": 120.0,
                 "category_id": 2,
                 "category_name": "Electronics",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             },
             {
                 "product_id": 4,
@@ -110,7 +110,7 @@ class PlatziStoreAdapter:
                 "price": 95.0,
                 "category_id": 2,
                 "category_name": "Electronics",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             },
             {
                 "product_id": 5,
@@ -118,7 +118,7 @@ class PlatziStoreAdapter:
                 "price": 210.0,
                 "category_id": 3,
                 "category_name": "Furniture",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             },
             {
                 "product_id": 6,
@@ -126,7 +126,7 @@ class PlatziStoreAdapter:
                 "price": 180.0,
                 "category_id": 3,
                 "category_name": "Furniture",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             },
             {
                 "product_id": 7,
@@ -134,7 +134,7 @@ class PlatziStoreAdapter:
                 "price": 85.0,
                 "category_id": 4,
                 "category_name": "Shoes",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             },
             {
                 "product_id": 8,
@@ -142,7 +142,7 @@ class PlatziStoreAdapter:
                 "price": 45.0,
                 "category_id": 5,
                 "category_name": "Accessories",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             },
         ]
 
@@ -160,8 +160,8 @@ class PlatziStoreAdapter:
                                 "customer_id": u["id"],
                                 "email": u["email"],
                                 "name": u["name"],
-                                "created_at": datetime.now(timezone.utc).isoformat(),
-                                "updated_at": datetime.now(timezone.utc).isoformat(),
+                                "created_at": datetime.now(UTC).isoformat(),
+                                "updated_at": datetime.now(UTC).isoformat(),
                             }
                         )
                     if customers:
@@ -187,10 +187,8 @@ class PlatziStoreAdapter:
                 "customer_id": i + 1,
                 "email": f"customer{i + 1}@example.com",
                 "name": name,
-                "created_at": (
-                    datetime.now(timezone.utc) - timedelta(days=120)
-                ).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": (datetime.now(UTC) - timedelta(days=120)).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             }
             for i, name in enumerate(names)
         ]
@@ -220,7 +218,7 @@ class PlatziStoreAdapter:
         orders: list[dict[str, Any]] = []
         order_items: list[dict[str, Any]] = []
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         order_seq = 1000
         item_seq = 5000
 

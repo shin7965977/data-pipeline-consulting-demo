@@ -1,6 +1,6 @@
 import argparse
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import dlt
 from dotenv import load_dotenv
@@ -78,9 +78,7 @@ def run_pipeline(
     else:
         since_timestamp = None
         if incremental_days:
-            since_timestamp = datetime.now(timezone.utc) - timedelta(
-                days=incremental_days
-            )
+            since_timestamp = datetime.now(UTC) - timedelta(days=incremental_days)
 
     if since_timestamp:
         print(

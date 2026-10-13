@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -81,7 +81,7 @@ def test_simulator_generates_canonical_records(adapter):
 
 def test_incremental_watermark_filtering(adapter):
     """Verify that incremental generation with a watermark only returns new/updated records."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=2)
+    cutoff = datetime.now(UTC) - timedelta(days=2)
     data = adapter.generate_synthetic_orders(
         days=5, orders_per_day=4, since_timestamp=cutoff
     )
