@@ -1092,21 +1092,62 @@ custom_tab_titles = [f"📌 {t['title']}" for t in st.session_state.custom_tabs]
 all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ 新增圖表分頁"]
 
 is_ai_open = st.session_state.get("show_ai_drawer", False)
+drawer_mode = st.session_state.get("drawer_mode", "overlay")
 
-if is_ai_open:
+if is_ai_open and drawer_mode == "split":
     main_tab_col, ai_drawer_col = st.columns([6.8, 3.2], gap="large")
     tab_parent = main_tab_col
 else:
+    main_tab_col = None
     tab_parent = st.container()
-    ai_drawer_col = None
+    ai_drawer_col = st.container() if is_ai_open else None
 
 with tab_parent:
-    all_rendered_tabs = st.tabs(all_tab_titles)
-    tab1, tab2, tab3, tab4, tab5 = all_rendered_tabs[0], all_rendered_tabs[1], all_rendered_tabs[2], all_rendered_tabs[3], all_rendered_tabs[4]
-    custom_tabs_rendered = all_rendered_tabs[5:5 + len(st.session_state.custom_tabs)]
-    tab_add = all_rendered_tabs[-1]
+    active_tab_nav_key = f"active_tab_nav_{selected_layer}"
+    if active_tab_nav_key not in st.session_state or st.session_state[active_tab_nav_key] not in all_tab_titles:
+        st.session_state[active_tab_nav_key] = all_tab_titles[0]
 
+    # Custom Segmented Control styling for modern tab look
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stSegmentedControl"] {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            background: rgba(15, 23, 42, 0.45) !important;
+            padding: 6px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            margin-bottom: 1.5rem !important;
+        }
+        div[data-testid="stSegmentedControl"] button {
+            border-radius: 8px !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            padding: 0.55rem 1.1rem !important;
+            border: none !important;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
+    active_tab = st.segmented_control(
+        "分頁導航",
+        options=all_tab_titles,
+        default=st.session_state[active_tab_nav_key],
+        key=active_tab_nav_key,
+        label_visibility="collapsed",
+    )
+    if not active_tab:
+        active_tab = st.session_state[active_tab_nav_key]
 
 # ==============================================================================
 # RENDER TABS ACCORDING TO SELECTED LAKEHOUSE LAYER
@@ -1116,7 +1157,7 @@ if selected_layer == "gold":
     # --------------------------------------------------------------------------
     # GOLD TAB 1: 每日營收走勢與轉換漏斗
     # --------------------------------------------------------------------------
-    with tab1:
+    if active_tab == base_tab_titles[0]:
         st.subheader("📊 每日 GMV 與實質淨營收趨勢")
         if not filtered_kpi.empty:
             fig_rev = go.Figure()
@@ -1189,7 +1230,7 @@ if selected_layer == "gold":
     # --------------------------------------------------------------------------
     # GOLD TAB 2: 客戶終身價值 (LTV) 分群
     # --------------------------------------------------------------------------
-    with tab2:
+    elif active_tab == base_tab_titles[1]:
         st.subheader("👥 客戶層級 (Customer Tiers) 佔比與價值貢獻")
         if not df_ltv.empty:
             col_ltv1, col_ltv2 = st.columns([1, 2])
@@ -1238,7 +1279,7 @@ if selected_layer == "gold":
     # --------------------------------------------------------------------------
     # GOLD TAB 3: 熱銷商品與類別排行
     # --------------------------------------------------------------------------
-    with tab3:
+    elif active_tab == base_tab_titles[2]:
         st.subheader("🏆 商品業績與銷售數量排行榜")
         if not df_prod.empty:
             c_p1, c_p2 = st.columns(2)
@@ -1280,7 +1321,7 @@ if selected_layer == "gold":
     # --------------------------------------------------------------------------
     # GOLD TAB 4: 自然語言 AI 智能圖表生成器 (NL-to-Visualization + FastMCP Mode A)
     # --------------------------------------------------------------------------
-    with tab4:
+    elif active_tab == base_tab_titles[3]:
         st.subheader("✨ 自然語言 AI 智能圖表生成器 (Text-to-Chart)")
         st.caption("🤖 支援自然繁體中文輸入任何圖表需求，AI 即時自動選取 BigQuery 金牌資料欄位並繪製互動式 Plotly 圖表")
 
@@ -1413,19 +1454,19 @@ if selected_layer == "gold":
     # --------------------------------------------------------------------------
     # GOLD TAB 5: 類 Power BI 雙軌自訂視覺化看板
     # --------------------------------------------------------------------------
-    with tab5:
+    elif active_tab == base_tab_titles[4]:
         render_powerbi_studio(
-            df_kpi=filtered_kpi,
-            df_ltv=df_ltv,
-            df_prod=df_prod,
-            key_prefix="pbi_main",
-        )
+                df_kpi=filtered_kpi,
+                df_ltv=df_ltv,
+                df_prod=df_prod,
+                key_prefix="pbi_main",
+            )
 
 elif selected_layer == "silver":
     # --------------------------------------------------------------------------
     # SILVER TAB 1: 訂單事實表 (fct_orders)
     # --------------------------------------------------------------------------
-    with tab1:
+    if active_tab == base_tab_titles[0]:
         st.subheader("📦 fct_orders 訂單清洗事實表概覽")
         if not df_orders.empty:
             c_s1, c_s2 = st.columns(2)
@@ -1472,7 +1513,7 @@ elif selected_layer == "silver":
     # --------------------------------------------------------------------------
     # SILVER TAB 2: 訂單品項事實表 (fct_order_items)
     # --------------------------------------------------------------------------
-    with tab2:
+    elif active_tab == base_tab_titles[1]:
         st.subheader("🛒 fct_order_items 訂單品項事實表明細")
         if not df_items.empty:
             c_i1, c_i2 = st.columns(2)
@@ -1505,7 +1546,7 @@ elif selected_layer == "silver":
     # --------------------------------------------------------------------------
     # SILVER TAB 3: 客戶維度表 (dim_customers)
     # --------------------------------------------------------------------------
-    with tab3:
+    elif active_tab == base_tab_titles[2]:
         st.subheader("👥 dim_customers 客戶維度表 (PII 去識別化)")
         st.caption("🔒 符合資安規範：姓名與信箱透過 SHA-256 雜湊或遮蔽處理")
         if not df_cust.empty:
@@ -1516,7 +1557,7 @@ elif selected_layer == "silver":
     # --------------------------------------------------------------------------
     # SILVER TAB 4: 商品維度表 (dim_products)
     # --------------------------------------------------------------------------
-    with tab4:
+    elif active_tab == base_tab_titles[3]:
         st.subheader("🏷️ dim_products 商品維度表")
         if not df_prod_silver.empty:
             if "category_name" in df_prod_silver.columns:
@@ -1541,7 +1582,7 @@ elif selected_layer == "silver":
     # --------------------------------------------------------------------------
     # SILVER TAB 5: 銀牌層視覺化畫布 (Power BI 畫布)
     # --------------------------------------------------------------------------
-    with tab5:
+    elif active_tab == base_tab_titles[4]:
         silver_datasets = {
             "orders": {"name": "📦 fct_orders (訂單事實表)", "df": df_orders},
             "items": {"name": "🛒 fct_order_items (品項明細表)", "df": df_items},
@@ -1558,7 +1599,7 @@ else:  # bronze layer
     # --------------------------------------------------------------------------
     # BRONZE TAB 1: 原始訂單流 (raw_orders)
     # --------------------------------------------------------------------------
-    with tab1:
+    if active_tab == base_tab_titles[0]:
         st.subheader("📥 raw_orders 原始訂單 Ingestion 串流記錄")
         st.caption("源自 Platzi Fake Store API 的原始 JSON 解析落地數據，包含 dlt Ingestion 元數據")
         if not df_raw_orders.empty:
@@ -1569,7 +1610,7 @@ else:  # bronze layer
     # --------------------------------------------------------------------------
     # BRONZE TAB 2: 原始品項流 (raw_order_items)
     # --------------------------------------------------------------------------
-    with tab2:
+    elif active_tab == base_tab_titles[1]:
         st.subheader("🛒 raw_order_items 原始品項拆解流水")
         st.caption("未經彙總與業務規則過濾之原始訂單品項記錄")
         if not df_raw_items.empty:
@@ -1580,7 +1621,7 @@ else:  # bronze layer
     # --------------------------------------------------------------------------
     # BRONZE TAB 3: 原始客戶快照 (raw_customers)
     # --------------------------------------------------------------------------
-    with tab3:
+    elif active_tab == base_tab_titles[2]:
         st.subheader("👤 raw_customers 原始客戶資料快照")
         st.caption("原始客戶明細，後續由 dbt staging 進行 PII 遮蔽雜湊轉換為銀牌維度")
         if not df_raw_cust.empty:
@@ -1591,7 +1632,7 @@ else:  # bronze layer
     # --------------------------------------------------------------------------
     # BRONZE TAB 4: dlt 載入歷程 (_dlt_loads)
     # --------------------------------------------------------------------------
-    with tab4:
+    elif active_tab == base_tab_titles[3]:
         st.subheader("⚙️ _dlt_loads Ingestion 管道載入歷程日誌")
         st.caption("記錄每次 dlt pipeline 載入之 load_id、schema 演化版本與載入完成狀態")
         if not df_dlt.empty:
@@ -1602,7 +1643,7 @@ else:  # bronze layer
     # --------------------------------------------------------------------------
     # BRONZE TAB 5: 銅牌層視覺化畫布 (Power BI 畫布)
     # --------------------------------------------------------------------------
-    with tab5:
+    elif active_tab == base_tab_titles[4]:
         bronze_datasets = {
             "raw_orders": {"name": "📥 raw_orders (原始訂單串流)", "df": df_raw_orders},
             "raw_items": {"name": "🛒 raw_order_items (原始品項流水)", "df": df_raw_items},
@@ -1619,9 +1660,10 @@ else:  # bronze layer
 # ==============================================================================
 # DYNAMIC CUSTOM TABS (支援跨層級新增自訂分頁與 FastMCP Mode A)
 # ==============================================================================
-for idx, (t_meta, t_obj) in enumerate(zip(st.session_state.custom_tabs, custom_tabs_rendered)):
-    with t_obj:
-        col_c_title, col_c_del = st.columns([5, 1])
+for idx, t_meta in enumerate(st.session_state.custom_tabs):
+    if active_tab == f"📌 {t_meta['title']}":
+        with st.container():
+            col_c_title, col_c_del = st.columns([5, 1])
         with col_c_title:
             st.subheader(f"📌 {t_meta['title']}")
             st.caption(f"自訂分頁類型：**{t_meta.get('type_label', '自訂看板')}** · 綁定資料表：`{t_meta.get('dataset_name', 'BigQuery 資料表')}`")
@@ -1744,7 +1786,7 @@ for idx, (t_meta, t_obj) in enumerate(zip(st.session_state.custom_tabs, custom_t
 # ==============================================================================
 # TAB ADD: ➕ 新增圖表分頁 (Dynamic Tab Creation Wizard)
 # ==============================================================================
-with tab_add:
+if active_tab == "➕ 新增圖表分頁":
     st.subheader("➕ 新增自訂圖表分頁 (Add Custom Analytics Tab)")
     st.caption("自由擴充儀表板分頁，支援建立獨立的「AI 智能語意圖表」或「類 Power BI 拖曳畫布」")
 
@@ -1975,6 +2017,7 @@ if ai_drawer_col is not None:
             current_layer=selected_layer,
             base_tab_titles=base_tab_titles,
             tab_data_map=tab_data_map,
+            active_tab_title=active_tab,
             language="zh",
         )
 

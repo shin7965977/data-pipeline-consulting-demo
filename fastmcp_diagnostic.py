@@ -881,29 +881,92 @@ def render_fastmcp_advisor_drawer(
     current_layer: str,
     base_tab_titles: list[str],
     tab_data_map: dict[str, Any],
+    active_tab_title: str | None = None,
     language: str = "zh",
 ) -> None:
-    """Render the slide-over AI Advisor side panel (Mode B: Dynamic Split View).
+    """Render the slide-over AI Advisor side panel (Mode B: Floating Overlay & Adaptive Split View).
 
     Features:
-    1. Context-Aware: Only injects and evaluates data belonging to the currently selected tab.
-    2. LocalStorage Persistence: Allows user to choose whether to remember API key in browser.
-    3. Multi-turn Conversational MBB Diagnostic: Action Title, Pyramid Principle, MECE breakdown, 30-60-90 day plan.
-    4. Suggested question chips aligned with current tab's metric signals.
+    1. Automatic Context Binding: Directly binds to the currently active tab without manual selection.
+    2. Dual Display Modes: Seamlessly supports both Floating Overlay Drawer (with backdrop blur) and Adaptive Split View.
+    3. LocalStorage Persistence: Allows user to choose whether to remember API key in browser.
+    4. Multi-turn Conversational MBB Diagnostic: Action Title, Pyramid Principle, MECE breakdown, 30-60-90 day plan.
+    5. Suggested question chips aligned with current tab's metric signals.
     """
     import os
     import streamlit as st
 
     is_zh = language == "zh"
+    drawer_mode = st.session_state.get("drawer_mode", "overlay")
 
-    # Header section
-    head_col, close_col = st.columns([3.8, 1.2])
+    # In overlay mode, inject floating fixed-drawer styling and backdrop
+    if drawer_mode == "overlay":
+        st.markdown(
+            """
+            <div class="ai-drawer-overlay-backdrop"></div>
+            <div class="ai-drawer-floating-marker"></div>
+            <style>
+            .ai-drawer-overlay-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(15, 23, 42, 0.65);
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+                z-index: 999980;
+                pointer-events: auto;
+            }
+            div[data-testid="stVerticalBlock"]:has(div.ai-drawer-floating-marker),
+            div[data-testid="stVerticalBlockBorderWrapper"]:has(div.ai-drawer-floating-marker) {
+                position: fixed !important;
+                top: 0 !important;
+                right: 0 !important;
+                width: min(520px, 94vw) !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                background: #0f172a !important;
+                border-left: 1px solid rgba(99, 102, 241, 0.35) !important;
+                box-shadow: -12px 0 45px rgba(0, 0, 0, 0.75) !important;
+                z-index: 999999 !important;
+                overflow-y: auto !important;
+                padding: 1.5rem !important;
+                animation: drawerSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            @keyframes drawerSlideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            """
+            <div class="ai-drawer-split-marker"></div>
+            <style>
+            div[data-testid="stVerticalBlock"]:has(div.ai-drawer-split-marker) {
+                background: rgba(15, 23, 42, 0.85);
+                border: 1px solid rgba(99, 102, 241, 0.3);
+                border-radius: 14px;
+                padding: 1.25rem !important;
+                box-shadow: 0 4px 25px rgba(0, 0, 0, 0.3);
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # Header section with title, mode toggle, and close button
+    head_col, mode_col, close_col = st.columns([2.6, 1.2, 1.2])
     with head_col:
         st.markdown(
             f"""
             <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem;">
                 <span style="font-size: 1.3rem;">✨</span>
-                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-color, #0f172a);">
+                <span style="font-size: 1.15rem; font-weight: 700; color: #f8fafc;">
                     {'AI 經營顧問' if is_zh else 'AI Operations Advisor'}
                 </span>
             </div>
@@ -911,10 +974,18 @@ def render_fastmcp_advisor_drawer(
             unsafe_allow_html=True,
         )
         st.caption(
-            "AI Operations Lakehouse 顧問工作台 · ⚡ 即時分析"
-            if is_zh
-            else "AI Operations Lakehouse Copilot · ⚡ Live"
+            f"{'AI Operations Lakehouse' if is_zh else 'AI Operations Lakehouse'} · "
+            f"{'🪟 浮動遮罩' if drawer_mode == 'overlay' else '📌 雙欄並排'}"
         )
+    with mode_col:
+        if drawer_mode == "overlay":
+            if st.button("📌 雙欄" if is_zh else "📌 Split", key="btn_mode_toggle", help="切換為動態自適應雙欄並排模式" if is_zh else "Switch to adaptive split columns view", width="stretch"):
+                st.session_state["drawer_mode"] = "split"
+                st.rerun()
+        else:
+            if st.button("🪟 浮動" if is_zh else "🪟 Float", key="btn_mode_toggle", help="切換為浮動遮罩抽屜層模式" if is_zh else "Switch to floating overlay drawer mode", width="stretch"):
+                st.session_state["drawer_mode"] = "overlay"
+                st.rerun()
     with close_col:
         if st.button("✕ 關閉" if is_zh else "✕ Close", key="btn_drawer_close_top", width="stretch", type="secondary"):
             st.session_state["show_ai_drawer"] = False
@@ -922,26 +993,34 @@ def render_fastmcp_advisor_drawer(
 
     st.markdown("---")
 
-    # Tab Context Scope Selector
-    active_scope = st.selectbox(
-        "🎯 當前分析分頁上下文" if is_zh else "🎯 Active Tab Context Scope",
-        options=base_tab_titles,
-        index=0 if base_tab_titles else 0,
-        key="ai_drawer_active_scope",
-        help=(
-            "顧問將嚴格限定分析此分頁所呈現之數據，避免全庫數據干擾並大幅提速。"
-            if is_zh
-            else "Advisor strictly analyzes the selected tab's dataset to maximize speed and precision."
-        ),
-    )
+    # Determine Active Tab Context Scope automatically
+    active_scope = None
+    if active_tab_title:
+        if active_tab_title in tab_data_map:
+            active_scope = active_tab_title
+        else:
+            for k in tab_data_map:
+                if k in active_tab_title or active_tab_title in k:
+                    active_scope = k
+                    break
+    if not active_scope:
+        active_scope = base_tab_titles[0] if base_tab_titles else (list(tab_data_map.keys())[0] if tab_data_map else "")
 
     tab_payload = tab_data_map.get(active_scope, {})
     tab_display_title = tab_payload.get("title", active_scope)
 
-    st.caption(
-        f"🔒 已鎖定 **{tab_display_title}** 數據源進行精準深度診斷（不讀取全庫）"
-        if is_zh
-        else f"🔒 Locked to **{tab_display_title}** dataset (isolated tab context)."
+    # Render Auto-Locked Scope Badge (Directly binds to current tab without manual selection)
+    st.markdown(
+        f"""
+        <div style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <div style="font-size: 0.74rem; color: #a5b4fc; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">🔒 {'當前分析分頁上下文（已自動鎖定）' if is_zh else 'Active Tab Scope (Auto-locked)'}</div>
+                <div style="font-size: 0.95rem; color: #ffffff; font-weight: 700; margin-top: 3px;">{tab_display_title}</div>
+            </div>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.72rem; padding: 3px 8px; border-radius: 12px; font-weight: 600;">{'即時同步' if is_zh else 'Synced'}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     # Gemini Key & Model Settings (Collapsible Expander)

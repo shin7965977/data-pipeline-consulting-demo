@@ -996,30 +996,67 @@ def main():
     all_tab_titles = base_tab_titles + custom_tab_titles + ["➕ Add Custom Tab"]
 
     is_ai_open = st.session_state.get("show_ai_drawer", False)
+    drawer_mode = st.session_state.get("drawer_mode", "overlay")
 
-    if is_ai_open:
+    if is_ai_open and drawer_mode == "split":
         main_tab_col, ai_drawer_col = st.columns([6.8, 3.2], gap="large")
         tab_parent = main_tab_col
     else:
+        main_tab_col = None
         tab_parent = st.container()
-        ai_drawer_col = None
+        ai_drawer_col = st.container() if is_ai_open else None
 
     with tab_parent:
-        all_rendered_tabs = st.tabs(all_tab_titles)
-        tab1, tab2, tab3, tab4, tab5 = (
-            all_rendered_tabs[0],
-            all_rendered_tabs[1],
-            all_rendered_tabs[2],
-            all_rendered_tabs[3],
-            all_rendered_tabs[4],
+        active_tab_nav_key = f"active_tab_nav_en_{selected_layer}"
+        if active_tab_nav_key not in st.session_state or st.session_state[active_tab_nav_key] not in all_tab_titles:
+            st.session_state[active_tab_nav_key] = all_tab_titles[0]
+
+        # Custom Segmented Control styling for modern tab look
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stSegmentedControl"] {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+                background: rgba(15, 23, 42, 0.45) !important;
+                padding: 6px !important;
+                border-radius: 12px !important;
+                border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                margin-bottom: 1.5rem !important;
+            }
+            div[data-testid="stSegmentedControl"] button {
+                border-radius: 8px !important;
+                font-size: 0.95rem !important;
+                font-weight: 600 !important;
+                padding: 0.55rem 1.1rem !important;
+                border: none !important;
+                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+                color: #ffffff !important;
+                box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
         )
-        custom_tabs_rendered = all_rendered_tabs[5 : 5 + len(st.session_state.custom_tabs_en)]
-        tab_add = all_rendered_tabs[-1]
+
+        active_tab = st.segmented_control(
+            "Tab Navigation",
+            options=all_tab_titles,
+            default=st.session_state[active_tab_nav_key],
+            key=active_tab_nav_key,
+            label_visibility="collapsed",
+        )
+        if not active_tab:
+            active_tab = st.session_state[active_tab_nav_key]
 
     # Render Tabs
     if selected_layer == "gold":
         # GOLD TAB 1: Revenue Trends & Funnel
-        with tab1:
+        if active_tab == base_tab_titles[0]:
             st.subheader("📊 Daily GMV vs. Net Realized Revenue")
             if not filtered_kpi.empty:
                 fig_rev = go.Figure()
@@ -1090,7 +1127,7 @@ def main():
                 st.info("No Gold KPI records matching the selected date filter.")
 
         # GOLD TAB 2: Customer LTV Segmentation
-        with tab2:
+        elif active_tab == base_tab_titles[1]:
             st.subheader("👥 Customer Tier Distribution & Value Contribution")
             if not df_ltv.empty:
                 col_ltv1, col_ltv2 = st.columns([1, 2])
@@ -1137,7 +1174,7 @@ def main():
                 st.info("No customer LTV records available.")
 
         # GOLD TAB 3: Product & Category Rankings
-        with tab3:
+        elif active_tab == base_tab_titles[2]:
             st.subheader("🏆 Product Revenue & Volume Leaderboards")
             if not df_prod.empty:
                 c_p1, c_p2 = st.columns(2)
@@ -1177,7 +1214,7 @@ def main():
                 st.info("No product ranking records available.")
 
         # GOLD TAB 4: Natural Language AI Charts
-        with tab4:
+        elif active_tab == base_tab_titles[3]:
             st.subheader("✨ Natural Language AI Smart Chart Generator (Text-to-Chart)")
             st.caption("🤖 Enter any analytical requirement in plain English. AI inspects BigQuery Gold schema and renders an interactive Plotly chart.")
 
@@ -1307,7 +1344,7 @@ def main():
                     st.dataframe(raw_df, width="stretch", hide_index=True)
 
         # GOLD TAB 5: Custom Analytics Studio (Power BI Canvas)
-        with tab5:
+        elif active_tab == base_tab_titles[4]:
             render_powerbi_studio(
                 df_kpi=filtered_kpi,
                 df_ltv=df_ltv,
@@ -1317,7 +1354,7 @@ def main():
 
     elif selected_layer == "silver":
         # SILVER TAB 1: Orders Fact
-        with tab1:
+        if active_tab == base_tab_titles[0]:
             st.subheader("📦 fct_orders Cleaned Transactions Overview")
             if not df_orders.empty:
                 c_s1, c_s2 = st.columns(2)
@@ -1362,7 +1399,7 @@ def main():
                 st.info("No silver fct_orders records available.")
 
         # SILVER TAB 2: Line Items Fact
-        with tab2:
+        elif active_tab == base_tab_titles[1]:
             st.subheader("🛒 fct_order_items Line-Level Fact Breakdown")
             if not df_items.empty:
                 c_i1, c_i2 = st.columns(2)
@@ -1393,7 +1430,7 @@ def main():
                 st.info("No silver fct_order_items records available.")
 
         # SILVER TAB 3: Customers Dimension
-        with tab3:
+        elif active_tab == base_tab_titles[2]:
             st.subheader("👥 dim_customers Customer Dimension (PII De-Identified)")
             st.caption("🔒 Privacy Compliant: Full names and emails masked / cryptographically hashed")
             if not df_cust.empty:
@@ -1402,7 +1439,7 @@ def main():
                 st.info("No silver dim_customers records available.")
 
         # SILVER TAB 4: Products Dimension
-        with tab4:
+        elif active_tab == base_tab_titles[3]:
             st.subheader("🏷️ dim_products Product Dimension")
             if not df_prod_silver.empty:
                 if "category_name" in df_prod_silver.columns:
@@ -1425,7 +1462,7 @@ def main():
                 st.info("No silver dim_products records available.")
 
         # SILVER TAB 5: Silver BI Studio
-        with tab5:
+        elif active_tab == base_tab_titles[4]:
             silver_datasets = {
                 "orders": {"name": "📦 fct_orders (Orders Fact)", "df": df_orders},
                 "items": {"name": "🛒 fct_order_items (Line Items Fact)", "df": df_items},
@@ -1440,7 +1477,7 @@ def main():
 
     else:  # bronze
         # BRONZE TAB 1: Raw Orders
-        with tab1:
+        if active_tab == base_tab_titles[0]:
             st.subheader("📥 raw_orders Ingestion Event Logs")
             st.caption("Raw JSON events extracted from Platzi Fake Store API, containing dlt ingestion metadata")
             if not df_raw_orders.empty:
@@ -1449,7 +1486,7 @@ def main():
                 st.info("No bronze raw_orders records available.")
 
         # BRONZE TAB 2: Raw Items
-        with tab2:
+        elif active_tab == base_tab_titles[1]:
             st.subheader("🛒 raw_order_items Unfiltered Item Streams")
             st.caption("Raw order line items prior to transformation and schema standardization")
             if not df_raw_items.empty:
@@ -1458,7 +1495,7 @@ def main():
                 st.info("No bronze raw_order_items records available.")
 
         # BRONZE TAB 3: Raw Customers
-        with tab3:
+        elif active_tab == base_tab_titles[2]:
             st.subheader("👤 raw_customers Customer Ingestion Snapshots")
             st.caption("Original customer records ingested before dbt staging privacy masking")
             if not df_raw_cust.empty:
@@ -1467,7 +1504,7 @@ def main():
                 st.info("No bronze raw_customers records available.")
 
         # BRONZE TAB 4: dlt Load Logs
-        with tab4:
+        elif active_tab == base_tab_titles[3]:
             st.subheader("⚙️ _dlt_loads Pipeline Ingestion Run Logs")
             st.caption("Tracks load_id, schema versioning, and execution status across dlt pipeline runs")
             if not df_dlt.empty:
@@ -1476,7 +1513,7 @@ def main():
                 st.info("No bronze _dlt_loads audit records available.")
 
         # BRONZE TAB 5: Bronze BI Studio
-        with tab5:
+        elif active_tab == base_tab_titles[4]:
             bronze_datasets = {
                 "raw_orders": {"name": "📥 raw_orders (Raw Order Stream)", "df": df_raw_orders},
                 "raw_items": {"name": "🛒 raw_order_items (Raw Line Items)", "df": df_raw_items},
@@ -1490,9 +1527,10 @@ def main():
             )
 
     # Dynamic Custom Tabs
-    for idx, (t_meta, t_obj) in enumerate(zip(st.session_state.custom_tabs_en, custom_tabs_rendered)):
-        with t_obj:
-            col_c_title, col_c_del = st.columns([5, 1])
+    for idx, t_meta in enumerate(st.session_state.custom_tabs_en):
+        if active_tab == f"📌 {t_meta['title']}":
+            with st.container():
+                col_c_title, col_c_del = st.columns([5, 1])
             with col_c_title:
                 st.subheader(f"📌 {t_meta['title']}")
                 st.caption(f"Custom Tab Type: **{t_meta.get('type_label', 'Custom Dashboard')}** · Bound Dataset: `{t_meta.get('dataset_name', 'BigQuery Table')}`")
@@ -1609,7 +1647,7 @@ def main():
                 )
 
     # TAB ADD: Add Custom Analytics Tab
-    with tab_add:
+    if active_tab == "➕ Add Custom Tab":
         st.subheader("➕ Add Custom Analytics Tab")
         st.caption("Expand your dashboard tabs with dedicated AI Smart Charts or Power BI Drag-and-Drop Canvases.")
 
@@ -1834,6 +1872,7 @@ def main():
                 current_layer=selected_layer,
                 base_tab_titles=base_tab_titles,
                 tab_data_map=tab_data_map_en,
+                active_tab_title=active_tab,
                 language="en",
             )
 
