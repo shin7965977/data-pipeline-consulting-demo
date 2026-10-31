@@ -1008,6 +1008,11 @@ def main():
                 star_choice = st.radio(
                     "Select Star Schema to Inspect:" if is_en else "請選擇欲檢視的星型模型：",
                     [
+                        "🌟 Star Schema 1: Traffic Acquisition & Geo Star",
+                        "🌟 Star Schema 2: Product Engagement & Feature Funnel Star",
+                    ]
+                    if is_en
+                    else [
                         "🌟 Star Schema 1: Traffic Acquisition & Geo Star (每日流量與獲客渠道模型)",
                         "🌟 Star Schema 2: Product Engagement & Feature Funnel Star (產品功能事件與漏斗模型)",
                     ],
@@ -1015,39 +1020,100 @@ def main():
                 )
 
                 if "Traffic" in star_choice:
-                    st.markdown(
-                        """
-                        <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(59, 130, 246, 0.3); border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:1rem;">
-                            <div style="font-weight:800; font-size:1.05rem; color:#2563eb; margin-bottom:0.35rem;">
-                                📡 Star Schema 1: Traffic Acquisition Star (流量獲客星型模型)
+                    if is_en:
+                        st.markdown(
+                            """
+                            <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(59, 130, 246, 0.3); border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:1rem;">
+                                <div style="font-weight:800; font-size:1.05rem; color:#2563eb; margin-bottom:0.35rem;">
+                                    📡 Star Schema 1: Traffic Acquisition & Geo Star
+                                </div>
+                                <div style="font-size:0.875rem; color:#475569; line-height:1.6;">
+                                    <b>Fact Grain</b>: <code>fct_daily_traffic</code> (Grain: Date × Channel Group × Source/Medium × Device Category × Country)<br/>
+                                    <b>Dimensions</b>:
+                                    <ul>
+                                        <li>🔗 <code>dim_channels</code> (FK <code>channel_key</code> ⨝ Channel Group, Source/Medium, and Strategy <code>acquisition_type</code>)</li>
+                                        <li>🔗 <code>dim_devices_geo</code> (FK <code>device_geo_key</code> ⨝ Device Category, Country, and <code>is_dach_region</code> DACH market flag)</li>
+                                    </ul>
+                                </div>
                             </div>
-                            <div style="font-size:0.875rem; color:#475569; line-height:1.6;">
-                                <b>事實核心（Fact Grain）</b>：<code>fct_daily_traffic</code>（日期 × 渠道 × 媒介 × 裝置 × 國家）<br/>
-                                <b>關聯維度（Dimensions）</b>：
-                                <ul>
-                                    <li>🔗 <code>dim_channels</code>（外鍵 <code>channel_key</code> ⨝ 關聯渠道群組、媒介與獲客類型 <code>acquisition_type</code>）</li>
-                                    <li>🔗 <code>dim_devices_geo</code>（外鍵 <code>device_geo_key</code> ⨝ 關聯裝置類別、國家與 <code>is_dach_region</code> 德語區旗標）</li>
-                                </ul>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.markdown(
+                            """
+                            <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(59, 130, 246, 0.3); border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:1rem;">
+                                <div style="font-weight:800; font-size:1.05rem; color:#2563eb; margin-bottom:0.35rem;">
+                                    📡 Star Schema 1: Traffic Acquisition Star (流量獲客星型模型)
+                                </div>
+                                <div style="font-size:0.875rem; color:#475569; line-height:1.6;">
+                                    <b>事實核心（Fact Grain）</b>：<code>fct_daily_traffic</code>（日期 × 渠道 × 媒介 × 裝置 × 國家）<br/>
+                                    <b>關聯維度（Dimensions）</b>：
+                                    <ul>
+                                        <li>🔗 <code>dim_channels</code>（外鍵 <code>channel_key</code> ⨝ 關聯渠道群組、媒介與獲客類型 <code>acquisition_type</code>）</li>
+                                        <li>🔗 <code>dim_devices_geo</code>（外鍵 <code>device_geo_key</code> ⨝ 關聯裝置類別、國家與 <code>is_dach_region</code> 德語區旗標）</li>
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
                     col_s1_left, col_s1_right = st.columns([1.1, 0.9])
                     with col_s1_left:
                         st.markdown("##### " + ("Denormalized Star Schema Table Preview" if is_en else "星型關聯寬表即時數據預覽 (Enriched Star View)"))
-                        df_tr = data_dict.get("traffic", pd.DataFrame())
-                        df_ch = data_dict.get("channels", pd.DataFrame())
-                        df_geo = data_dict.get("devices_geo", pd.DataFrame())
+                        df_tr = data_dict.get("traffic", pd.DataFrame()).copy()
+                        df_ch = data_dict.get("channels", pd.DataFrame()).copy()
+                        df_geo = data_dict.get("devices_geo", pd.DataFrame()).copy()
 
-                        if not df_tr.empty and not df_ch.empty and not df_geo.empty:
-                            df_tr_star = pd.merge(df_tr, df_ch[["channel_key", "acquisition_type"]].drop_duplicates("channel_key"), on="channel_key", how="left")
-                            df_tr_star = pd.merge(df_tr_star, df_geo[["device_geo_key", "is_dach_region"]].drop_duplicates("device_geo_key"), on="device_geo_key", how="left")
+                        # Defensive key derivation & reconstruction
+                        if not df_tr.empty:
+                            if "channel_key" not in df_tr.columns and "channel_group" in df_tr.columns:
+                                src = df_tr["source_medium"].astype(str).str.lower().str.replace(" ", "").str.replace("/", "_") if "source_medium" in df_tr.columns else "direct"
+                                df_tr["channel_key"] = df_tr["channel_group"].astype(str).str.lower().str.replace(" ", "_") + "__" + src
+                            if "device_geo_key" not in df_tr.columns and "device_category" in df_tr.columns and "country" in df_tr.columns:
+                                df_tr["device_geo_key"] = df_tr["device_category"].astype(str).str.lower() + "__" + df_tr["country"].astype(str).str.lower().str.replace(" ", "_")
+                            if "is_dach_region" not in df_tr.columns and "country" in df_tr.columns:
+                                df_tr["is_dach_region"] = df_tr["country"].isin(["Germany", "Austria", "Switzerland"])
+
+                        if df_ch.empty or "channel_key" not in df_ch.columns or "acquisition_type" not in df_ch.columns:
+                            if not df_tr.empty and "channel_group" in df_tr.columns:
+                                cols_base = [c for c in ["channel_group", "source_medium"] if c in df_tr.columns]
+                                df_ch = df_tr[cols_base].drop_duplicates().copy()
+                                src = df_ch["source_medium"].astype(str).str.lower().str.replace(" ", "").str.replace("/", "_") if "source_medium" in df_ch.columns else "direct"
+                                df_ch["channel_key"] = df_ch["channel_group"].astype(str).str.lower().str.replace(" ", "_") + "__" + src
+                                df_ch["acquisition_type"] = df_ch["channel_group"].map({
+                                    "Organic Search": "pSEO / Organic Search",
+                                    "Referral": "Viral Referral Loop",
+                                    "Organic Social": "Community / Social",
+                                }).fillna("Direct / Bookmark")
+
+                        if df_geo.empty or "device_geo_key" not in df_geo.columns or "is_dach_region" not in df_geo.columns:
+                            if not df_tr.empty and "device_category" in df_tr.columns and "country" in df_tr.columns:
+                                df_geo = df_tr[["device_category", "country"]].drop_duplicates().copy()
+                                df_geo["device_geo_key"] = df_geo["device_category"].astype(str).lower() + "__" + df_geo["country"].astype(str).lower().str.replace(" ", "_")
+                                df_geo["is_dach_region"] = df_geo["country"].isin(["Germany", "Austria", "Switzerland"])
+
+                        if not df_tr.empty:
+                            df_tr_star = df_tr.copy()
+                            if not df_ch.empty and "channel_key" in df_tr_star.columns and "channel_key" in df_ch.columns and "acquisition_type" in df_ch.columns:
+                                df_tr_star = pd.merge(
+                                    df_tr_star,
+                                    df_ch[["channel_key", "acquisition_type"]].drop_duplicates("channel_key"),
+                                    on="channel_key",
+                                    how="left",
+                                )
+                            if not df_geo.empty and "device_geo_key" in df_tr_star.columns and "device_geo_key" in df_geo.columns and "is_dach_region" in df_geo.columns:
+                                df_tr_star = pd.merge(
+                                    df_tr_star,
+                                    df_geo[["device_geo_key", "is_dach_region"]].drop_duplicates("device_geo_key"),
+                                    on="device_geo_key",
+                                    how="left",
+                                )
                             disp_cols = [c for c in ["traffic_record_id", "event_date", "acquisition_type", "channel_group", "country", "is_dach_region", "sessions", "active_users", "engagement_rate"] if c in df_tr_star.columns]
                             st.dataframe(df_tr_star[disp_cols].head(15), use_container_width=True, height=360)
                         else:
-                            st.dataframe(df_tr.head(15), use_container_width=True, height=360)
+                            st.info("No traffic records found." if is_en else "無可用流量記錄。")
 
                     with col_s1_right:
                         st.markdown("##### " + ("BigQuery / dbt Production Star SQL" if is_en else "BigQuery / dbt 正式星型 JOIN 語法"))
@@ -1076,35 +1142,63 @@ ORDER BY t.event_date DESC, t.sessions DESC;""",
                         )
 
                 else:
-                    st.markdown(
-                        """
-                        <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:1rem;">
-                            <div style="font-weight:800; font-size:1.05rem; color:#059669; margin-bottom:0.35rem;">
-                                🎯 Star Schema 2: Product Engagement & Feature Funnel Star (產品功能事件星型模型)
+                    if is_en:
+                        st.markdown(
+                            """
+                            <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:1rem;">
+                                <div style="font-weight:800; font-size:1.05rem; color:#059669; margin-bottom:0.35rem;">
+                                    🎯 Star Schema 2: Product Engagement & Feature Funnel Star
+                                </div>
+                                <div style="font-size:0.875rem; color:#475569; line-height:1.6;">
+                                    <b>Fact Grain</b>: <code>fct_feature_events</code> (Grain: Discrete user interaction & telemetry event)<br/>
+                                    <b>Dimensions</b>:
+                                    <ul>
+                                        <li>🔗 <code>dim_feature_catalog</code> (FK <code>event_name</code> ⨝ AARRR Lifecycle Stage, Module Category, Source Component, Aha! Moments, and AI Inference Flags)</li>
+                                    </ul>
+                                </div>
                             </div>
-                            <div style="font-size:0.875rem; color:#475569; line-height:1.6;">
-                                <b>事實核心（Fact Grain）</b>：<code>fct_feature_events</code>（單次點擊事件觸發粒度）<br/>
-                                <b>關聯維度（Dimensions）</b>：
-                                <ul>
-                                    <li>🔗 <code>dim_feature_catalog</code>（外鍵 <code>event_name</code> ⨝ 關聯 AARRR 階段、模組類別、前端組件代碼路徑、Aha! 時刻與 AI 推理旗標）</li>
-                                </ul>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.markdown(
+                            """
+                            <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:1rem;">
+                                <div style="font-weight:800; font-size:1.05rem; color:#059669; margin-bottom:0.35rem;">
+                                    🎯 Star Schema 2: Product Engagement & Feature Funnel Star (產品功能事件星型模型)
+                                </div>
+                                <div style="font-size:0.875rem; color:#475569; line-height:1.6;">
+                                    <b>事實核心（Fact Grain）</b>：<code>fct_feature_events</code>（單次點擊事件觸發粒度）<br/>
+                                    <b>關聯維度（Dimensions）</b>：
+                                    <ul>
+                                        <li>🔗 <code>dim_feature_catalog</code>（外鍵 <code>event_name</code> ⨝ 關聯 AARRR 階段、模組類別、前端組件代碼路徑、Aha! 時刻與 AI 推理旗標）</li>
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
                     col_s2_left, col_s2_right = st.columns([1.1, 0.9])
                     with col_s2_left:
                         st.markdown("##### " + ("Denormalized Star Schema Table Preview" if is_en else "星型關聯寬表即時數據預覽 (Enriched Star View)"))
-                        df_fe_raw = data_dict.get("feature_events", pd.DataFrame())
-                        df_cat = data_dict.get("catalog", pd.DataFrame())
-                        if not df_fe_raw.empty and not df_cat.empty:
-                            df_ev_star = pd.merge(df_fe_raw, df_cat[["event_name", "module_category", "aarrr_stage", "source_component", "is_aha_moment", "is_ai_inference_event"]].drop_duplicates("event_name"), on="event_name", how="left")
+                        df_fe_raw = data_dict.get("feature_events", pd.DataFrame()).copy()
+                        df_cat = data_dict.get("catalog", pd.DataFrame()).copy()
+
+                        if not df_fe_raw.empty:
+                            df_ev_star = df_fe_raw.copy()
+                            if not df_cat.empty and "event_name" in df_ev_star.columns and "event_name" in df_cat.columns:
+                                cat_cols = [c for c in ["event_name", "module_category", "aarrr_stage", "source_component", "is_aha_moment", "is_ai_inference_event"] if c in df_cat.columns]
+                                df_ev_star = pd.merge(
+                                    df_ev_star,
+                                    df_cat[cat_cols].drop_duplicates("event_name"),
+                                    on="event_name",
+                                    how="left",
+                                )
                             disp_cols = [c for c in ["event_record_id", "event_date", "event_name", "aarrr_stage", "module_category", "is_aha_moment", "event_count", "total_users", "events_per_user"] if c in df_ev_star.columns]
                             st.dataframe(df_ev_star[disp_cols].head(15), use_container_width=True, height=360)
                         else:
-                            st.dataframe(df_fe_raw.head(15), use_container_width=True, height=360)
+                            st.info("No feature event records found." if is_en else "無可用功能事件記錄。")
 
                     with col_s2_right:
                         st.markdown("##### " + ("BigQuery / dbt Production Star SQL" if is_en else "BigQuery / dbt 正式星型 JOIN 語法"))
@@ -1171,9 +1265,9 @@ ORDER BY e.event_date DESC, e.event_count DESC;""",
                         st.plotly_chart(fig_trend, use_container_width=True)
                     with col_dau_meta:
                         st.markdown(
-                            """
+                            f"""
                             <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(226, 232, 240, 0.9); border-radius:10px; padding:0.65rem 0.9rem; margin-bottom:0.4rem;">
-                                <div style="font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase;">Source Mart Table / 來源業務集市表</div>
+                                <div style="font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase;">{'Source Mart Table' if is_en else '來源業務集市表'}</div>
                                 <div style="font-size:0.86rem; font-weight:700; color:#2563eb; font-family:monospace;">readcall_gold.gold_daily_growth_kpi</div>
                             </div>
                             """,
@@ -1215,7 +1309,7 @@ ORDER BY event_date ASC;""",
                         )
                         st.plotly_chart(fig_ch, use_container_width=True)
                         with st.expander("📋 " + ("Source Table & dbt SQL" if is_en else "查看底層來源表與 SQL 語法"), expanded=False):
-                            st.markdown("**來源表**：`readcall_silver.fct_daily_traffic` ⨝ `dim_channels`")
+                            st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_silver.fct_daily_traffic` ⨝ `dim_channels`")
                             st.code("""SELECT 
     c.acquisition_type,
     t.channel_group,
@@ -1246,7 +1340,7 @@ GROUP BY 1, 2 ORDER BY 3 DESC;""", language="sql")
                         )
                         st.plotly_chart(fig_geo, use_container_width=True)
                         with st.expander("📋 " + ("Source Table & dbt SQL" if is_en else "查看底層來源表與 SQL 語法"), expanded=False):
-                            st.markdown("**來源表**：`readcall_silver.fct_daily_traffic` ⨝ `dim_devices_geo`")
+                            st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_silver.fct_daily_traffic` ⨝ `dim_devices_geo`")
                             st.code("""SELECT 
     g.country,
     g.is_dach_region,
@@ -1331,7 +1425,7 @@ GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
                     )
                     st.plotly_chart(fig_b, use_container_width=True)
                     with st.expander("📋 " + ("Source Table & Funnel SQL" if is_en else "查看漏斗資料表與 SQL 語法"), expanded=False):
-                        st.markdown("**來源表**：`readcall_gold.gold_byok_funnel`")
+                        st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_byok_funnel`")
                         st.code("""SELECT 
     step_1_first_visit,
     step_2_aha_interaction,
@@ -1389,7 +1483,7 @@ FROM `de-consulting-508822.readcall_gold.gold_byok_funnel`;""", language="sql")
                     )
                     st.plotly_chart(fig_r, use_container_width=True)
                     with st.expander("📋 " + ("Source Table & Referral SQL" if is_en else "查看推薦裂變資料表與 SQL 語法"), expanded=False):
-                        st.markdown("**來源表**：`readcall_gold.gold_referral_loop`")
+                        st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_referral_loop`")
                         st.code("""SELECT 
     step_1_referral_modal_opened,
     step_2_referral_link_copied,
@@ -1431,9 +1525,9 @@ FROM `de-consulting-508822.readcall_gold.gold_referral_loop`;""", language="sql"
                         st.plotly_chart(fig_fric, use_container_width=True)
                     with c_fric_meta:
                         st.markdown(
-                            """
+                            f"""
                             <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(226, 232, 240, 0.9); border-radius:10px; padding:0.65rem 0.9rem; margin-bottom:0.4rem;">
-                                <div style="font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase;">Source Mart Table / 來源業務集市表</div>
+                                <div style="font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase;">{'Source Mart Table' if is_en else '來源業務集市表'}</div>
                                 <div style="font-size:0.86rem; font-weight:700; color:#d97706; font-family:monospace;">readcall_gold.gold_byok_funnel (Daily Grain)</div>
                             </div>
                             """,

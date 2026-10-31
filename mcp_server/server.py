@@ -544,7 +544,7 @@ def load_gold_dataframe(table_name: str):
     if table_name == "fct_daily_traffic":
         df_traffic_raw["session_default_channel_group"] = df_traffic_raw["channel_group"]
         df_traffic_raw["is_dach_region"] = df_traffic_raw["country"].isin(["Germany", "Austria", "Switzerland"])
-        df_traffic_raw["channel_key"] = df_traffic_raw["channel_group"].str.lower().str.replace(" ", "_")
+        df_traffic_raw["channel_key"] = df_traffic_raw["channel_group"].str.lower().str.replace(" ", "_") + "__" + df_traffic_raw["source_medium"].str.lower().str.replace(" ", "").str.replace("/", "_")
         df_traffic_raw["device_geo_key"] = df_traffic_raw["device_category"].str.lower() + "__" + df_traffic_raw["country"].str.lower().str.replace(" ", "_")
         df_traffic_raw["returning_users"] = (df_traffic_raw["active_users"] - df_traffic_raw["new_users"]).clip(lower=0)
         df_traffic_raw["engagement_rate"] = (df_traffic_raw["engaged_sessions"] / df_traffic_raw["sessions"].clip(lower=1)).round(4)

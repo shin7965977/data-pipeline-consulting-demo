@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataOps Unified Portal | Platzi E-Commerce</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet">
   <style>
     :root {
       --bg-dark: #090d16;
@@ -36,7 +39,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      background-image: 
+      background-image:
         radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
         radial-gradient(at 90% 80%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
         radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
@@ -156,8 +159,17 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.9); }
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(0.9);
+      }
     }
 
     /* Main Container */
@@ -467,6 +479,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- Top Navigation Header -->
@@ -481,25 +494,40 @@
 
     <nav class="nav-tabs">
       <button class="nav-tab active" onclick="switchView('hub')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
         雙儀表板總覽
       </button>
       <button class="nav-tab" onclick="switchView('elementary')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+        </svg>
         Elementary 質量監控
       </button>
       <button class="nav-tab" onclick="switchView('dbt')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
         dbt 資料目錄與血緣
       </button>
     </nav>
 
     <div class="top-actions">
       <!-- Language Switcher & Home -->
-      <div style="display: inline-flex; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--card-border); border-radius: 8px; padding: 3px; gap: 3px;">
-        <a href="../../index.html" style="padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-decoration: none;">🏠 總首頁</a>
-        <a href="../en/portal.html" style="padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-decoration: none;">English</a>
-        <a href="portal.html" style="padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; background: var(--primary); color: #fff; text-decoration: none; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);">繁體中文</a>
+      <div
+        style="display: inline-flex; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--card-border); border-radius: 8px; padding: 3px; gap: 3px;">
+        <a href="../../index.html"
+          style="padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-decoration: none;">🏠
+          總首頁</a>
+        <a href="../en/portal.html"
+          style="padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-decoration: none;">English</a>
+        <a href="portal.html"
+          style="padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; background: var(--primary); color: #fff; text-decoration: none; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);">繁體中文</a>
       </div>
 
       <div class="status-badge">
@@ -516,7 +544,8 @@
       <div class="hero-banner">
         <h2 class="hero-title">企業級雙核心 DataOps 控制中心</h2>
         <p class="hero-subtitle">
-          結合 <strong>Elementary Data</strong>（管線即時測試、異常偵測、Schema 變更追蹤）與 <strong>dbt Docs</strong>（完整商業資料字典、欄位型態目錄、互動式端到端血緣圖），達成 100% Serverless 零伺服器維運架構。
+          結合 <strong>Elementary Data</strong>（管線即時測試、異常偵測、Schema 變更追蹤）與 <strong>dbt
+            Docs</strong>（完整商業資料字典、欄位型態目錄、互動式端到端血緣圖），達成 100% Serverless 零伺服器維運架構。
         </p>
         <div class="meta-tags">
           <div class="meta-tag">GCP Project: <span>de-consulting-508822</span></div>
@@ -528,7 +557,7 @@
 
       <!-- Two Pillar Dashboards -->
       <div class="dashboard-grid">
-        
+
         <!-- Card 1: Elementary Observability -->
         <div class="dash-card">
           <div>
@@ -542,15 +571,21 @@
             </p>
             <ul class="feature-list">
               <li class="feature-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span><strong>測試結果即時追蹤</strong>：完整捕捉 Unique、Not Null、Accepted Values 違規</span>
               </li>
               <li class="feature-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span><strong>統計異常監控</strong>：資料筆數劇變（Volume Anomaly）、延遲（Freshness）</span>
               </li>
               <li class="feature-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span><strong>執行耗時剖析</strong>：分析每個 Model 與 Test 在 BigQuery 的消耗秒數</span>
               </li>
             </ul>
@@ -578,15 +613,21 @@
             </p>
             <ul class="feature-list">
               <li class="feature-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span><strong>完整欄位目錄（Catalog）</strong>：真實 BigQuery 資料型態、欄位中文業務說明</span>
               </li>
               <li class="feature-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span><strong>互動式 DAG 血緣圖</strong>：從 Bronze 來源端、Silver 清洗層到 Gold 商業報表</span>
               </li>
               <li class="feature-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span><strong>即時全站搜尋</strong>：可依 Model 名稱、Tag、或是欄位名秒級檢索</span>
               </li>
             </ul>
@@ -605,33 +646,48 @@
         <div class="dash-card">
           <div>
             <div class="dash-card-header">
-              <div class="dash-card-icon" style="background: rgba(255, 75, 75, 0.15); border: 1px solid rgba(255, 75, 75, 0.3); color: #ff4b4b;">💻</div>
-              <span class="dash-card-badge" style="background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid rgba(255, 75, 75, 0.3);">Live App</span>
+              <div class="dash-card-icon"
+                style="background: rgba(255, 75, 75, 0.15); border: 1px solid rgba(255, 75, 75, 0.3); color: #ff4b4b;">
+                💻</div>
+              <span class="dash-card-badge"
+                style="background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid rgba(255, 75, 75, 0.3);">Live
+                App</span>
             </div>
             <h2>Streamlit 商業決策駕駛艙</h2>
             <p>
-              直連 BigQuery Gold 商業市集的實體互動應用（<code>dashboard.py</code>），提供管理層損益分析、商品 Pareto 80/20 排行、顧客 RFM 分群、Gemini AI 自然語言問答，以及類 Power BI 拖曳視覺化畫布。
+              直連 BigQuery Gold 商業市集的實體互動應用（<code>dashboard.py</code>），提供管理層損益分析、商品 Pareto 80/20 排行、顧客 RFM 分群、Gemini AI
+              自然語言問答，以及類 Power BI 拖曳視覺化畫布。
             </p>
             <ul class="feature-list">
               <li class="feature-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span><strong>五大決策面板</strong>：即時 P&L 損益、商品 Pareto、會員 RFM、Gemini 圖表生成、類 Power BI 自訂畫布</span>
               </li>
               <li class="feature-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span><strong>FastMCP 商業顧問</strong>：MBB 金字塔原理與根因樹狀分析</span>
               </li>
               <li class="feature-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span><strong>雲端即時託管</strong>：部署於 Streamlit Community Cloud</span>
               </li>
             </ul>
           </div>
           <div class="dash-card-actions">
-            <a class="btn btn-primary" href="https://data-pipeline-consulting-demo-v01.streamlit.app/?lang=en" target="_blank" rel="noopener" style="background: linear-gradient(135deg, #ff4b4b, #e11d48); box-shadow: 0 4px 14px rgba(255, 75, 75, 0.4);">
+            <a class="btn btn-primary" href="https://data-pipeline-consulting-demo-v01.streamlit.app/?lang=en"
+              target="_blank" rel="noopener"
+              style="background: linear-gradient(135deg, #ff4b4b, #e11d48); box-shadow: 0 4px 14px rgba(255, 75, 75, 0.4);">
               <span>🚀 英文版 App (English) ↗</span>
             </a>
-            <a class="btn btn-primary" href="https://data-pipeline-consulting-demo-v01.streamlit.app/" target="_blank" rel="noopener" style="background: linear-gradient(135deg, #0284c7, #2563eb); box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">
+            <a class="btn btn-primary" href="https://data-pipeline-consulting-demo-v01.streamlit.app/" target="_blank"
+              rel="noopener"
+              style="background: linear-gradient(135deg, #0284c7, #2563eb); box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">
               <span>🇹🇼 啟動繁中版 App ↗</span>
             </a>
             <a class="btn btn-secondary" href="streamlit_dashboard_guide.html">
@@ -674,13 +730,16 @@
 
   <footer style="display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
     <div style="display: flex; gap: 1.5rem; font-size: 0.88rem;">
-      <a href="dataops_principles_guide.html" style="color: var(--primary-light); text-decoration: none;">📘 DataOps 宣言與 4 大工程支柱實務指南</a>
+      <a href="dataops_principles_guide.html" style="color: var(--primary-light); text-decoration: none;">📘 DataOps 宣言與
+        4 大工程支柱實務指南</a>
       <span style="color: var(--card-border);">|</span>
       <a href="pipeline_architecture.html" style="color: var(--cyan); text-decoration: none;">🏗️ 管線架構與 DataOps 設計藍圖</a>
       <span style="color: var(--card-border);">|</span>
-      <a href="looker_studio_guide.html" style="color: var(--emerald); text-decoration: none;">📊 Looker Studio 商業報表指南</a>
+      <a href="looker_studio_guide.html" style="color: var(--emerald); text-decoration: none;">📊 Looker Studio
+        商業報表指南</a>
     </div>
-    <p>Platzi E-Commerce Data Pipeline Consulting Demo | Automated DataOps Powered by GCP Serverless, dbt Core & Elementary Data</p>
+    <p>Platzi E-Commerce Data Pipeline Consulting Demo | Automated DataOps Powered by GCP Serverless, dbt Core &
+      Elementary Data</p>
   </footer>
 
   <script>
@@ -724,4 +783,5 @@
     }
   </script>
 </body>
+
 </html>
