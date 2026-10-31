@@ -1321,9 +1321,11 @@ FROM `de-consulting-508822.readcall_gold.gold_daily_growth_kpi`
 ORDER BY event_date ASC;""",
                             language="sql",
                         )
-                        st.caption("📊 **Table Data Snippet (Recent 5 Days)**" if is_en else "📊 **圖表數據切片 (近期 5 日抽樣)**")
-                        disp_kpi_cols = [c for c in ["event_date", "dau", "aha_users", "activation_rate_pct"] if c in df_trend.columns]
-                        st.dataframe(df_trend[disp_kpi_cols].tail(5), use_container_width=True, height=130)
+                        st.caption("📊 **Table Data Snippet (Recent 5 Days - 100% Aligned with SQL)**" if is_en else "📊 **圖表數據切片 (近期 5 日抽樣 - 100% 依 SQL 語法即時對齊)**")
+                        df_trend_preview = df_trend.sort_values("event_date", ascending=True).tail(5).copy()
+                        df_trend_preview["aha_rate_pct"] = (df_trend_preview["aha_users"] * 100.0 / df_trend_preview["dau"].clip(lower=1)).round(2)
+                        sql_kpi_cols = ["event_date", "dau", "aha_users", "aha_rate_pct"]
+                        st.dataframe(df_trend_preview[sql_kpi_cols].reset_index(drop=True), use_container_width=True, height=160)
 
                 col_t1, col_t2 = st.columns(2)
                 df_traffic = scope.traffic
@@ -1354,7 +1356,18 @@ ORDER BY event_date ASC;""",
 FROM `readcall_silver.fct_daily_traffic` t
 JOIN `readcall_silver.dim_channels` c ON t.channel_key = c.channel_key
 GROUP BY 1, 2 ORDER BY 3 DESC;""", language="sql")
-                            st.dataframe(ch_agg, use_container_width=True, height=140)
+                            df_ch_dim = data_dict.get("channels", pd.DataFrame())
+                            if not df_traffic.empty and not df_ch_dim.empty and "channel_key" in df_traffic.columns and "channel_key" in df_ch_dim.columns and "acquisition_type" in df_ch_dim.columns:
+                                ch_joined = pd.merge(df_traffic, df_ch_dim[["channel_key", "acquisition_type"]].drop_duplicates("channel_key"), on="channel_key", how="left")
+                            else:
+                                ch_joined = df_traffic.copy()
+                                ch_joined["acquisition_type"] = ch_joined["channel_group"].map({
+                                    "Organic Search": "pSEO / Organic Search",
+                                    "Referral": "Viral Referral Loop",
+                                    "Organic Social": "Community / Social",
+                                }).fillna("Direct / Bookmark")
+                            ch_sql_agg = ch_joined.groupby(["acquisition_type", "channel_group"], as_index=False)["active_users"].sum().sort_values("active_users", ascending=False)
+                            st.dataframe(ch_sql_agg[["acquisition_type", "channel_group", "active_users"]].reset_index(drop=True), use_container_width=True, height=160)
                 with col_t2:
                     st.markdown("##### " + ("DACH vs. Global Learners" if is_en else "DACH 德語區 vs. 全球學習者分佈"))
                     if not df_traffic.empty and "country" in df_traffic.columns:
@@ -1385,7 +1398,14 @@ GROUP BY 1, 2 ORDER BY 3 DESC;""", language="sql")
 FROM `readcall_silver.fct_daily_traffic` t
 JOIN `readcall_silver.dim_devices_geo` g ON t.device_geo_key = g.device_geo_key
 GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
-                            st.dataframe(geo_agg, use_container_width=True, height=140)
+                            df_geo_dim = data_dict.get("devices_geo", pd.DataFrame())
+                            if not df_traffic.empty and not df_geo_dim.empty and "device_geo_key" in df_traffic.columns and "device_geo_key" in df_geo_dim.columns and "is_dach_region" in df_geo_dim.columns:
+                                geo_joined = pd.merge(df_traffic, df_geo_dim[["device_geo_key", "is_dach_region"]].drop_duplicates("device_geo_key"), on="device_geo_key", how="left")
+                            else:
+                                geo_joined = df_traffic.copy()
+                                geo_joined["is_dach_region"] = geo_joined["country"].isin(["Germany", "Austria", "Switzerland"])
+                            geo_sql_agg = geo_joined.groupby(["country", "is_dach_region"], as_index=False)["active_users"].sum().sort_values("active_users", ascending=False).head(5)
+                            st.dataframe(geo_sql_agg[["country", "is_dach_region", "active_users"]].reset_index(drop=True), use_container_width=True, height=160)
 
             # TAB 2: BYOK FUNNEL & REFERRAL LOOP
             with tab2:
@@ -1464,23 +1484,24 @@ GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
                     with st.expander("📋 " + ("Source Table & Funnel SQL" if is_en else "查看漏斗資料表與 SQL 語法"), expanded=False):
                         st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_byok_funnel`")
                         st.code("""SELECT 
+    event_date,
     step_1_first_visit,
     step_2_aha_interaction,
-    step_3_byok_modal_opened,
-    step_4_byok_get_key_clicked,
-    step_5_byok_key_saved
-FROM `de-consulting-508822.readcall_gold.gold_byok_funnel`;""", language="sql")
-                        df_byok_prev = pd.DataFrame({
-                            "Funnel Stage": stages_byok,
-                            "Users": [
-                                byok_s["step_1_first_visit"],
-                                byok_s["step_2_aha_interaction"],
-                                byok_s["step_3_byok_modal_opened"],
-                                byok_s["step_4_byok_get_key_clicked"],
-                                byok_s["step_5_byok_key_saved"],
-                            ]
-                        })
-                        st.dataframe(df_byok_prev, use_container_width=True, height=150)
+    step_4_byok_modal_opened,
+    step_5_byok_get_key_clicked,
+    step_6_byok_key_saved
+FROM `de-consulting-508822.readcall_gold.gold_byok_funnel`
+ORDER BY event_date ASC;""", language="sql")
+                        df_byok_raw = scope.byok
+                        if not df_byok_raw.empty:
+                            byok_cols = [c for c in ["event_date", "step_1_first_visit", "step_2_aha_interaction", "step_4_byok_modal_opened", "step_5_byok_get_key_clicked", "step_6_byok_key_saved"] if c in df_byok_raw.columns]
+                            st.dataframe(df_byok_raw.sort_values("event_date", ascending=True).tail(5)[byok_cols].reset_index(drop=True), use_container_width=True, height=160)
+                        else:
+                            df_byok_prev = pd.DataFrame({
+                                "Funnel Stage": stages_byok,
+                                "Users": [byok_s["step_1_first_visit"], byok_s["step_2_aha_interaction"], byok_s["step_3_byok_modal_opened"], byok_s["step_4_byok_get_key_clicked"], byok_s["step_5_byok_key_saved"]]
+                            })
+                            st.dataframe(df_byok_prev, use_container_width=True, height=150)
 
                 with col_b2:
                     stages_ref = (
@@ -1522,22 +1543,24 @@ FROM `de-consulting-508822.readcall_gold.gold_byok_funnel`;""", language="sql")
                     with st.expander("📋 " + ("Source Table & Referral SQL" if is_en else "查看推薦裂變資料表與 SQL 語法"), expanded=False):
                         st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_referral_loop`")
                         st.code("""SELECT 
+    event_date,
     step_1_referral_modal_opened,
     step_2_referral_link_copied,
     step_4_referral_unlock_success,
     step_5_custom_prompt_saved,
-    viral_k_factor_proxy
-FROM `de-consulting-508822.readcall_gold.gold_referral_loop`;""", language="sql")
-                        df_ref_prev = pd.DataFrame({
-                            "Referral Stage": stages_ref,
-                            "Count": [
-                                ref_s["step_1_referral_modal_opened"],
-                                ref_s["step_2_referral_link_copied"],
-                                ref_s["step_4_referral_unlock_success"],
-                                ref_s["step_5_custom_prompt_saved"],
-                            ]
-                        })
-                        st.dataframe(df_ref_prev, use_container_width=True, height=150)
+    viral_k_factor
+FROM `de-consulting-508822.readcall_gold.gold_referral_loop`
+ORDER BY event_date ASC;""", language="sql")
+                        df_ref_raw = scope.referral
+                        if not df_ref_raw.empty:
+                            ref_cols = [c for c in ["event_date", "step_1_referral_modal_opened", "step_2_referral_link_copied", "step_4_referral_unlock_success", "step_5_custom_prompt_saved", "viral_k_factor"] if c in df_ref_raw.columns]
+                            st.dataframe(df_ref_raw.sort_values("event_date", ascending=True).tail(5)[ref_cols].reset_index(drop=True), use_container_width=True, height=160)
+                        else:
+                            df_ref_prev = pd.DataFrame({
+                                "Referral Stage": stages_ref,
+                                "Count": [ref_s["step_1_referral_modal_opened"], ref_s["step_2_referral_link_copied"], ref_s["step_4_referral_unlock_success"], ref_s["step_5_custom_prompt_saved"]]
+                            })
+                            st.dataframe(df_ref_prev, use_container_width=True, height=150)
 
                 # Daily Friction Monitoring
                 df_byok = scope.byok
@@ -1579,9 +1602,14 @@ FROM `de-consulting-508822.readcall_gold.gold_byok_funnel`
 ORDER BY event_date ASC;""",
                             language="sql",
                         )
-                        st.caption("📊 **Table Data Snippet (Recent 5 Days)**" if is_en else "📊 **圖表數據切片 (近期 5 日抽樣)**")
-                        fric_cols = [c for c in ["event_date", "step_6_byok_key_saved", "byok_verify_failed"] if c in df_b_sort.columns]
-                        st.dataframe(df_b_sort[fric_cols].tail(5), use_container_width=True, height=130)
+                        st.caption("📊 **Table Data Snippet (Recent 5 Days - 100% Aligned with SQL)**" if is_en else "📊 **圖表數據切片 (近期 5 日抽樣 - 100% 依 SQL 語法即時對齊)**")
+                        df_fric_preview = df_b_sort.sort_values("event_date", ascending=True).tail(5).copy()
+                        df_fric_preview["friction_pct"] = (
+                            df_fric_preview["byok_verify_failed"] * 100.0 / 
+                            (df_fric_preview["step_6_byok_key_saved"] + df_fric_preview["byok_verify_failed"]).clip(lower=1)
+                        ).round(2)
+                        sql_fric_cols = ["event_date", "step_6_byok_key_saved", "byok_verify_failed", "friction_pct"]
+                        st.dataframe(df_fric_preview[sql_fric_cols].reset_index(drop=True), use_container_width=True, height=160)
 
             # TAB 3: NL2CHART GENERATOR
             with tab3:
