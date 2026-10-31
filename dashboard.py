@@ -837,6 +837,8 @@ def main():
             start_date=s_d,
             end_date=e_d,
         )
+        start_str = s_d.isoformat() if s_d else "2026-10-01"
+        end_str = e_d.isoformat() if e_d else "2026-10-31"
 
         # ======================================================================
         # DATA ANALYST (DA) SEMANTIC LAYER LIVE MONITOR (Clean & Actionable)
@@ -1511,7 +1513,7 @@ def main():
                             )
                         )
                         st.code(
-                            """-- Traffic Acquisition Star Schema Join
+                            f"""-- Traffic Acquisition Star Schema Join
 SELECT 
     t.traffic_record_id,
     t.event_date,
@@ -1530,6 +1532,7 @@ LEFT JOIN `de-consulting-508822.readcall_silver.dim_channels` c
     ON t.channel_key = c.channel_key
 LEFT JOIN `de-consulting-508822.readcall_silver.dim_devices_geo` g 
     ON t.device_geo_key = g.device_geo_key
+WHERE t.event_date BETWEEN '{start_str}' AND '{end_str}'
 ORDER BY t.event_date DESC, t.sessions DESC
 LIMIT 15;""",
                             language="sql",
@@ -1680,7 +1683,7 @@ LIMIT 15;""",
                             )
                         )
                         st.code(
-                            """-- Product Feature Events Star Schema Join
+                            f"""-- Product Feature Events Star Schema Join
 SELECT 
     e.event_record_id,
     e.event_date,
@@ -1696,6 +1699,7 @@ SELECT
 FROM `de-consulting-508822.readcall_silver.fct_feature_events` e
 LEFT JOIN `de-consulting-508822.readcall_silver.dim_feature_catalog` c 
     ON e.event_name = c.event_name
+WHERE e.event_date BETWEEN '{start_str}' AND '{end_str}'
 ORDER BY e.event_date DESC, e.event_count DESC
 LIMIT 15;""",
                             language="sql",
@@ -1776,14 +1780,14 @@ LIMIT 15;""",
                             else "🔍 **dbt 金層集市查詢 SQL**"
                         )
                         st.code(
-                            """SELECT 
+                            f"""SELECT 
     event_date,
     dau,
     aha_users,
     round(aha_users * 100.0 / nullif(dau, 0), 2) AS aha_rate_pct
 FROM `de-consulting-508822.readcall_gold.gold_daily_growth_kpi`
-ORDER BY event_date DESC
-LIMIT 5;""",
+WHERE event_date BETWEEN '{start_str}' AND '{end_str}'
+ORDER BY event_date ASC;""",
                             language="sql",
                         )
                         st.caption(
@@ -1791,11 +1795,9 @@ LIMIT 5;""",
                             if is_en
                             else "📊 **圖表數據切片 (近期 5 日抽樣 - 100% 依 SQL 語法即時對齊)**"
                         )
-                        df_trend_preview = (
-                            df_trend.sort_values("event_date", ascending=False)
-                            .head(5)
-                            .copy()
-                        )
+                        df_trend_preview = df_trend.sort_values(
+                            "event_date", ascending=True
+                        ).copy()
                         df_trend_preview["aha_rate_pct"] = (
                             df_trend_preview["aha_users"]
                             * 100.0
@@ -1861,14 +1863,14 @@ LIMIT 5;""",
                                 f"**{'Source Table' if is_en else '來源表'}**：`readcall_silver.fct_daily_traffic` ⨝ `dim_channels`"
                             )
                             st.code(
-                                """SELECT 
+                                f"""SELECT 
     c.acquisition_type,
     t.channel_group,
     SUM(t.active_users) AS active_users
 FROM `readcall_silver.fct_daily_traffic` t
 JOIN `readcall_silver.dim_channels` c ON t.channel_key = c.channel_key
-GROUP BY 1, 2 ORDER BY 3 DESC
-LIMIT 5;""",
+WHERE t.event_date BETWEEN '{start_str}' AND '{end_str}'
+GROUP BY 1, 2 ORDER BY 3 DESC;""",
                                 language="sql",
                             )
                             df_ch_dim = data_dict.get("channels", pd.DataFrame())
@@ -1999,12 +2001,13 @@ LIMIT 5;""",
                                 f"**{'Source Table' if is_en else '來源表'}**：`readcall_silver.fct_daily_traffic` ⨝ `dim_devices_geo`"
                             )
                             st.code(
-                                """SELECT 
+                                f"""SELECT 
     g.country,
     g.is_dach_region,
     SUM(t.active_users) AS active_users
 FROM `readcall_silver.fct_daily_traffic` t
 JOIN `readcall_silver.dim_devices_geo` g ON t.device_geo_key = g.device_geo_key
+WHERE t.event_date BETWEEN '{start_str}' AND '{end_str}'
 GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""",
                                 language="sql",
                             )
@@ -2170,7 +2173,7 @@ GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""",
                             f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_byok_funnel`"
                         )
                         st.code(
-                            """SELECT 
+                            f"""SELECT 
     event_date,
     step_1_first_visit,
     step_2_aha_interaction,
@@ -2178,8 +2181,8 @@ GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""",
     step_5_byok_get_key_clicked,
     step_6_byok_key_saved
 FROM `de-consulting-508822.readcall_gold.gold_byok_funnel`
-ORDER BY event_date DESC
-LIMIT 5;""",
+WHERE event_date BETWEEN '{start_str}' AND '{end_str}'
+ORDER BY event_date ASC;""",
                             language="sql",
                         )
                         df_byok_raw = scope.byok
@@ -2272,7 +2275,7 @@ LIMIT 5;""",
                             f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_referral_loop`"
                         )
                         st.code(
-                            """SELECT 
+                            f"""SELECT 
     event_date,
     step_1_referral_modal_opened,
     step_2_referral_link_copied,
@@ -2280,8 +2283,8 @@ LIMIT 5;""",
     step_5_custom_prompt_saved,
     viral_k_factor
 FROM `de-consulting-508822.readcall_gold.gold_referral_loop`
-ORDER BY event_date DESC
-LIMIT 5;""",
+WHERE event_date BETWEEN '{start_str}' AND '{end_str}'
+ORDER BY event_date ASC;""",
                             language="sql",
                         )
                         df_ref_raw = scope.referral
@@ -2385,14 +2388,14 @@ LIMIT 5;""",
                             else "🔍 **摩擦率監控 SQL 語法**"
                         )
                         st.code(
-                            """SELECT 
+                            f"""SELECT 
     event_date,
     step_6_byok_key_saved,
     byok_verify_failed,
     round(byok_verify_failed * 100.0 / nullif(step_6_byok_key_saved + byok_verify_failed, 0), 2) AS friction_pct
 FROM `de-consulting-508822.readcall_gold.gold_byok_funnel`
-ORDER BY event_date DESC
-LIMIT 5;""",
+WHERE event_date BETWEEN '{start_str}' AND '{end_str}'
+ORDER BY event_date ASC;""",
                             language="sql",
                         )
                         st.caption(
