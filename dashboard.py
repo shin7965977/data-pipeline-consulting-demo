@@ -360,7 +360,8 @@ def load_cockpit_datasets() -> dict[str, pd.DataFrame]:
     """Load Gold marts and traffic facts for cockpit testing and analytics."""
     data = load_lakehouse_data("gold")
     data["traffic"] = cached_load_gold_dataframe("fct_daily_traffic")
-    return data
+    core_keys = {"kpi", "features", "byok", "referral", "traffic", "feature_events"}
+    return {k: v for k, v in data.items() if k in core_keys}
 
 
 @st.cache_data(ttl=600)
@@ -445,10 +446,13 @@ def check_gemini_key_validity(key_to_test: str) -> tuple[bool, str]:
         return True, "valid"
     except Exception as e:  # noqa: BLE001
         err = str(e)
-        if "API_KEY_INVALID" in err or "PERMISSION_DENIED" in err or "unregistered" in err.lower():
+        if (
+            "API_KEY_INVALID" in err
+            or "PERMISSION_DENIED" in err
+            or "unregistered" in err.lower()
+        ):
             return False, "rejected"
         return True, "valid"
-
 
 
 class DashboardScope:
@@ -475,7 +479,11 @@ class DashboardScope:
         self.kpi = self._filter_date(df_kpi, "event_date", start_date, end_date)
 
         # 2. Filter traffic
-        df_tr = traffic_raw if traffic_raw is not None else raw_dict.get("traffic", pd.DataFrame())
+        df_tr = (
+            traffic_raw
+            if traffic_raw is not None
+            else raw_dict.get("traffic", pd.DataFrame())
+        )
         self.traffic = self._filter_date(df_tr, "event_date", start_date, end_date)
 
         # 3. Filter byok
@@ -489,18 +497,50 @@ class DashboardScope:
         # 5. Features (Pareto aggregate dynamically sensitive to date range)
         df_fe = raw_dict.get("feature_events", pd.DataFrame())
         df_fe_filtered = self._filter_date(df_fe, "event_date", start_date, end_date)
-        if not df_fe_filtered.empty and "event_count" in df_fe_filtered.columns and "event_name" in df_fe_filtered.columns:
+        if (
+            not df_fe_filtered.empty
+            and "event_count" in df_fe_filtered.columns
+            and "event_name" in df_fe_filtered.columns
+        ):
             df_cat = raw_dict.get("catalog", pd.DataFrame())
             if not df_cat.empty and "event_name" in df_cat.columns:
-                cat_cols = [c for c in ["event_name", "module_category", "aarrr_stage", "source_component", "is_aha_moment", "is_ai_inference_event"] if c in df_cat.columns]
-                df_fe_filtered = pd.merge(df_fe_filtered, df_cat[cat_cols].drop_duplicates("event_name"), on="event_name", how="left")
-            cols = [c for c in ["event_name", "module_category", "aarrr_stage", "source_component", "is_aha_moment", "is_ai_inference_event"] if c in df_fe_filtered.columns]
-            df_agg = (
-                df_fe_filtered.groupby(cols, as_index=False)
-                .agg(total_event_count=("event_count", "sum"))
+                cat_cols = [
+                    c
+                    for c in [
+                        "event_name",
+                        "module_category",
+                        "aarrr_stage",
+                        "source_component",
+                        "is_aha_moment",
+                        "is_ai_inference_event",
+                    ]
+                    if c in df_cat.columns
+                ]
+                df_fe_filtered = pd.merge(
+                    df_fe_filtered,
+                    df_cat[cat_cols].drop_duplicates("event_name"),
+                    on="event_name",
+                    how="left",
+                )
+            cols = [
+                c
+                for c in [
+                    "event_name",
+                    "module_category",
+                    "aarrr_stage",
+                    "source_component",
+                    "is_aha_moment",
+                    "is_ai_inference_event",
+                ]
+                if c in df_fe_filtered.columns
+            ]
+            df_agg = df_fe_filtered.groupby(cols, as_index=False).agg(
+                total_event_count=("event_count", "sum")
             )
             tot = float(df_agg["total_event_count"].sum())
-            df_agg["event_share_pct"] = (df_agg["total_event_count"] / tot * 100.0).round(2) if tot > 0 else 0.0
+            df_agg["event_share_pct"] = (
+                (df_agg["total_event_count"] / tot * 100.0).round(2) if tot > 0 else 0.0
+            )
             self.features = df_agg
         else:
             self.features = raw_dict.get("features", pd.DataFrame())
@@ -542,18 +582,38 @@ class DashboardScope:
                 "step_6_byok_key_saved": 0,
             }
         # True monotonic user progression: First Visit (401) -> Aha! Interaction (107) -> ByokModal Opened (55) -> Key Retrieval Clicked (19) -> Key Saved (18)
-        s1 = int(df["step_1_first_visit"].sum()) if "step_1_first_visit" in df else int(df.get("step_1_reader_opened", pd.Series([0])).sum())
-        s2 = int(df["step_2_aha_interaction"].sum()) if "step_2_aha_interaction" in df else int(df.get("step_2_ai_trial_inquiry", pd.Series([0])).sum())
+        s1 = (
+            int(df["step_1_first_visit"].sum())
+            if "step_1_first_visit" in df
+            else int(df.get("step_1_reader_opened", pd.Series([0])).sum())
+        )
+        s2 = (
+            int(df["step_2_aha_interaction"].sum())
+            if "step_2_aha_interaction" in df
+            else int(df.get("step_2_ai_trial_inquiry", pd.Series([0])).sum())
+        )
 
         # Unit-Grain & Monotonicity Guard:
         # If s2 exceeds s1 or reaches event count levels (e.g. 2,441 interactions due to un-cleared browser cache/mart),
         # retrieve authentic unique user count from scope.kpi["aha_users"] (107) to ensure funnel integrity.
         if s2 > s1 or s2 > 400:
-            kpi_aha = int(self.kpi["aha_users"].sum()) if not self.kpi.empty and "aha_users" in self.kpi.columns else 0
+            kpi_aha = (
+                int(self.kpi["aha_users"].sum())
+                if not self.kpi.empty and "aha_users" in self.kpi.columns
+                else 0
+            )
             s2 = kpi_aha if 0 < kpi_aha <= s1 else 107
 
         s3 = min(int(df.get("step_4_byok_modal_opened", pd.Series([0])).sum()), s2)
-        s4 = min(int(df.get("step_5_key_acquisition_attempt", df.get("step_5_byok_get_key_clicked", pd.Series([0]))).sum()), s3)
+        s4 = min(
+            int(
+                df.get(
+                    "step_5_key_acquisition_attempt",
+                    df.get("step_5_byok_get_key_clicked", pd.Series([0])),
+                ).sum()
+            ),
+            s3,
+        )
         s5 = min(int(df.get("step_6_byok_key_saved", pd.Series([0])).sum()), s4)
         trial_wall = int(df.get("step_3_trial_limit_hit", pd.Series([0])).sum())
         failed = int(df.get("byok_verify_failed", pd.Series([0])).sum())
@@ -590,7 +650,12 @@ class DashboardScope:
         r2 = int(df.get("step_2_referral_link_copied", pd.Series([0])).sum())
         r3 = int(df.get("step_4_referral_unlock_success", pd.Series([0])).sum())
         r4 = int(df.get("step_5_custom_prompt_saved", pd.Series([0])).sum())
-        r_banner = int(df.get("step_3_referral_link_visited", df.get("step_3_referral_banner_shown", pd.Series([0]))).sum())
+        r_banner = int(
+            df.get(
+                "step_3_referral_link_visited",
+                df.get("step_3_referral_banner_shown", pd.Series([0])),
+            ).sum()
+        )
         return {
             "step_1_referral_modal_opened": r1,
             "step_2_referral_link_copied": r2,
@@ -600,6 +665,7 @@ class DashboardScope:
             "viral_k_factor_proxy": round(r3 / max(r1, 1), 4),
         }
 
+
 def main():
     if "lang" not in st.session_state:
         qp_lang = st.query_params.get("lang", "").lower()
@@ -608,7 +674,9 @@ def main():
     is_en = st.session_state["lang"] == "en"
 
     # Inject stealth 0px recruiter telemetry
-    inject_stealth_telemetry("portfolio_opened", {"cockpit_lang": st.session_state["lang"]})
+    inject_stealth_telemetry(
+        "portfolio_opened", {"cockpit_lang": st.session_state["lang"]}
+    )
 
     # ==============================================================================
     # 3. Session State Defaults
@@ -661,9 +729,24 @@ def main():
         st.markdown("---")
         st.subheader("📁 " + ("Lakehouse Layer" if is_en else "湖倉資料來源層級"))
         layer_options = {
-            "gold": "🥇 " + ("Gold (readcall_gold · Core PLG Marts)" if is_en else "金牌層 (readcall_gold · 核心 PLG 指標)"),
-            "silver": "🥈 " + ("Silver (readcall_silver · Star Schema)" if is_en else "銀牌層 (readcall_silver · 清洗事實與維度)"),
-            "bronze": "🥉 " + ("Bronze (readcall_bronze · Raw Telemetry)" if is_en else "銅牌層 (readcall_bronze · 原始埋點串流)"),
+            "gold": "🥇 "
+            + (
+                "Gold (readcall_gold · Core PLG Marts)"
+                if is_en
+                else "金牌層 (readcall_gold · 核心 PLG 指標)"
+            ),
+            "silver": "🥈 "
+            + (
+                "Silver (readcall_silver · Star Schema)"
+                if is_en
+                else "銀牌層 (readcall_silver · 清洗事實與維度)"
+            ),
+            "bronze": "🥉 "
+            + (
+                "Bronze (readcall_bronze · Raw Telemetry)"
+                if is_en
+                else "銅牌層 (readcall_bronze · 原始埋點串流)"
+            ),
         }
         selected_layer = st.selectbox(
             "Select Layer:" if is_en else "切換湖倉資料來源層級：",
@@ -672,12 +755,18 @@ def main():
             index=0,
             key="selected_lakehouse_layer",
         )
-        data_source_str = f"Google Cloud BigQuery ({PROJECT_ID}.readcall_{selected_layer})"
+        data_source_str = (
+            f"Google Cloud BigQuery ({PROJECT_ID}.readcall_{selected_layer})"
+        )
         is_live = cached_is_bigquery_live()
         if is_live:
-            st.caption(f"🟢 {'Live GCP BigQuery: ' if is_en else '即時 BigQuery 連線：'}`{data_source_str}`")
+            st.caption(
+                f"🟢 {'Live GCP BigQuery: ' if is_en else '即時 BigQuery 連線：'}`{data_source_str}`"
+            )
         else:
-            st.caption(f"📁 {'Authentic Telemetry Mirror: ' if is_en else '真實遙測緩存鏡像：'}`GA4 Property 559361789`")
+            st.caption(
+                f"📁 {'Authentic Telemetry Mirror: ' if is_en else '真實遙測緩存鏡像：'}`GA4 Property 559361789`"
+            )
 
         # Load layer data
         data_dict = load_lakehouse_data(selected_layer)
@@ -692,18 +781,28 @@ def main():
                 unsafe_allow_html=True,
             )
         with c_sync2:
-            if st.button("🔄 " + ("Refresh" if is_en else "刷新"), key="btn_refresh_lakehouse"):
+            if st.button(
+                "🔄 " + ("Refresh" if is_en else "刷新"), key="btn_refresh_lakehouse"
+            ):
                 st.cache_data.clear()
                 st.rerun()
 
         if st.button(
-            "🚀 " + ("Trigger ELT Pipeline" if is_en else "立即同步最新資料 (Trigger ELT)"),
+            "🚀 "
+            + ("Trigger ELT Pipeline" if is_en else "立即同步最新資料 (Trigger ELT)"),
             type="primary",
             use_container_width=True,
             key="btn_trigger_pipeline",
         ):
             with st.spinner("Executing Ingest ➔ Transform ➔ Test in BigQuery..."):
-                st.success("🎉 " + ("ELT Pipeline synchronized with BigQuery!" if is_en else "已成功同步 BigQuery 湖倉數據！"))
+                st.success(
+                    "🎉 "
+                    + (
+                        "ELT Pipeline synchronized with BigQuery!"
+                        if is_en
+                        else "已成功同步 BigQuery 湖倉數據！"
+                    )
+                )
 
         # Date Range Filter for Gold Layer
         s_d, e_d = None, None
@@ -720,11 +819,18 @@ def main():
                     min_value=min_date - timedelta(days=90),
                     max_value=date.today() + timedelta(days=1),
                 )
-                if isinstance(selected_dates, (list, tuple)) and len(selected_dates) == 2:
+                if (
+                    isinstance(selected_dates, (list, tuple))
+                    and len(selected_dates) == 2
+                ):
                     s_d, e_d = selected_dates
 
         # Centralized Filtered Scope (Single Source of Truth)
-        traffic_raw_df = cached_load_gold_dataframe("fct_daily_traffic") if selected_layer == "gold" else pd.DataFrame()
+        traffic_raw_df = (
+            cached_load_gold_dataframe("fct_daily_traffic")
+            if selected_layer == "gold"
+            else pd.DataFrame()
+        )
         scope = DashboardScope(
             raw_dict=data_dict,
             traffic_raw=traffic_raw_df,
@@ -736,23 +842,31 @@ def main():
         # DATA ANALYST (DA) SEMANTIC LAYER LIVE MONITOR (Clean & Actionable)
         # ======================================================================
         st.markdown("---")
-        st.subheader("📐 " + ("dbt Semantic Metrics" if is_en else "dbt 語意層指標監控"))
-        st.caption("Live Metric Calculations & Targets for Data Analysts" if is_en else "提供給資料分析師 (DA) 的真實指標數值與達標監控")
+        st.subheader(
+            "📐 " + ("dbt Semantic Metrics" if is_en else "dbt 語意層指標監控")
+        )
+        st.caption(
+            "Live Metric Calculations & Targets for Data Analysts"
+            if is_en
+            else "提供給資料分析師 (DA) 的真實指標數值與達標監控"
+        )
 
         byok_funnel_calc = scope.byok_funnel
         ref_loop_calc = scope.referral_loop
         gold_kpi_calc = scope.kpi
 
         tot_dau_num = int(gold_kpi_calc["dau"].sum()) if not gold_kpi_calc.empty else 1
-        tot_aha_num = int(gold_kpi_calc["aha_users"].sum()) if not gold_kpi_calc.empty else 0
+        tot_aha_num = (
+            int(gold_kpi_calc["aha_users"].sum()) if not gold_kpi_calc.empty else 0
+        )
         aha_live_val = (tot_aha_num / tot_dau_num * 100.0) if tot_dau_num > 0 else 0.0
 
         byok_saved_num = byok_funnel_calc.get("step_6_byok_key_saved", 0)
         byok_wall_num = byok_funnel_calc.get("step_3_trial_limit_hit", 1)
-        byok_conv_val = (byok_saved_num / max(byok_wall_num, 1) * 100.0)
+        byok_conv_val = byok_saved_num / max(byok_wall_num, 1) * 100.0
 
         byok_fail_num = byok_funnel_calc.get("byok_verify_failed", 0)
-        byok_fail_val = (byok_fail_num / max(byok_saved_num + byok_fail_num, 1) * 100.0)
+        byok_fail_val = byok_fail_num / max(byok_saved_num + byok_fail_num, 1) * 100.0
 
         viral_k_val = ref_loop_calc.get("viral_k_factor_proxy", 0.0) * 100.0
 
@@ -763,15 +877,21 @@ def main():
                 "target": "≥ 60.0%",
                 "healthy": aha_live_val >= 60.0,
                 "formula": "aha_users / dau",
-                "desc": "Active learners selecting words or searching dictionary." if is_en else "進站後選字或查字典之活躍讀者佔比。",
+                "desc": "Active learners selecting words or searching dictionary."
+                if is_en
+                else "進站後選字或查字典之活躍讀者佔比。",
             },
             {
-                "name": "Trial-to-BYOK Conversion" if is_en else "試用至 BYOK 金鑰轉換率",
+                "name": "Trial-to-BYOK Conversion"
+                if is_en
+                else "試用至 BYOK 金鑰轉換率",
                 "val_str": f"{byok_conv_val:.1f}%",
                 "target": "≥ 45.0%",
                 "healthy": byok_conv_val >= 45.0,
                 "formula": "byok_key_saved / trial_wall_hits",
-                "desc": "Conversion rate from quota wall hit to saved Gemini API key." if is_en else "觸發試用上限後成功綁定 API 金鑰之比例。",
+                "desc": "Conversion rate from quota wall hit to saved Gemini API key."
+                if is_en
+                else "觸發試用上限後成功綁定 API 金鑰之比例。",
             },
             {
                 "name": "API Key Verify Friction" if is_en else "金鑰驗證失敗摩擦率",
@@ -779,7 +899,9 @@ def main():
                 "target": "≤ 8.0%",
                 "healthy": byok_fail_val <= 8.0,
                 "formula": "verify_failed / total_verify_attempts",
-                "desc": "Percentage of key submissions failing API verification." if is_en else "金鑰驗證失敗佔總送出驗證次數之比例。",
+                "desc": "Percentage of key submissions failing API verification."
+                if is_en
+                else "金鑰驗證失敗佔總送出驗證次數之比例。",
             },
             {
                 "name": "Referral Viral K-Factor" if is_en else "推薦裂變解鎖係數",
@@ -787,39 +909,107 @@ def main():
                 "target": "≥ 12.0%",
                 "healthy": viral_k_val >= 12.0,
                 "formula": "unlock_success / referral_modal_opened",
-                "desc": "Proxy ratio of successful prompt unlocks to share modal opens." if is_en else "開推薦彈窗至受邀者成功解鎖之比例。",
+                "desc": "Proxy ratio of successful prompt unlocks to share modal opens."
+                if is_en
+                else "開推薦彈窗至受邀者成功解鎖之比例。",
             },
         ]
 
-        def _make_term(term_str: str, role_title: str, unit_str: str, meaning_str: str, is_numerator: bool = True) -> str:
+        def _make_term(
+            term_str: str,
+            role_title: str,
+            unit_str: str,
+            meaning_str: str,
+            is_numerator: bool = True,
+        ) -> str:
             cls_name = "term-num" if is_numerator else "term-den"
             return (
                 f'<span class="formula-term {cls_name}">'
-                f'{term_str}'
+                f"{term_str}"
                 f'<span class="tooltip-box">'
                 f'<div class="tooltip-header"><span>{role_title}</span><span class="tooltip-unit">{unit_str}</span></div>'
                 f'<div class="tooltip-body">{meaning_str}</div>'
-                f'</span>'
-                f'</span>'
+                f"</span>"
+                f"</span>"
             )
 
-        f1_num = _make_term("aha_users", "aha_users (Numerator)" if is_en else "aha_users（分子）", "Unit: Users" if is_en else "單位：人", "Unique active users executing core dictionary or reading highlights." if is_en else "當日執行查字典 (dictionary_searched) 或選字精讀的獨立讀者數")
-        f1_den = _make_term("dau", "dau (Denominator)", unit_str="Unit: Users" if is_en else "單位：人", meaning_str="Total daily active users visiting the platform." if is_en else "全站當日總造訪之獨立活躍讀者數 (Daily Active Users)", is_numerator=False)
+        f1_num = _make_term(
+            "aha_users",
+            "aha_users (Numerator)" if is_en else "aha_users（分子）",
+            "Unit: Users" if is_en else "單位：人",
+            "Unique active users executing core dictionary or reading highlights."
+            if is_en
+            else "當日執行查字典 (dictionary_searched) 或選字精讀的獨立讀者數",
+        )
+        f1_den = _make_term(
+            "dau",
+            "dau (Denominator)",
+            unit_str="Unit: Users" if is_en else "單位：人",
+            meaning_str="Total daily active users visiting the platform."
+            if is_en
+            else "全站當日總造訪之獨立活躍讀者數 (Daily Active Users)",
+            is_numerator=False,
+        )
         # f1_den_old =  if is_en else "dau（分母）", "Unit: Users" if is_en else "單位：人", "Total daily active users visiting the platform." if is_en else "全站當日總造訪之獨立活躍讀者數 (Daily Active Users)")
         f1_html = f'<div class="formula-tag">{f1_num} <span style="color:#64748b;font-weight:700;">/</span> {f1_den}</div>'
 
-        f2_num = _make_term("byok_key_saved", "byok_key_saved (Numerator)" if is_en else "byok_key_saved（分子）", "Unit: Keys" if is_en else "單位：組", "Successful Google AI Studio Gemini API key activations." if is_en else "成功輸入並驗證綁定 Google AI Studio Gemini API Key 之次數")
-        f2_den = _make_term("trial_wall_hits", "trial_wall_hits (Denominator)", unit_str="Unit: Hits" if is_en else "單位：次", meaning_str="Users exhausting free trial and triggering BYOK modal." if is_en else "免費試用額度用盡觸發綁定提醒彈窗之次數", is_numerator=False)
+        f2_num = _make_term(
+            "byok_key_saved",
+            "byok_key_saved (Numerator)" if is_en else "byok_key_saved（分子）",
+            "Unit: Keys" if is_en else "單位：組",
+            "Successful Google AI Studio Gemini API key activations."
+            if is_en
+            else "成功輸入並驗證綁定 Google AI Studio Gemini API Key 之次數",
+        )
+        f2_den = _make_term(
+            "trial_wall_hits",
+            "trial_wall_hits (Denominator)",
+            unit_str="Unit: Hits" if is_en else "單位：次",
+            meaning_str="Users exhausting free trial and triggering BYOK modal."
+            if is_en
+            else "免費試用額度用盡觸發綁定提醒彈窗之次數",
+            is_numerator=False,
+        )
         # f2_den_old =  if is_en else "trial_wall_hits（分母）", "Unit: Hits" if is_en else "單位：次", "Users exhausting free trial and triggering BYOK modal." if is_en else "免費試用額度用盡觸發綁定提醒彈窗之次數")
         f2_html = f'<div class="formula-tag">{f2_num} <span style="color:#64748b;font-weight:700;">/</span> {f2_den}</div>'
 
-        f3_num = _make_term("verify_failed", "verify_failed (Numerator)" if is_en else "verify_failed（分子）", "Unit: Errors" if is_en else "單位：次", "Key submissions failing validation check." if is_en else "因貼錯字元或格式不合法導致驗證失敗之次數")
-        f3_den = _make_term("total_verify_attempts", "total_verify_attempts (Denominator)", unit_str="Unit: Submissions" if is_en else "單位：次", meaning_str="Total key verification attempts (saved + failed)." if is_en else "送出金鑰驗證之總嘗試次數 (成功 + 失敗)", is_numerator=False)
+        f3_num = _make_term(
+            "verify_failed",
+            "verify_failed (Numerator)" if is_en else "verify_failed（分子）",
+            "Unit: Errors" if is_en else "單位：次",
+            "Key submissions failing validation check."
+            if is_en
+            else "因貼錯字元或格式不合法導致驗證失敗之次數",
+        )
+        f3_den = _make_term(
+            "total_verify_attempts",
+            "total_verify_attempts (Denominator)",
+            unit_str="Unit: Submissions" if is_en else "單位：次",
+            meaning_str="Total key verification attempts (saved + failed)."
+            if is_en
+            else "送出金鑰驗證之總嘗試次數 (成功 + 失敗)",
+            is_numerator=False,
+        )
         # f3_den_old =  if is_en else "total_verify_attempts（分母）", "Unit: Submissions" if is_en else "單位：次", "Total key verification attempts (saved + failed)." if is_en else "送出金鑰驗證之總嘗試次數 (成功 + 失敗)")
         f3_html = f'<div class="formula-tag">{f3_num} <span style="color:#64748b;font-weight:700;">/</span> {f3_den}</div>'
 
-        f4_num = _make_term("unlock_success", "unlock_success (Numerator)" if is_en else "unlock_success（分子）", "Unit: Unlocks" if is_en else "單位：次", "Successful prompt unlocks via referral link." if is_en else "受邀好友透過專屬連結成功解鎖高階 Prompt 之次數")
-        f4_den = _make_term("referral_modal_opened", "referral_modal_opened (Denominator)", unit_str="Unit: Opens" if is_en else "單位：次", meaning_str="Users opening the viral share invitation modal." if is_en else "既有讀者主動點開邀請好友分享彈窗之次數", is_numerator=False)
+        f4_num = _make_term(
+            "unlock_success",
+            "unlock_success (Numerator)" if is_en else "unlock_success（分子）",
+            "Unit: Unlocks" if is_en else "單位：次",
+            "Successful prompt unlocks via referral link."
+            if is_en
+            else "受邀好友透過專屬連結成功解鎖高階 Prompt 之次數",
+        )
+        f4_den = _make_term(
+            "referral_modal_opened",
+            "referral_modal_opened (Denominator)",
+            unit_str="Unit: Opens" if is_en else "單位：次",
+            meaning_str="Users opening the viral share invitation modal."
+            if is_en
+            else "既有讀者主動點開邀請好友分享彈窗之次數",
+            is_numerator=False,
+        )
         # f4_den_old =  if is_en else "referral_modal_opened（分母）", "Unit: Opens" if is_en else "單位：次", "Users opening the viral share invitation modal." if is_en else "既有讀者主動點開邀請好友分享彈窗之次數")
         f4_html = f'<div class="formula-tag">{f4_num} <span style="color:#64748b;font-weight:700;">/</span> {f4_den}</div>'
 
@@ -827,18 +1017,26 @@ def main():
 
         for i, m in enumerate(da_metrics):
             badge_cls = "da-badge-healthy" if m["healthy"] else "da-badge-warn"
-            badge_txt = ("🟢 " + ("Normal" if is_en else "健康")) if m["healthy"] else ("🟡 " + ("Warning" if is_en else "警戒"))
-            cur_formula_html = formula_html_map[i] if i < len(formula_html_map) else f'<span class="formula-tag">{m["formula"]}</span>'
+            badge_txt = (
+                ("🟢 " + ("Normal" if is_en else "健康"))
+                if m["healthy"]
+                else ("🟡 " + ("Warning" if is_en else "警戒"))
+            )
+            cur_formula_html = (
+                formula_html_map[i]
+                if i < len(formula_html_map)
+                else f'<span class="formula-tag">{m["formula"]}</span>'
+            )
             st.markdown(
                 f"""
                 <div class="da-metric-box">
                     <span class="{badge_cls}">{badge_txt}</span>
-                    <div class="da-metric-title">{m['name']}</div>
-                    <div class="da-metric-num">{m['val_str']} <span style="font-size:0.75rem;color:#64748b;font-weight:600;">({'Target: ' if is_en else '目標: '}{m['target']})</span></div>
+                    <div class="da-metric-title">{m["name"]}</div>
+                    <div class="da-metric-num">{m["val_str"]} <span style="font-size:0.75rem;color:#64748b;font-weight:600;">({"Target: " if is_en else "目標: "}{m["target"]})</span></div>
                     <div style="margin-top:0.25rem;">
                         {cur_formula_html}
                     </div>
-                    <div style="font-size:0.74rem;color:#64748b;margin-top:0.35rem;line-height:1.35;">{m['desc']}</div>
+                    <div style="font-size:0.74rem;color:#64748b;margin-top:0.35rem;line-height:1.35;">{m["desc"]}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -858,12 +1056,31 @@ def main():
         # Header Area
         header_col1, header_col2 = st.columns([2.7, 1.3])
         layer_display_titles = {
-            "gold": "🥇 " + ("Gold Layer (readcall_gold · Core PLG Marts)" if is_en else "金牌層 (readcall_gold · 業務決策與 PLG 指標)"),
-            "silver": "🥈 " + ("Silver Layer (readcall_silver · Star Schema)" if is_en else "銀牌層 (readcall_silver · 清洗事實與維度明細)"),
-            "bronze": "🥉 " + ("Bronze Layer (readcall_bronze · Raw Streams)" if is_en else "銅牌層 (readcall_bronze · 原始串流與 Ingestion 歷程)"),
+            "gold": "🥇 "
+            + (
+                "Gold Layer (readcall_gold · Core PLG Marts)"
+                if is_en
+                else "金牌層 (readcall_gold · 業務決策與 PLG 指標)"
+            ),
+            "silver": "🥈 "
+            + (
+                "Silver Layer (readcall_silver · Star Schema)"
+                if is_en
+                else "銀牌層 (readcall_silver · 清洗事實與維度明細)"
+            ),
+            "bronze": "🥉 "
+            + (
+                "Bronze Layer (readcall_bronze · Raw Streams)"
+                if is_en
+                else "銅牌層 (readcall_bronze · 原始串流與 Ingestion 歷程)"
+            ),
         }
         with header_col1:
-            st.title("ReadCall Product Analytics Lakehouse" if is_en else "ReadCall 產品分析與 PLG 數據戰情室")
+            st.title(
+                "ReadCall Product Analytics Lakehouse"
+                if is_en
+                else "ReadCall 產品分析與 PLG 數據戰情室"
+            )
             st.markdown(
                 f"**{'Current Layer: ' if is_en else '當前湖倉層級：'}**{layer_display_titles.get(selected_layer)} · "
                 f"**GA4 Property 559361789 + dlt + GCP BigQuery + dbt-core**"
@@ -894,7 +1111,9 @@ def main():
                 )
             with c_ai_btn:
                 if st.button(
-                    ("» Hide Advisor" if is_ai_open else "✨ AI Advisor") if is_en else ("» 收起顧問" if is_ai_open else "✨ AI 顧問"),
+                    ("» Hide Advisor" if is_ai_open else "✨ AI Advisor")
+                    if is_en
+                    else ("» 收起顧問" if is_ai_open else "✨ AI 顧問"),
                     type="secondary" if is_ai_open else "primary",
                     use_container_width=True,
                     key="top_bar_ai_toggle",
@@ -916,16 +1135,38 @@ def main():
         # ----------------------------------------------------------------------
         if selected_layer == "gold":
             df_kpi_active = scope.kpi
-            total_user_days = int(df_kpi_active["dau"].sum()) if "dau" in df_kpi_active.columns else 0
-            total_sessions = int(df_kpi_active["total_sessions"].sum()) if "total_sessions" in df_kpi_active.columns else 0
-            
+            total_user_days = (
+                int(df_kpi_active["dau"].sum()) if "dau" in df_kpi_active.columns else 0
+            )
+            total_sessions = (
+                int(df_kpi_active["total_sessions"].sum())
+                if "total_sessions" in df_kpi_active.columns
+                else 0
+            )
+
             # Weighted ratio sums (strictly compliant with dbt Semantic Layer formulas - eliminates Simpson's Paradox)
-            tot_eng = float(df_kpi_active["engaged_sessions"].sum()) if "engaged_sessions" in df_kpi_active.columns else 0.0
-            tot_sess = float(df_kpi_active["total_sessions"].sum()) if "total_sessions" in df_kpi_active.columns else 0.0
+            tot_eng = (
+                float(df_kpi_active["engaged_sessions"].sum())
+                if "engaged_sessions" in df_kpi_active.columns
+                else 0.0
+            )
+            tot_sess = (
+                float(df_kpi_active["total_sessions"].sum())
+                if "total_sessions" in df_kpi_active.columns
+                else 0.0
+            )
             avg_eng_rate = (tot_eng / max(tot_sess, 1.0)) * 100.0
 
-            tot_aha = float(df_kpi_active["aha_users"].sum()) if "aha_users" in df_kpi_active.columns else 0.0
-            tot_dau = float(df_kpi_active["dau"].sum()) if "dau" in df_kpi_active.columns else 0.0
+            tot_aha = (
+                float(df_kpi_active["aha_users"].sum())
+                if "aha_users" in df_kpi_active.columns
+                else 0.0
+            )
+            tot_dau = (
+                float(df_kpi_active["dau"].sum())
+                if "dau" in df_kpi_active.columns
+                else 0.0
+            )
             avg_aha_rate = (tot_aha / max(tot_dau, 1.0)) * 100.0
 
             byok_totals = scope.byok_funnel
@@ -938,9 +1179,9 @@ def main():
                 st.markdown(
                     f"""
                     <div class="metric-card metric-card-blue">
-                        <div class="metric-label">{'Total User-Days' if is_en else '累計活躍人天 (User-Days)'}</div>
+                        <div class="metric-label">{"Total User-Days" if is_en else "累計活躍人天 (User-Days)"}</div>
                         <div class="metric-value">{total_user_days:,}</div>
-                        <div class="metric-subtext-pill info">📈 {'Total Sessions' if is_en else '總工作階段'}: {total_sessions:,}</div>
+                        <div class="metric-subtext-pill info">📈 {"Total Sessions" if is_en else "總工作階段"}: {total_sessions:,}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -949,9 +1190,9 @@ def main():
                 st.markdown(
                     f"""
                     <div class="metric-card metric-card-emerald">
-                        <div class="metric-label">{'Avg Engagement Rate' if is_en else '平均互動工作階段率'}</div>
+                        <div class="metric-label">{"Avg Engagement Rate" if is_en else "平均互動工作階段率"}</div>
                         <div class="metric-value">{avg_eng_rate:.1f}%</div>
-                        <div class="metric-subtext-pill">✓ {'Target ≥ 65.0%' if is_en else '目標基準 ≥ 65.0%'}</div>
+                        <div class="metric-subtext-pill">✓ {"Target ≥ 65.0%" if is_en else "目標基準 ≥ 65.0%"}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -960,9 +1201,9 @@ def main():
                 st.markdown(
                     f"""
                     <div class="metric-card metric-card-indigo">
-                        <div class="metric-label">{'Aha! Activation Rate' if is_en else 'Aha! 核心功能啟用率'}</div>
+                        <div class="metric-label">{"Aha! Activation Rate" if is_en else "Aha! 核心功能啟用率"}</div>
                         <div class="metric-value">{avg_aha_rate:.1f}%</div>
-                        <div class="metric-subtext-pill">⚡ {'Selected Text + Dict' if is_en else '選詞解析 + 雙語字典查詢'}</div>
+                        <div class="metric-subtext-pill">⚡ {"Selected Text + Dict" if is_en else "選詞解析 + 雙語字典查詢"}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -971,9 +1212,9 @@ def main():
                 st.markdown(
                     f"""
                     <div class="metric-card metric-card-amber">
-                        <div class="metric-label">{'BYOK Conversion Rate' if is_en else '視窗至金鑰儲存轉換率'}</div>
+                        <div class="metric-label">{"BYOK Conversion Rate" if is_en else "視窗至金鑰儲存轉換率"}</div>
                         <div class="metric-value">{byok_conv:.1f}%</div>
-                        <div class="metric-subtext-pill warning">🔑 {saved_keys:,} {'Keys Unlocked' if is_en else '組金鑰解鎖額度'}</div>
+                        <div class="metric-subtext-pill warning">🔑 {saved_keys:,} {"Keys Unlocked" if is_en else "組金鑰解鎖額度"}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -1002,7 +1243,11 @@ def main():
 
             # TAB 0: STAR SCHEMA ARCHITECTURE & LINEAGE
             with tab0:
-                st.subheader("Dimensional Star Schema Architecture & Kimball Lineage" if is_en else "維度星型模型架構全貌與 Kimball 關聯血緣")
+                st.subheader(
+                    "Dimensional Star Schema Architecture & Kimball Lineage"
+                    if is_en
+                    else "維度星型模型架構全貌與 Kimball 關聯血緣"
+                )
                 st.caption(
                     "Inspect the 2 production Star Schemas powering ReadCall Lakehouse, their underlying Foreign Key joins, and denormalized analytical views."
                     if is_en
@@ -1010,7 +1255,9 @@ def main():
                 )
 
                 star_choice = st.radio(
-                    "Select Star Schema to Inspect:" if is_en else "請選擇欲檢視的星型模型：",
+                    "Select Star Schema to Inspect:"
+                    if is_en
+                    else "請選擇欲檢視的星型模型：",
                     [
                         "🌟 Star Schema 1: Traffic Acquisition & Geo Star",
                         "🌟 Star Schema 2: Product Engagement & Feature Funnel Star",
@@ -1065,76 +1312,204 @@ def main():
 
                     col_s1_left, col_s1_right = st.columns([1.1, 0.9])
                     with col_s1_left:
-                        st.markdown("##### " + ("Denormalized Star Schema Table Preview" if is_en else "星型關聯寬表即時數據預覽 (Enriched Star View)"))
+                        st.markdown(
+                            "##### "
+                            + (
+                                "Denormalized Star Schema Table Preview"
+                                if is_en
+                                else "星型關聯寬表即時數據預覽 (Enriched Star View)"
+                            )
+                        )
                         df_tr = data_dict.get("traffic", pd.DataFrame()).copy()
                         df_ch = data_dict.get("channels", pd.DataFrame()).copy()
                         df_geo = data_dict.get("devices_geo", pd.DataFrame()).copy()
 
                         # Defensive key derivation & reconstruction
                         if not df_tr.empty:
-                            if "channel_key" not in df_tr.columns and "channel_group" in df_tr.columns:
-                                src = df_tr["source_medium"].astype(str).str.lower().str.replace(" ", "").str.replace("/", "_") if "source_medium" in df_tr.columns else "direct"
-                                df_tr["channel_key"] = df_tr["channel_group"].astype(str).str.lower().str.replace(" ", "_") + "__" + src
-                            if "device_geo_key" not in df_tr.columns and "device_category" in df_tr.columns and "country" in df_tr.columns:
-                                df_tr["device_geo_key"] = df_tr["device_category"].astype(str).str.lower() + "__" + df_tr["country"].astype(str).str.lower().str.replace(" ", "_")
-                            if "is_dach_region" not in df_tr.columns and "country" in df_tr.columns:
-                                df_tr["is_dach_region"] = df_tr["country"].isin(["Germany", "Austria", "Switzerland"])
+                            if (
+                                "channel_key" not in df_tr.columns
+                                and "channel_group" in df_tr.columns
+                            ):
+                                src = (
+                                    df_tr["source_medium"]
+                                    .astype(str)
+                                    .str.lower()
+                                    .str.replace(" ", "")
+                                    .str.replace("/", "_")
+                                    if "source_medium" in df_tr.columns
+                                    else "direct"
+                                )
+                                df_tr["channel_key"] = (
+                                    df_tr["channel_group"]
+                                    .astype(str)
+                                    .str.lower()
+                                    .str.replace(" ", "_")
+                                    + "__"
+                                    + src
+                                )
+                            if (
+                                "device_geo_key" not in df_tr.columns
+                                and "device_category" in df_tr.columns
+                                and "country" in df_tr.columns
+                            ):
+                                df_tr["device_geo_key"] = (
+                                    df_tr["device_category"].astype(str).str.lower()
+                                    + "__"
+                                    + df_tr["country"]
+                                    .astype(str)
+                                    .str.lower()
+                                    .str.replace(" ", "_")
+                                )
+                            if (
+                                "is_dach_region" not in df_tr.columns
+                                and "country" in df_tr.columns
+                            ):
+                                df_tr["is_dach_region"] = df_tr["country"].isin(
+                                    ["Germany", "Austria", "Switzerland"]
+                                )
 
-                        if df_ch.empty or "channel_key" not in df_ch.columns or "acquisition_type" not in df_ch.columns:
+                        if (
+                            df_ch.empty
+                            or "channel_key" not in df_ch.columns
+                            or "acquisition_type" not in df_ch.columns
+                        ):
                             if not df_tr.empty and "channel_group" in df_tr.columns:
-                                cols_base = [c for c in ["channel_group", "source_medium"] if c in df_tr.columns]
+                                cols_base = [
+                                    c
+                                    for c in ["channel_group", "source_medium"]
+                                    if c in df_tr.columns
+                                ]
                                 df_ch = df_tr[cols_base].drop_duplicates().copy()
-                                src = df_ch["source_medium"].astype(str).str.lower().str.replace(" ", "").str.replace("/", "_") if "source_medium" in df_ch.columns else "direct"
-                                df_ch["channel_key"] = df_ch["channel_group"].astype(str).str.lower().str.replace(" ", "_") + "__" + src
-                                df_ch["acquisition_type"] = df_ch["channel_group"].map({
-                                    "Organic Search": "pSEO / Organic Search",
-                                    "Referral": "Viral Referral Loop",
-                                    "Organic Social": "Community / Social",
-                                }).fillna("Direct / Bookmark")
+                                src = (
+                                    df_ch["source_medium"]
+                                    .astype(str)
+                                    .str.lower()
+                                    .str.replace(" ", "")
+                                    .str.replace("/", "_")
+                                    if "source_medium" in df_ch.columns
+                                    else "direct"
+                                )
+                                df_ch["channel_key"] = (
+                                    df_ch["channel_group"]
+                                    .astype(str)
+                                    .str.lower()
+                                    .str.replace(" ", "_")
+                                    + "__"
+                                    + src
+                                )
+                                df_ch["acquisition_type"] = (
+                                    df_ch["channel_group"]
+                                    .map(
+                                        {
+                                            "Organic Search": "pSEO / Organic Search",
+                                            "Referral": "Viral Referral Loop",
+                                            "Organic Social": "Community / Social",
+                                        }
+                                    )
+                                    .fillna("Direct / Bookmark")
+                                )
 
-                        if df_geo.empty or "device_geo_key" not in df_geo.columns or "is_dach_region" not in df_geo.columns:
-                            if not df_tr.empty and "device_category" in df_tr.columns and "country" in df_tr.columns:
-                                df_geo = df_tr[["device_category", "country"]].drop_duplicates().copy()
-                                df_geo["device_geo_key"] = df_geo["device_category"].astype(str).lower() + "__" + df_geo["country"].astype(str).lower().str.replace(" ", "_")
-                                df_geo["is_dach_region"] = df_geo["country"].isin(["Germany", "Austria", "Switzerland"])
+                        if (
+                            df_geo.empty
+                            or "device_geo_key" not in df_geo.columns
+                            or "is_dach_region" not in df_geo.columns
+                        ):
+                            if (
+                                not df_tr.empty
+                                and "device_category" in df_tr.columns
+                                and "country" in df_tr.columns
+                            ):
+                                df_geo = (
+                                    df_tr[["device_category", "country"]]
+                                    .drop_duplicates()
+                                    .copy()
+                                )
+                                df_geo["device_geo_key"] = (
+                                    df_geo["device_category"].astype(str).lower()
+                                    + "__"
+                                    + df_geo["country"]
+                                    .astype(str)
+                                    .lower()
+                                    .str.replace(" ", "_")
+                                )
+                                df_geo["is_dach_region"] = df_geo["country"].isin(
+                                    ["Germany", "Austria", "Switzerland"]
+                                )
 
                         if not df_tr.empty:
-                            pure_tr_cols = [c for c in df_tr.columns if c not in ["acquisition_type", "is_dach_region"]]
+                            pure_tr_cols = [
+                                c
+                                for c in df_tr.columns
+                                if c not in ["acquisition_type", "is_dach_region"]
+                            ]
                             df_tr_star = df_tr[pure_tr_cols].copy()
-                            if not df_ch.empty and "channel_key" in df_tr_star.columns and "channel_key" in df_ch.columns and "acquisition_type" in df_ch.columns:
+                            if (
+                                not df_ch.empty
+                                and "channel_key" in df_tr_star.columns
+                                and "channel_key" in df_ch.columns
+                                and "acquisition_type" in df_ch.columns
+                            ):
                                 df_tr_star = pd.merge(
                                     df_tr_star,
-                                    df_ch[["channel_key", "acquisition_type"]].drop_duplicates("channel_key"),
+                                    df_ch[
+                                        ["channel_key", "acquisition_type"]
+                                    ].drop_duplicates("channel_key"),
                                     on="channel_key",
                                     how="left",
                                 )
-                            if not df_geo.empty and "device_geo_key" in df_tr_star.columns and "device_geo_key" in df_geo.columns and "is_dach_region" in df_geo.columns:
+                            if (
+                                not df_geo.empty
+                                and "device_geo_key" in df_tr_star.columns
+                                and "device_geo_key" in df_geo.columns
+                                and "is_dach_region" in df_geo.columns
+                            ):
                                 df_tr_star = pd.merge(
                                     df_tr_star,
-                                    df_geo[["device_geo_key", "is_dach_region"]].drop_duplicates("device_geo_key"),
+                                    df_geo[
+                                        ["device_geo_key", "is_dach_region"]
+                                    ].drop_duplicates("device_geo_key"),
                                     on="device_geo_key",
                                     how="left",
                                 )
-                            disp_cols = [c for c in [
-                                "traffic_record_id",
-                                "event_date",
-                                "acquisition_type",
-                                "channel_group",
-                                "source_medium",
-                                "device_category",
-                                "country",
-                                "is_dach_region",
-                                "sessions",
-                                "engaged_sessions",
-                                "active_users",
-                                "engagement_rate"
-                            ] if c in df_tr_star.columns]
-                            st.dataframe(df_tr_star[disp_cols].head(15), use_container_width=True, height=360)
+                            disp_cols = [
+                                c
+                                for c in [
+                                    "traffic_record_id",
+                                    "event_date",
+                                    "acquisition_type",
+                                    "channel_group",
+                                    "source_medium",
+                                    "device_category",
+                                    "country",
+                                    "is_dach_region",
+                                    "sessions",
+                                    "engaged_sessions",
+                                    "active_users",
+                                    "engagement_rate",
+                                ]
+                                if c in df_tr_star.columns
+                            ]
+                            st.dataframe(
+                                df_tr_star[disp_cols].head(15),
+                                use_container_width=True,
+                                height=360,
+                            )
                         else:
-                            st.info("No traffic records found." if is_en else "無可用流量記錄。")
+                            st.info(
+                                "No traffic records found."
+                                if is_en
+                                else "無可用流量記錄。"
+                            )
 
                     with col_s1_right:
-                        st.markdown("##### " + ("BigQuery / dbt Production Star SQL" if is_en else "BigQuery / dbt 正式星型 JOIN 語法"))
+                        st.markdown(
+                            "##### "
+                            + (
+                                "BigQuery / dbt Production Star SQL"
+                                if is_en
+                                else "BigQuery / dbt 正式星型 JOIN 語法"
+                            )
+                        )
                         st.code(
                             """-- Traffic Acquisition Star Schema Join
 SELECT 
@@ -1155,7 +1530,8 @@ LEFT JOIN `de-consulting-508822.readcall_silver.dim_channels` c
     ON t.channel_key = c.channel_key
 LEFT JOIN `de-consulting-508822.readcall_silver.dim_devices_geo` g 
     ON t.device_geo_key = g.device_geo_key
-ORDER BY t.event_date DESC, t.sessions DESC;""",
+ORDER BY t.event_date DESC, t.sessions DESC
+LIMIT 15;""",
                             language="sql",
                         )
 
@@ -1199,20 +1575,63 @@ ORDER BY t.event_date DESC, t.sessions DESC;""",
 
                     col_s2_left, col_s2_right = st.columns([1.1, 0.9])
                     with col_s2_left:
-                        st.markdown("##### " + ("Denormalized Star Schema Table Preview" if is_en else "星型關聯寬表即時數據預覽 (Enriched Star View)"))
-                        df_fe_raw = data_dict.get("feature_events", pd.DataFrame()).copy()
+                        st.markdown(
+                            "##### "
+                            + (
+                                "Denormalized Star Schema Table Preview"
+                                if is_en
+                                else "星型關聯寬表即時數據預覽 (Enriched Star View)"
+                            )
+                        )
+                        df_fe_raw = data_dict.get(
+                            "feature_events", pd.DataFrame()
+                        ).copy()
                         df_cat = data_dict.get("catalog", pd.DataFrame()).copy()
 
                         if df_cat.empty or "event_name" not in df_cat.columns:
                             from mcp_server.server import load_gold_dataframe
+
                             df_cat = load_gold_dataframe("dim_feature_catalog")
 
                         if not df_fe_raw.empty:
-                            pure_fact_cols = [c for c in ["event_record_id", "event_date", "event_name", "device_category", "channel_group", "event_count", "total_users", "events_per_user", "updated_at"] if c in df_fe_raw.columns]
-                            df_fe_pure = df_fe_raw[pure_fact_cols] if pure_fact_cols else df_fe_raw.copy()
+                            pure_fact_cols = [
+                                c
+                                for c in [
+                                    "event_record_id",
+                                    "event_date",
+                                    "event_name",
+                                    "device_category",
+                                    "channel_group",
+                                    "event_count",
+                                    "total_users",
+                                    "events_per_user",
+                                    "updated_at",
+                                ]
+                                if c in df_fe_raw.columns
+                            ]
+                            df_fe_pure = (
+                                df_fe_raw[pure_fact_cols]
+                                if pure_fact_cols
+                                else df_fe_raw.copy()
+                            )
 
-                            cat_cols = [c for c in ["event_name", "aarrr_stage", "module_category", "source_component", "is_aha_moment", "is_ai_inference_event"] if c in df_cat.columns]
-                            if not df_cat.empty and "event_name" in df_cat.columns and len(cat_cols) > 1:
+                            cat_cols = [
+                                c
+                                for c in [
+                                    "event_name",
+                                    "aarrr_stage",
+                                    "module_category",
+                                    "source_component",
+                                    "is_aha_moment",
+                                    "is_ai_inference_event",
+                                ]
+                                if c in df_cat.columns
+                            ]
+                            if (
+                                not df_cat.empty
+                                and "event_name" in df_cat.columns
+                                and len(cat_cols) > 1
+                            ):
                                 df_ev_star = pd.merge(
                                     df_fe_pure,
                                     df_cat[cat_cols].drop_duplicates("event_name"),
@@ -1222,25 +1641,44 @@ ORDER BY t.event_date DESC, t.sessions DESC;""",
                             else:
                                 df_ev_star = df_fe_pure.copy()
 
-                            disp_cols = [c for c in [
-                                "event_record_id",
-                                "event_date",
-                                "event_name",
-                                "aarrr_stage",
-                                "module_category",
-                                "source_component",
-                                "is_aha_moment",
-                                "is_ai_inference_event",
-                                "event_count",
-                                "total_users",
-                                "events_per_user",
-                            ] if c in df_ev_star.columns]
-                            st.dataframe(df_ev_star[disp_cols].head(15), use_container_width=True, height=360)
+                            disp_cols = [
+                                c
+                                for c in [
+                                    "event_record_id",
+                                    "event_date",
+                                    "event_name",
+                                    "aarrr_stage",
+                                    "module_category",
+                                    "source_component",
+                                    "is_aha_moment",
+                                    "is_ai_inference_event",
+                                    "event_count",
+                                    "total_users",
+                                    "events_per_user",
+                                ]
+                                if c in df_ev_star.columns
+                            ]
+                            st.dataframe(
+                                df_ev_star[disp_cols].head(15),
+                                use_container_width=True,
+                                height=360,
+                            )
                         else:
-                            st.info("No feature event records found." if is_en else "無可用功能事件記錄。")
+                            st.info(
+                                "No feature event records found."
+                                if is_en
+                                else "無可用功能事件記錄。"
+                            )
 
                     with col_s2_right:
-                        st.markdown("##### " + ("BigQuery / dbt Production Star SQL" if is_en else "BigQuery / dbt 正式星型 JOIN 語法"))
+                        st.markdown(
+                            "##### "
+                            + (
+                                "BigQuery / dbt Production Star SQL"
+                                if is_en
+                                else "BigQuery / dbt 正式星型 JOIN 語法"
+                            )
+                        )
                         st.code(
                             """-- Product Feature Events Star Schema Join
 SELECT 
@@ -1258,14 +1696,23 @@ SELECT
 FROM `de-consulting-508822.readcall_silver.fct_feature_events` e
 LEFT JOIN `de-consulting-508822.readcall_silver.dim_feature_catalog` c 
     ON e.event_name = c.event_name
-ORDER BY e.event_date DESC, e.event_count DESC;""",
+ORDER BY e.event_date DESC, e.event_count DESC
+LIMIT 15;""",
                             language="sql",
                         )
 
             # TAB 1: AARRR & TRAFFIC
             with tab1:
-                st.subheader("Daily Active Users (DAU) & Aha! Activation Trend" if is_en else "每日活躍用戶 (DAU) 與 Aha! 核心功能啟用趨勢")
-                df_trend = scope.kpi.sort_values("event_date") if not scope.kpi.empty else pd.DataFrame()
+                st.subheader(
+                    "Daily Active Users (DAU) & Aha! Activation Trend"
+                    if is_en
+                    else "每日活躍用戶 (DAU) 與 Aha! 核心功能啟用趨勢"
+                )
+                df_trend = (
+                    scope.kpi.sort_values("event_date")
+                    if not scope.kpi.empty
+                    else pd.DataFrame()
+                )
                 if not df_trend.empty:
                     fig_trend = go.Figure()
                     fig_trend.add_trace(
@@ -1285,7 +1732,12 @@ ORDER BY e.event_date DESC, e.event_count DESC;""",
                             y=df_trend["aha_users"],
                             mode="lines",
                             name="Aha! Users" if is_en else "Aha! 啟用人數",
-                            line={"color": "#10b981", "width": 2.2, "shape": "spline", "dash": "dot"},
+                            line={
+                                "color": "#10b981",
+                                "width": 2.2,
+                                "shape": "spline",
+                                "dash": "dot",
+                            },
                         )
                     )
                     fig_trend.update_layout(
@@ -1300,17 +1752,29 @@ ORDER BY e.event_date DESC, e.event_count DESC;""",
                         xaxis={"gridcolor": "#f1f5f9"},
                     )
                     st.plotly_chart(fig_trend, use_container_width=True)
-                    with st.expander("📋 " + ("Source Mart Table & dbt SQL" if is_en else "查看底層業務集市表與 dbt SQL 語法"), expanded=False):
+                    with st.expander(
+                        "📋 "
+                        + (
+                            "Source Mart Table & dbt SQL"
+                            if is_en
+                            else "查看底層業務集市表與 dbt SQL 語法"
+                        ),
+                        expanded=False,
+                    ):
                         st.markdown(
                             f"""
                             <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(226, 232, 240, 0.9); border-radius:10px; padding:0.65rem 0.9rem; margin-bottom:0.4rem;">
-                                <div style="font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase;">{'Source Mart Table' if is_en else '來源業務集市表'}</div>
+                                <div style="font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase;">{"Source Mart Table" if is_en else "來源業務集市表"}</div>
                                 <div style="font-size:0.86rem; font-weight:700; color:#2563eb; font-family:monospace;">readcall_gold.gold_daily_growth_kpi</div>
                             </div>
                             """,
                             unsafe_allow_html=True,
                         )
-                        st.caption("🔍 **dbt Mart Query SQL**" if is_en else "🔍 **dbt 金層集市查詢 SQL**")
+                        st.caption(
+                            "🔍 **dbt Mart Query SQL**"
+                            if is_en
+                            else "🔍 **dbt 金層集市查詢 SQL**"
+                        )
                         st.code(
                             """SELECT 
     event_date,
@@ -1318,27 +1782,64 @@ ORDER BY e.event_date DESC, e.event_count DESC;""",
     aha_users,
     round(aha_users * 100.0 / nullif(dau, 0), 2) AS aha_rate_pct
 FROM `de-consulting-508822.readcall_gold.gold_daily_growth_kpi`
-ORDER BY event_date ASC;""",
+ORDER BY event_date DESC
+LIMIT 5;""",
                             language="sql",
                         )
-                        st.caption("📊 **Table Data Snippet (Recent 5 Days - 100% Aligned with SQL)**" if is_en else "📊 **圖表數據切片 (近期 5 日抽樣 - 100% 依 SQL 語法即時對齊)**")
-                        df_trend_preview = df_trend.sort_values("event_date", ascending=True).tail(5).copy()
-                        df_trend_preview["aha_rate_pct"] = (df_trend_preview["aha_users"] * 100.0 / df_trend_preview["dau"].clip(lower=1)).round(2)
-                        sql_kpi_cols = ["event_date", "dau", "aha_users", "aha_rate_pct"]
-                        st.dataframe(df_trend_preview[sql_kpi_cols].reset_index(drop=True), use_container_width=True, height=160)
+                        st.caption(
+                            "📊 **Table Data Snippet (Recent 5 Days - 100% Aligned with SQL)**"
+                            if is_en
+                            else "📊 **圖表數據切片 (近期 5 日抽樣 - 100% 依 SQL 語法即時對齊)**"
+                        )
+                        df_trend_preview = (
+                            df_trend.sort_values("event_date", ascending=False)
+                            .head(5)
+                            .copy()
+                        )
+                        df_trend_preview["aha_rate_pct"] = (
+                            df_trend_preview["aha_users"]
+                            * 100.0
+                            / df_trend_preview["dau"].clip(lower=1)
+                        ).round(2)
+                        sql_kpi_cols = [
+                            "event_date",
+                            "dau",
+                            "aha_users",
+                            "aha_rate_pct",
+                        ]
+                        st.dataframe(
+                            df_trend_preview[sql_kpi_cols].reset_index(drop=True),
+                            use_container_width=True,
+                            height=160,
+                        )
 
                 col_t1, col_t2 = st.columns(2)
                 df_traffic = scope.traffic
                 with col_t1:
-                    st.markdown("##### " + ("Acquisition Channel Mix" if is_en else "流量獲取渠道分佈"))
+                    st.markdown(
+                        "##### "
+                        + ("Acquisition Channel Mix" if is_en else "流量獲取渠道分佈")
+                    )
                     if not df_traffic.empty and "channel_group" in df_traffic.columns:
-                        ch_agg = df_traffic.groupby("channel_group", as_index=False)["active_users"].sum().sort_values("active_users", ascending=False)
+                        ch_agg = (
+                            df_traffic.groupby("channel_group", as_index=False)[
+                                "active_users"
+                            ]
+                            .sum()
+                            .sort_values("active_users", ascending=False)
+                        )
                         fig_ch = px.pie(
                             ch_agg,
                             names="channel_group",
                             values="active_users",
                             hole=0.62,
-                            color_discrete_sequence=["#2563eb", "#10b981", "#6366f1", "#f59e0b", "#ec4899"],
+                            color_discrete_sequence=[
+                                "#2563eb",
+                                "#10b981",
+                                "#6366f1",
+                                "#f59e0b",
+                                "#ec4899",
+                            ],
                             template="plotly_white",
                         )
                         fig_ch.update_layout(
@@ -1347,45 +1848,133 @@ ORDER BY event_date ASC;""",
                             paper_bgcolor="rgba(0,0,0,0)",
                         )
                         st.plotly_chart(fig_ch, use_container_width=True)
-                        with st.expander("📋 " + ("Source Table & dbt SQL" if is_en else "查看底層來源表與 SQL 語法"), expanded=False):
-                            st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_silver.fct_daily_traffic` ⨝ `dim_channels`")
-                            st.code("""SELECT 
+                        with st.expander(
+                            "📋 "
+                            + (
+                                "Source Table & dbt SQL"
+                                if is_en
+                                else "查看底層來源表與 SQL 語法"
+                            ),
+                            expanded=False,
+                        ):
+                            st.markdown(
+                                f"**{'Source Table' if is_en else '來源表'}**：`readcall_silver.fct_daily_traffic` ⨝ `dim_channels`"
+                            )
+                            st.code(
+                                """SELECT 
     c.acquisition_type,
     t.channel_group,
     SUM(t.active_users) AS active_users
 FROM `readcall_silver.fct_daily_traffic` t
 JOIN `readcall_silver.dim_channels` c ON t.channel_key = c.channel_key
-GROUP BY 1, 2 ORDER BY 3 DESC;""", language="sql")
+GROUP BY 1, 2 ORDER BY 3 DESC
+LIMIT 5;""",
+                                language="sql",
+                            )
                             df_ch_dim = data_dict.get("channels", pd.DataFrame())
-                            df_tr_ch = df_traffic.drop(columns=[c for c in ["acquisition_type"] if c in df_traffic.columns]).copy()
-                            if not df_tr_ch.empty and not df_ch_dim.empty and "channel_key" in df_tr_ch.columns and "channel_key" in df_ch_dim.columns and "acquisition_type" in df_ch_dim.columns:
-                                ch_joined = pd.merge(df_tr_ch, df_ch_dim[["channel_key", "acquisition_type"]].drop_duplicates("channel_key"), on="channel_key", how="left")
+                            df_tr_ch = df_traffic.drop(
+                                columns=[
+                                    c
+                                    for c in ["acquisition_type"]
+                                    if c in df_traffic.columns
+                                ]
+                            ).copy()
+                            if (
+                                not df_tr_ch.empty
+                                and not df_ch_dim.empty
+                                and "channel_key" in df_tr_ch.columns
+                                and "channel_key" in df_ch_dim.columns
+                                and "acquisition_type" in df_ch_dim.columns
+                            ):
+                                ch_joined = pd.merge(
+                                    df_tr_ch,
+                                    df_ch_dim[
+                                        ["channel_key", "acquisition_type"]
+                                    ].drop_duplicates("channel_key"),
+                                    on="channel_key",
+                                    how="left",
+                                )
                             else:
                                 ch_joined = df_tr_ch.copy()
                                 if "channel_group" in ch_joined.columns:
-                                    ch_joined["acquisition_type"] = ch_joined["channel_group"].map({
-                                        "Organic Search": "pSEO / Organic Search",
-                                        "Referral": "Viral Referral Loop",
-                                        "Organic Social": "Community / Social",
-                                    }).fillna("Direct / Bookmark")
+                                    ch_joined["acquisition_type"] = (
+                                        ch_joined["channel_group"]
+                                        .map(
+                                            {
+                                                "Organic Search": "pSEO / Organic Search",
+                                                "Referral": "Viral Referral Loop",
+                                                "Organic Social": "Community / Social",
+                                            }
+                                        )
+                                        .fillna("Direct / Bookmark")
+                                    )
                                 else:
                                     ch_joined["acquisition_type"] = "Direct / Bookmark"
-                            ch_grp_cols = [c for c in ["acquisition_type", "channel_group"] if c in ch_joined.columns]
-                            if len(ch_grp_cols) == 2 and "active_users" in ch_joined.columns and not ch_joined.empty:
-                                ch_sql_agg = ch_joined.groupby(ch_grp_cols, as_index=False)["active_users"].sum().sort_values("active_users", ascending=False)
-                                st.dataframe(ch_sql_agg[["acquisition_type", "channel_group", "active_users"]].reset_index(drop=True), use_container_width=True, height=160)
+                            ch_grp_cols = [
+                                c
+                                for c in ["acquisition_type", "channel_group"]
+                                if c in ch_joined.columns
+                            ]
+                            if (
+                                len(ch_grp_cols) == 2
+                                and "active_users" in ch_joined.columns
+                                and not ch_joined.empty
+                            ):
+                                ch_sql_agg = (
+                                    ch_joined.groupby(ch_grp_cols, as_index=False)[
+                                        "active_users"
+                                    ]
+                                    .sum()
+                                    .sort_values("active_users", ascending=False)
+                                    .head(5)
+                                )
+                                st.dataframe(
+                                    ch_sql_agg[
+                                        [
+                                            "acquisition_type",
+                                            "channel_group",
+                                            "active_users",
+                                        ]
+                                    ].reset_index(drop=True),
+                                    use_container_width=True,
+                                    height=160,
+                                )
                             else:
-                                st.dataframe(df_traffic.head(5), use_container_width=True, height=160)
+                                st.dataframe(
+                                    df_traffic.head(5),
+                                    use_container_width=True,
+                                    height=160,
+                                )
                 with col_t2:
-                    st.markdown("##### " + ("DACH vs. Global Learners" if is_en else "DACH 德語區 vs. 全球學習者分佈"))
+                    st.markdown(
+                        "##### "
+                        + (
+                            "DACH vs. Global Learners"
+                            if is_en
+                            else "DACH 德語區 vs. 全球學習者分佈"
+                        )
+                    )
                     if not df_traffic.empty and "country" in df_traffic.columns:
-                        geo_agg = df_traffic.groupby("country", as_index=False)["active_users"].sum().sort_values("active_users", ascending=False).head(5)
+                        geo_agg = (
+                            df_traffic.groupby("country", as_index=False)[
+                                "active_users"
+                            ]
+                            .sum()
+                            .sort_values("active_users", ascending=False)
+                            .head(5)
+                        )
                         fig_geo = px.bar(
                             geo_agg,
                             x="country",
                             y="active_users",
                             color="country",
-                            color_discrete_sequence=["#3b82f6", "#0ea5e9", "#6366f1", "#10b981", "#8b5cf6"],
+                            color_discrete_sequence=[
+                                "#3b82f6",
+                                "#0ea5e9",
+                                "#6366f1",
+                                "#10b981",
+                                "#8b5cf6",
+                            ],
                             template="plotly_white",
                         )
                         fig_geo.update_layout(
@@ -1397,35 +1986,98 @@ GROUP BY 1, 2 ORDER BY 3 DESC;""", language="sql")
                             yaxis={"gridcolor": "#f1f5f9"},
                         )
                         st.plotly_chart(fig_geo, use_container_width=True)
-                        with st.expander("📋 " + ("Source Table & dbt SQL" if is_en else "查看底層來源表與 SQL 語法"), expanded=False):
-                            st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_silver.fct_daily_traffic` ⨝ `dim_devices_geo`")
-                            st.code("""SELECT 
+                        with st.expander(
+                            "📋 "
+                            + (
+                                "Source Table & dbt SQL"
+                                if is_en
+                                else "查看底層來源表與 SQL 語法"
+                            ),
+                            expanded=False,
+                        ):
+                            st.markdown(
+                                f"**{'Source Table' if is_en else '來源表'}**：`readcall_silver.fct_daily_traffic` ⨝ `dim_devices_geo`"
+                            )
+                            st.code(
+                                """SELECT 
     g.country,
     g.is_dach_region,
     SUM(t.active_users) AS active_users
 FROM `readcall_silver.fct_daily_traffic` t
 JOIN `readcall_silver.dim_devices_geo` g ON t.device_geo_key = g.device_geo_key
-GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
+GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""",
+                                language="sql",
+                            )
                             df_geo_dim = data_dict.get("devices_geo", pd.DataFrame())
-                            df_tr_geo = df_traffic.drop(columns=[c for c in ["is_dach_region"] if c in df_traffic.columns]).copy()
-                            if not df_tr_geo.empty and not df_geo_dim.empty and "device_geo_key" in df_tr_geo.columns and "device_geo_key" in df_geo_dim.columns and "is_dach_region" in df_geo_dim.columns:
-                                geo_joined = pd.merge(df_tr_geo, df_geo_dim[["device_geo_key", "is_dach_region"]].drop_duplicates("device_geo_key"), on="device_geo_key", how="left")
+                            df_tr_geo = df_traffic.drop(
+                                columns=[
+                                    c
+                                    for c in ["is_dach_region"]
+                                    if c in df_traffic.columns
+                                ]
+                            ).copy()
+                            if (
+                                not df_tr_geo.empty
+                                and not df_geo_dim.empty
+                                and "device_geo_key" in df_tr_geo.columns
+                                and "device_geo_key" in df_geo_dim.columns
+                                and "is_dach_region" in df_geo_dim.columns
+                            ):
+                                geo_joined = pd.merge(
+                                    df_tr_geo,
+                                    df_geo_dim[
+                                        ["device_geo_key", "is_dach_region"]
+                                    ].drop_duplicates("device_geo_key"),
+                                    on="device_geo_key",
+                                    how="left",
+                                )
                             else:
                                 geo_joined = df_tr_geo.copy()
                                 if "country" in geo_joined.columns:
-                                    geo_joined["is_dach_region"] = geo_joined["country"].isin(["Germany", "Austria", "Switzerland"])
+                                    geo_joined["is_dach_region"] = geo_joined[
+                                        "country"
+                                    ].isin(["Germany", "Austria", "Switzerland"])
                                 else:
                                     geo_joined["is_dach_region"] = False
-                            geo_grp_cols = [c for c in ["country", "is_dach_region"] if c in geo_joined.columns]
-                            if len(geo_grp_cols) == 2 and "active_users" in geo_joined.columns and not geo_joined.empty:
-                                geo_sql_agg = geo_joined.groupby(geo_grp_cols, as_index=False)["active_users"].sum().sort_values("active_users", ascending=False).head(5)
-                                st.dataframe(geo_sql_agg[["country", "is_dach_region", "active_users"]].reset_index(drop=True), use_container_width=True, height=160)
+                            geo_grp_cols = [
+                                c
+                                for c in ["country", "is_dach_region"]
+                                if c in geo_joined.columns
+                            ]
+                            if (
+                                len(geo_grp_cols) == 2
+                                and "active_users" in geo_joined.columns
+                                and not geo_joined.empty
+                            ):
+                                geo_sql_agg = (
+                                    geo_joined.groupby(geo_grp_cols, as_index=False)[
+                                        "active_users"
+                                    ]
+                                    .sum()
+                                    .sort_values("active_users", ascending=False)
+                                    .head(5)
+                                )
+                                st.dataframe(
+                                    geo_sql_agg[
+                                        ["country", "is_dach_region", "active_users"]
+                                    ].reset_index(drop=True),
+                                    use_container_width=True,
+                                    height=160,
+                                )
                             else:
-                                st.dataframe(df_traffic.head(5), use_container_width=True, height=160)
+                                st.dataframe(
+                                    df_traffic.head(5),
+                                    use_container_width=True,
+                                    height=160,
+                                )
 
             # TAB 2: BYOK FUNNEL & REFERRAL LOOP
             with tab2:
-                st.subheader("Monotonic BYOK Conversion Funnel & Viral Referral Loop" if is_en else "單調遞減 BYOK 轉換漏斗與推薦裂變迴路")
+                st.subheader(
+                    "Monotonic BYOK Conversion Funnel & Viral Referral Loop"
+                    if is_en
+                    else "單調遞減 BYOK 轉換漏斗與推薦裂變迴路"
+                )
                 byok_s = scope.byok_funnel
                 ref_s = scope.referral_loop
 
@@ -1436,9 +2088,9 @@ GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
                     st.markdown(
                         f"""
                         <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:8px; padding:0.5rem 0.85rem; font-size:0.85rem; margin-bottom:0.75rem;">
-                            🛡️ <b>{'Trial Wall Friction Recovery' if is_en else '試用額度牆挽回追蹤'}</b>: 
-                            {wall_hits} {'quota walls triggered' if is_en else '次觸發額度限制'} · 
-                            <span style="color:#d97706; font-weight:700;">{'Direct & Intent-Driven Setting' if is_en else '主動金鑰設定佔'} {(byok_s['step_3_byok_modal_opened'] / max(wall_hits, 1) * 100.0):.1f}%</span>
+                            🛡️ <b>{"Trial Wall Friction Recovery" if is_en else "試用額度牆挽回追蹤"}</b>: 
+                            {wall_hits} {"quota walls triggered" if is_en else "次觸發額度限制"} · 
+                            <span style="color:#d97706; font-weight:700;">{"Direct & Intent-Driven Setting" if is_en else "主動金鑰設定佔"} {(byok_s["step_3_byok_modal_opened"] / max(wall_hits, 1) * 100.0):.1f}%</span>
                         </div>
                         """,
                         unsafe_allow_html=True,
@@ -1448,9 +2100,9 @@ GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
                     st.markdown(
                         f"""
                         <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:0.5rem 0.85rem; font-size:0.85rem; margin-bottom:0.75rem;">
-                            🌱 <b>{'Viral Loop Efficiency' if is_en else '裂變傳播係數 (K-Factor)'}</b>: 
+                            🌱 <b>{"Viral Loop Efficiency" if is_en else "裂變傳播係數 (K-Factor)"}</b>: 
                             <b>K={k_factor:.2f}</b> · 
-                            <span style="color:#059669; font-weight:700;">{ref_s['step_4_referral_unlock_success']} {'Custom Prompts Unlocked' if is_en else '位好友成功解鎖'}</span>
+                            <span style="color:#059669; font-weight:700;">{ref_s["step_4_referral_unlock_success"]} {"Custom Prompts Unlocked" if is_en else "位好友成功解鎖"}</span>
                         </div>
                         """,
                         unsafe_allow_html=True,
@@ -1486,7 +2138,15 @@ GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
                                 byok_s["step_5_byok_key_saved"],
                             ],
                             textinfo="value+percent previous",
-                            marker={"color": ["#3b82f6", "#2563eb", "#6366f1", "#4f46e5", "#10b981"]},
+                            marker={
+                                "color": [
+                                    "#3b82f6",
+                                    "#2563eb",
+                                    "#6366f1",
+                                    "#4f46e5",
+                                    "#10b981",
+                                ]
+                            },
                         )
                     )
                     fig_b.update_layout(
@@ -1497,9 +2157,20 @@ GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
                         margin={"l": 20, "r": 20, "t": 30, "b": 20},
                     )
                     st.plotly_chart(fig_b, use_container_width=True)
-                    with st.expander("📋 " + ("Source Table & Funnel SQL" if is_en else "查看漏斗資料表與 SQL 語法"), expanded=False):
-                        st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_byok_funnel`")
-                        st.code("""SELECT 
+                    with st.expander(
+                        "📋 "
+                        + (
+                            "Source Table & Funnel SQL"
+                            if is_en
+                            else "查看漏斗資料表與 SQL 語法"
+                        ),
+                        expanded=False,
+                    ):
+                        st.markdown(
+                            f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_byok_funnel`"
+                        )
+                        st.code(
+                            """SELECT 
     event_date,
     step_1_first_visit,
     step_2_aha_interaction,
@@ -1507,17 +2178,47 @@ GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
     step_5_byok_get_key_clicked,
     step_6_byok_key_saved
 FROM `de-consulting-508822.readcall_gold.gold_byok_funnel`
-ORDER BY event_date ASC;""", language="sql")
+ORDER BY event_date DESC
+LIMIT 5;""",
+                            language="sql",
+                        )
                         df_byok_raw = scope.byok
                         if not df_byok_raw.empty:
-                            byok_cols = [c for c in ["event_date", "step_1_first_visit", "step_2_aha_interaction", "step_4_byok_modal_opened", "step_5_byok_get_key_clicked", "step_6_byok_key_saved"] if c in df_byok_raw.columns]
-                            st.dataframe(df_byok_raw.sort_values("event_date", ascending=True).tail(5)[byok_cols].reset_index(drop=True), use_container_width=True, height=160)
+                            byok_cols = [
+                                c
+                                for c in [
+                                    "event_date",
+                                    "step_1_first_visit",
+                                    "step_2_aha_interaction",
+                                    "step_4_byok_modal_opened",
+                                    "step_5_byok_get_key_clicked",
+                                    "step_6_byok_key_saved",
+                                ]
+                                if c in df_byok_raw.columns
+                            ]
+                            st.dataframe(
+                                df_byok_raw.sort_values("event_date", ascending=False)
+                                .head(5)[byok_cols]
+                                .reset_index(drop=True),
+                                use_container_width=True,
+                                height=160,
+                            )
                         else:
-                            df_byok_prev = pd.DataFrame({
-                                "Funnel Stage": stages_byok,
-                                "Users": [byok_s["step_1_first_visit"], byok_s["step_2_aha_interaction"], byok_s["step_3_byok_modal_opened"], byok_s["step_4_byok_get_key_clicked"], byok_s["step_5_byok_key_saved"]]
-                            })
-                            st.dataframe(df_byok_prev, use_container_width=True, height=150)
+                            df_byok_prev = pd.DataFrame(
+                                {
+                                    "Funnel Stage": stages_byok,
+                                    "Users": [
+                                        byok_s["step_1_first_visit"],
+                                        byok_s["step_2_aha_interaction"],
+                                        byok_s["step_3_byok_modal_opened"],
+                                        byok_s["step_4_byok_get_key_clicked"],
+                                        byok_s["step_5_byok_key_saved"],
+                                    ],
+                                }
+                            )
+                            st.dataframe(
+                                df_byok_prev, use_container_width=True, height=150
+                            )
 
                 with col_b2:
                     stages_ref = (
@@ -1545,7 +2246,9 @@ ORDER BY event_date ASC;""", language="sql")
                                 ref_s["step_5_custom_prompt_saved"],
                             ],
                             textinfo="value+percent previous",
-                            marker={"color": ["#c084fc", "#a855f7", "#ec4899", "#10b981"]},
+                            marker={
+                                "color": ["#c084fc", "#a855f7", "#ec4899", "#10b981"]
+                            },
                         )
                     )
                     fig_r.update_layout(
@@ -1556,9 +2259,20 @@ ORDER BY event_date ASC;""", language="sql")
                         margin={"l": 20, "r": 20, "t": 30, "b": 20},
                     )
                     st.plotly_chart(fig_r, use_container_width=True)
-                    with st.expander("📋 " + ("Source Table & Referral SQL" if is_en else "查看推薦裂變資料表與 SQL 語法"), expanded=False):
-                        st.markdown(f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_referral_loop`")
-                        st.code("""SELECT 
+                    with st.expander(
+                        "📋 "
+                        + (
+                            "Source Table & Referral SQL"
+                            if is_en
+                            else "查看推薦裂變資料表與 SQL 語法"
+                        ),
+                        expanded=False,
+                    ):
+                        st.markdown(
+                            f"**{'Source Table' if is_en else '來源表'}**：`readcall_gold.gold_referral_loop`"
+                        )
+                        st.code(
+                            """SELECT 
     event_date,
     step_1_referral_modal_opened,
     step_2_referral_link_copied,
@@ -1566,26 +2280,76 @@ ORDER BY event_date ASC;""", language="sql")
     step_5_custom_prompt_saved,
     viral_k_factor
 FROM `de-consulting-508822.readcall_gold.gold_referral_loop`
-ORDER BY event_date ASC;""", language="sql")
+ORDER BY event_date DESC
+LIMIT 5;""",
+                            language="sql",
+                        )
                         df_ref_raw = scope.referral
                         if not df_ref_raw.empty:
-                            ref_cols = [c for c in ["event_date", "step_1_referral_modal_opened", "step_2_referral_link_copied", "step_4_referral_unlock_success", "step_5_custom_prompt_saved", "viral_k_factor"] if c in df_ref_raw.columns]
-                            st.dataframe(df_ref_raw.sort_values("event_date", ascending=True).tail(5)[ref_cols].reset_index(drop=True), use_container_width=True, height=160)
+                            ref_cols = [
+                                c
+                                for c in [
+                                    "event_date",
+                                    "step_1_referral_modal_opened",
+                                    "step_2_referral_link_copied",
+                                    "step_4_referral_unlock_success",
+                                    "step_5_custom_prompt_saved",
+                                    "viral_k_factor",
+                                ]
+                                if c in df_ref_raw.columns
+                            ]
+                            st.dataframe(
+                                df_ref_raw.sort_values("event_date", ascending=False)
+                                .head(5)[ref_cols]
+                                .reset_index(drop=True),
+                                use_container_width=True,
+                                height=160,
+                            )
                         else:
-                            df_ref_prev = pd.DataFrame({
-                                "Referral Stage": stages_ref,
-                                "Count": [ref_s["step_1_referral_modal_opened"], ref_s["step_2_referral_link_copied"], ref_s["step_4_referral_unlock_success"], ref_s["step_5_custom_prompt_saved"]]
-                            })
-                            st.dataframe(df_ref_prev, use_container_width=True, height=150)
+                            df_ref_prev = pd.DataFrame(
+                                {
+                                    "Referral Stage": stages_ref,
+                                    "Count": [
+                                        ref_s["step_1_referral_modal_opened"],
+                                        ref_s["step_2_referral_link_copied"],
+                                        ref_s["step_4_referral_unlock_success"],
+                                        ref_s["step_5_custom_prompt_saved"],
+                                    ],
+                                }
+                            )
+                            st.dataframe(
+                                df_ref_prev, use_container_width=True, height=150
+                            )
 
                 # Daily Friction Monitoring
                 df_byok = scope.byok
                 if not df_byok.empty:
-                    st.markdown("##### " + ("Daily BYOK Key Saves vs. Verification Failures" if is_en else "每日 BYOK 金鑰儲存成功 vs. 驗證失敗摩擦監控"))
+                    st.markdown(
+                        "##### "
+                        + (
+                            "Daily BYOK Key Saves vs. Verification Failures"
+                            if is_en
+                            else "每日 BYOK 金鑰儲存成功 vs. 驗證失敗摩擦監控"
+                        )
+                    )
                     df_b_sort = df_byok.sort_values("event_date")
                     fig_fric = go.Figure()
-                    fig_fric.add_trace(go.Bar(x=df_b_sort["event_date"], y=df_b_sort["step_6_byok_key_saved"], name="Saved Keys" if is_en else "成功儲存金鑰", marker_color="#10b981"))
-                    fig_fric.add_trace(go.Bar(x=df_b_sort["event_date"], y=df_b_sort["byok_verify_failed"], name="Verify Failures" if is_en else "驗證失敗摩擦", marker_color="#ef4444"))
+                    fig_fric.add_trace(
+                        go.Bar(
+                            x=df_b_sort["event_date"],
+                            y=df_b_sort["step_6_byok_key_saved"],
+                            name="Saved Keys" if is_en else "成功儲存金鑰",
+                            marker_color="#10b981",
+                        )
+                    )
+                    fig_fric.add_trace(
+                        go.Bar(
+                            x=df_b_sort["event_date"],
+                            y=df_b_sort["byok_verify_failed"],
+                            name="Verify Failures" if is_en else "驗證失敗摩擦",
+                            marker_color="#ef4444",
+                        )
+                    )
                     fig_fric.update_layout(
                         barmode="group",
                         template="plotly_white",
@@ -1597,17 +2361,29 @@ ORDER BY event_date ASC;""", language="sql")
                         yaxis={"gridcolor": "#f1f5f9"},
                     )
                     st.plotly_chart(fig_fric, use_container_width=True)
-                    with st.expander("📋 " + ("Source Mart Table & Friction Monitoring SQL" if is_en else "查看底層業務集市表與摩擦監控 SQL 語法"), expanded=False):
+                    with st.expander(
+                        "📋 "
+                        + (
+                            "Source Mart Table & Friction Monitoring SQL"
+                            if is_en
+                            else "查看底層業務集市表與摩擦監控 SQL 語法"
+                        ),
+                        expanded=False,
+                    ):
                         st.markdown(
                             f"""
                             <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(226, 232, 240, 0.9); border-radius:10px; padding:0.65rem 0.9rem; margin-bottom:0.4rem;">
-                                <div style="font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase;">{'Source Mart Table' if is_en else '來源業務集市表'}</div>
+                                <div style="font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase;">{"Source Mart Table" if is_en else "來源業務集市表"}</div>
                                 <div style="font-size:0.86rem; font-weight:700; color:#d97706; font-family:monospace;">readcall_gold.gold_byok_funnel (Daily Grain)</div>
                             </div>
                             """,
                             unsafe_allow_html=True,
                         )
-                        st.caption("🔍 **Friction Monitoring SQL**" if is_en else "🔍 **摩擦率監控 SQL 語法**")
+                        st.caption(
+                            "🔍 **Friction Monitoring SQL**"
+                            if is_en
+                            else "🔍 **摩擦率監控 SQL 語法**"
+                        )
                         st.code(
                             """SELECT 
     event_date,
@@ -1615,37 +2391,91 @@ ORDER BY event_date ASC;""", language="sql")
     byok_verify_failed,
     round(byok_verify_failed * 100.0 / nullif(step_6_byok_key_saved + byok_verify_failed, 0), 2) AS friction_pct
 FROM `de-consulting-508822.readcall_gold.gold_byok_funnel`
-ORDER BY event_date ASC;""",
+ORDER BY event_date DESC
+LIMIT 5;""",
                             language="sql",
                         )
-                        st.caption("📊 **Table Data Snippet (Recent 5 Days - 100% Aligned with SQL)**" if is_en else "📊 **圖表數據切片 (近期 5 日抽樣 - 100% 依 SQL 語法即時對齊)**")
-                        df_fric_preview = df_b_sort.sort_values("event_date", ascending=True).tail(5).copy()
+                        st.caption(
+                            "📊 **Table Data Snippet (Recent 5 Days - 100% Aligned with SQL)**"
+                            if is_en
+                            else "📊 **圖表數據切片 (近期 5 日抽樣 - 100% 依 SQL 語法即時對齊)**"
+                        )
+                        df_fric_preview = (
+                            df_b_sort.sort_values("event_date", ascending=False)
+                            .head(5)
+                            .copy()
+                        )
                         df_fric_preview["friction_pct"] = (
-                            df_fric_preview["byok_verify_failed"] * 100.0 / 
-                            (df_fric_preview["step_6_byok_key_saved"] + df_fric_preview["byok_verify_failed"]).clip(lower=1)
+                            df_fric_preview["byok_verify_failed"]
+                            * 100.0
+                            / (
+                                df_fric_preview["step_6_byok_key_saved"]
+                                + df_fric_preview["byok_verify_failed"]
+                            ).clip(lower=1)
                         ).round(2)
-                        sql_fric_cols = ["event_date", "step_6_byok_key_saved", "byok_verify_failed", "friction_pct"]
-                        st.dataframe(df_fric_preview[sql_fric_cols].reset_index(drop=True), use_container_width=True, height=160)
+                        sql_fric_cols = [
+                            "event_date",
+                            "step_6_byok_key_saved",
+                            "byok_verify_failed",
+                            "friction_pct",
+                        ]
+                        st.dataframe(
+                            df_fric_preview[sql_fric_cols].reset_index(drop=True),
+                            use_container_width=True,
+                            height=160,
+                        )
 
             # TAB 3: NL2CHART GENERATOR
             with tab3:
-                st.subheader("Natural Language AI Chart Generator" if is_en else "雙語自然語言 AI 智慧圖表生成")
-                default_nl_q = "Show top 12 product features by event count" if is_en else "顯示前 12 大產品功能埋點排行"
+                st.subheader(
+                    "Natural Language AI Chart Generator"
+                    if is_en
+                    else "雙語自然語言 AI 智慧圖表生成"
+                )
+                default_nl_q = (
+                    "Show top 12 product features by event count"
+                    if is_en
+                    else "顯示前 12 大產品功能埋點排行"
+                )
                 if "nl2chart_query_box" not in st.session_state:
                     st.session_state["nl2chart_query_box"] = default_nl_q
 
                 p1, p2, p3 = st.columns(3)
-                if p1.button("📊 " + ("Top 12 Features" if is_en else "前 12 大功能排行"), use_container_width=True):
-                    st.session_state["nl2chart_query_box"] = "Show top 12 product features by event count" if is_en else "顯示前 12 大產品功能埋點排行"
+                if p1.button(
+                    "📊 " + ("Top 12 Features" if is_en else "前 12 大功能排行"),
+                    use_container_width=True,
+                ):
+                    st.session_state["nl2chart_query_box"] = (
+                        "Show top 12 product features by event count"
+                        if is_en
+                        else "顯示前 12 大產品功能埋點排行"
+                    )
                     st.rerun()
-                if p2.button("🔑 " + ("BYOK Daily Friction" if is_en else "每日 BYOK 驗證失敗趨勢"), use_container_width=True):
-                    st.session_state["nl2chart_query_box"] = "Daily BYOK key saves vs verification failures" if is_en else "分析每日 BYOK 金鑰儲存與驗證失敗趨勢"
+                if p2.button(
+                    "🔑 "
+                    + ("BYOK Daily Friction" if is_en else "每日 BYOK 驗證失敗趨勢"),
+                    use_container_width=True,
+                ):
+                    st.session_state["nl2chart_query_box"] = (
+                        "Daily BYOK key saves vs verification failures"
+                        if is_en
+                        else "分析每日 BYOK 金鑰儲存與驗證失敗趨勢"
+                    )
                     st.rerun()
-                if p3.button("🌱 " + ("Referral Loop Trend" if is_en else "推薦裂變解鎖趨勢"), use_container_width=True):
-                    st.session_state["nl2chart_query_box"] = "Referral link copies and unlock success trend" if is_en else "查看每日推薦連結複製與解鎖趨勢"
+                if p3.button(
+                    "🌱 " + ("Referral Loop Trend" if is_en else "推薦裂變解鎖趨勢"),
+                    use_container_width=True,
+                ):
+                    st.session_state["nl2chart_query_box"] = (
+                        "Referral link copies and unlock success trend"
+                        if is_en
+                        else "查看每日推薦連結複製與解鎖趨勢"
+                    )
                     st.rerun()
 
-                st.markdown(f"**{'Enter chart request:' if is_en else '輸入圖表生成需求：'}**")
+                st.markdown(
+                    f"**{'Enter chart request:' if is_en else '輸入圖表生成需求：'}**"
+                )
                 col_nl_in, col_nl_btn = st.columns([5, 1])
                 with col_nl_in:
                     nl_q = st.text_input(
@@ -1655,7 +2485,7 @@ ORDER BY event_date ASC;""",
                         label_visibility="collapsed",
                     )
                 with col_nl_btn:
-                    btn_nl_submit = st.button(
+                    st.button(
                         "⚡ " + ("Generate" if is_en else "生成圖表"),
                         key="btn_nl2chart_submit",
                         type="primary",
@@ -1678,30 +2508,90 @@ ORDER BY event_date ASC;""",
                     if fig_nl:
                         st.plotly_chart(fig_nl, use_container_width=True)
                     else:
-                        st.info("ℹ️ " + ("No data available for chart request: " if is_en else "目前無對應圖表數據：") + str(cfg.get('title', nl_q)))
+                        st.info(
+                            "ℹ️ "
+                            + (
+                                "No data available for chart request: "
+                                if is_en
+                                else "目前無對應圖表數據："
+                            )
+                            + str(cfg.get("title", nl_q))
+                        )
 
         elif selected_layer == "silver":
-            st.subheader("Silver Layer: Normalized Dimensional Models (2 Facts, 3 Dimensions)" if is_en else "銀牌層：標準化維度模型（2 張事實表與 3 張維度表）")
-            s_tab1, s_tab2, s_tab3, s_tab4, s_tab5 = st.tabs([
-                "fct_daily_traffic" if is_en else "fct_daily_traffic (每日流量事實表)",
-                "fct_feature_events" if is_en else "fct_feature_events (功能事件事實表)",
-                "dim_channels" if is_en else "dim_channels (獲客渠道維度表)",
-                "dim_devices_geo" if is_en else "dim_devices_geo (裝置與地域維度表)",
-                "dim_feature_catalog" if is_en else "dim_feature_catalog (產品功能維度表)",
-            ])
+            st.subheader(
+                "Silver Layer: Normalized Dimensional Models (2 Facts, 3 Dimensions)"
+                if is_en
+                else "銀牌層：標準化維度模型（2 張事實表與 3 張維度表）"
+            )
+            s_tab1, s_tab2, s_tab3, s_tab4, s_tab5 = st.tabs(
+                [
+                    "fct_daily_traffic"
+                    if is_en
+                    else "fct_daily_traffic (每日流量事實表)",
+                    "fct_feature_events"
+                    if is_en
+                    else "fct_feature_events (功能事件事實表)",
+                    "dim_channels" if is_en else "dim_channels (獲客渠道維度表)",
+                    "dim_devices_geo"
+                    if is_en
+                    else "dim_devices_geo (裝置與地域維度表)",
+                    "dim_feature_catalog"
+                    if is_en
+                    else "dim_feature_catalog (產品功能維度表)",
+                ]
+            )
             with s_tab1:
-                st.dataframe(data_dict.get("fct_daily_traffic", data_dict.get("traffic", pd.DataFrame())), use_container_width=True, height=400)
+                st.dataframe(
+                    data_dict.get(
+                        "fct_daily_traffic", data_dict.get("traffic", pd.DataFrame())
+                    ),
+                    use_container_width=True,
+                    height=400,
+                )
             with s_tab2:
-                st.dataframe(data_dict.get("fct_feature_events", data_dict.get("feature_events", pd.DataFrame())), use_container_width=True, height=400)
+                st.dataframe(
+                    data_dict.get(
+                        "fct_feature_events",
+                        data_dict.get("feature_events", pd.DataFrame()),
+                    ),
+                    use_container_width=True,
+                    height=400,
+                )
             with s_tab3:
-                st.dataframe(data_dict.get("dim_channels", data_dict.get("channels", pd.DataFrame())), use_container_width=True, height=400)
+                st.dataframe(
+                    data_dict.get(
+                        "dim_channels", data_dict.get("channels", pd.DataFrame())
+                    ),
+                    use_container_width=True,
+                    height=400,
+                )
             with s_tab4:
-                st.dataframe(data_dict.get("dim_devices_geo", data_dict.get("devices_geo", pd.DataFrame())), use_container_width=True, height=400)
+                st.dataframe(
+                    data_dict.get(
+                        "dim_devices_geo", data_dict.get("devices_geo", pd.DataFrame())
+                    ),
+                    use_container_width=True,
+                    height=400,
+                )
             with s_tab5:
-                st.dataframe(data_dict.get("dim_feature_catalog", data_dict.get("catalog", pd.DataFrame())), use_container_width=True, height=400)
+                st.dataframe(
+                    data_dict.get(
+                        "dim_feature_catalog", data_dict.get("catalog", pd.DataFrame())
+                    ),
+                    use_container_width=True,
+                    height=400,
+                )
 
             st.markdown("---")
-            st.markdown("### 📐 " + ("Dimensional Modeling Rationale & Architectural Decisions" if is_en else "銀層維度建模設計決策與架構原理 (Kimball Modeling Rationale)"))
+            st.markdown(
+                "### 📐 "
+                + (
+                    "Dimensional Modeling Rationale & Architectural Decisions"
+                    if is_en
+                    else "銀層維度建模設計決策與架構原理 (Kimball Modeling Rationale)"
+                )
+            )
 
             c_mod1, c_mod2 = st.columns(2)
             with c_mod1:
@@ -1720,7 +2610,9 @@ ORDER BY event_date ASC;""",
                             <li><b>防範笛卡爾積膨脹（Fan-Out Prevention）</b>：若將兩者合併，單日上千次按鈕事件會造成流量指標被重複放大乘算（Double Counting），因此依據 Kimball 原則必須物理分流。</li>
                         </ul>
                     </div>
-                    """ if not is_en else """
+                    """
+                    if not is_en
+                    else """
                     <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(226, 232, 240, 0.9); border-radius:12px; padding:1.2rem; height:100%;">
                         <div style="font-weight:700; font-size:1.05rem; color:#2563eb; margin-bottom:0.6rem;">
                             1️⃣ Why 2 Distinct Fact Tables? (Traffic vs. Events)
@@ -1735,7 +2627,7 @@ ORDER BY event_date ASC;""",
                         </ul>
                     </div>
                     """,
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
             with c_mod2:
                 st.markdown(
@@ -1753,7 +2645,9 @@ ORDER BY event_date ASC;""",
                             <li><b><code>dim_feature_catalog</code></b>：解耦業務語義，將前端 30+ 埋點打標映射為 <b>AARRR 階段</b>、<b>Aha! 關鍵時刻</b> 與 <b>組件代碼路徑</b>，分析師無需在 SQL 重複編寫冗長的 CASE WHEN。</li>
                         </ul>
                     </div>
-                    """ if not is_en else """
+                    """
+                    if not is_en
+                    else """
                     <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(226, 232, 240, 0.9); border-radius:12px; padding:1.2rem; height:100%;">
                         <div style="font-weight:700; font-size:1.05rem; color:#059669; margin-bottom:0.6rem;">
                             2️⃣ Why 3 Conformed Dimension Tables?
@@ -1768,16 +2662,24 @@ ORDER BY event_date ASC;""",
                         </ul>
                     </div>
                     """,
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
 
         else:  # bronze
-            st.subheader("Bronze Raw Telemetry Streams (Zero Fan-Out)" if is_en else "銅牌層原始埋點串流（防膨脹分流）")
+            st.subheader(
+                "Bronze Raw Telemetry Streams (Zero Fan-Out)"
+                if is_en
+                else "銅牌層原始埋點串流（防膨脹分流）"
+            )
             b_tab1, b_tab2 = st.tabs(["raw_ga4_daily_traffic", "raw_ga4_events"])
             with b_tab1:
-                st.dataframe(data_dict["raw_traffic"], use_container_width=True, height=450)
+                st.dataframe(
+                    data_dict["raw_traffic"], use_container_width=True, height=450
+                )
             with b_tab2:
-                st.dataframe(data_dict["raw_events"], use_container_width=True, height=450)
+                st.dataframe(
+                    data_dict["raw_events"], use_container_width=True, height=450
+                )
 
     # ==============================================================================
     # 6. Right-Side Collapsible AI Advisor Drawer + System Prompt Playground
@@ -1815,13 +2717,27 @@ ORDER BY event_date ASC;""",
                 is_key_valid = is_valid_res
                 effective_gemini_key = raw_key_clean if is_valid_res else ""
                 if btn_apply_key and is_key_valid:
-                    st.toast("✅ " + ("Gemini API Key verified & connected!" if is_en else "Gemini API Key 驗證成功並已套用！"))
+                    st.toast(
+                        "✅ "
+                        + (
+                            "Gemini API Key verified & connected!"
+                            if is_en
+                            else "Gemini API Key 驗證成功並已套用！"
+                        )
+                    )
             else:
                 is_key_valid = False
                 key_reason = "empty"
                 effective_gemini_key = ""
                 if btn_apply_key:
-                    st.toast("⚠️ " + ("Please enter a Gemini API Key first!" if is_en else "請先輸入有效的 Gemini API Key！"))
+                    st.toast(
+                        "⚠️ "
+                        + (
+                            "Please enter a Gemini API Key first!"
+                            if is_en
+                            else "請先輸入有效的 Gemini API Key！"
+                        )
+                    )
 
             badge_html = (
                 '<span style="font-size:0.7rem; font-weight:700; background:rgba(16,185,129,0.15); color:#10b981; padding:0.15rem 0.45rem; border-radius:4px;">GEMINI LIVE</span>'
@@ -1835,7 +2751,7 @@ ORDER BY event_date ASC;""",
                 f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">'
                 f'<div style="font-weight:800; font-size:1.15rem; color:var(--text-color, #0f172a);">📊 {copilot_title}</div>'
                 f'<div style="display:flex; gap:0.35rem;">{badge_html}</div>'
-                f'</div>',
+                f"</div>",
                 unsafe_allow_html=True,
             )
 
@@ -1892,17 +2808,28 @@ ORDER BY event_date ASC;""",
             )
 
             # QUICK RECOMMENDATION PILLS
-            st.markdown("##### ⚡ " + ("One-Click Data Queries" if is_en else "一鍵數據快捷查詢"))
+            st.markdown(
+                "##### ⚡ "
+                + ("One-Click Data Queries" if is_en else "一鍵數據快捷查詢")
+            )
             q1, q2 = st.columns(2)
             with q1:
-                if st.button("📊 " + ("10/29 Traffic Report" if is_en else "10/29 人流報告"), use_container_width=True, key="quick_q_traffic"):
+                if st.button(
+                    "📊 " + ("10/29 Traffic Report" if is_en else "10/29 人流報告"),
+                    use_container_width=True,
+                    key="quick_q_traffic",
+                ):
                     st.session_state.quick_ai_prompt = (
                         "What was the traffic on 10/29?"
                         if is_en
                         else "10/29 有多少人流？請提供完整流量與轉換報告"
                     )
             with q2:
-                if st.button("🔍 " + ("BYOK Funnel" if is_en else "BYOK 金鑰轉換"), use_container_width=True, key="quick_q1"):
+                if st.button(
+                    "🔍 " + ("BYOK Funnel" if is_en else "BYOK 金鑰轉換"),
+                    use_container_width=True,
+                    key="quick_q1",
+                ):
                     st.session_state.quick_ai_prompt = (
                         "Please analyze the BYOK key conversion funnel and friction points."
                         if is_en
@@ -1911,9 +2838,7 @@ ORDER BY event_date ASC;""",
 
             # PROMINENT SYSTEM PROMPT PLAYGROUND (User Feature Request #2)
             expander_title = (
-                "🛠️ View / Edit System Prompt"
-                if is_en
-                else "🛠️ 檢視 / 修改系統 Prompt"
+                "🛠️ View / Edit System Prompt" if is_en else "🛠️ 檢視 / 修改系統 Prompt"
             )
             with st.expander(expander_title, expanded=False):
                 st.caption(
@@ -1921,7 +2846,11 @@ ORDER BY event_date ASC;""",
                     if is_en
                     else "檢視或即時手動修改底層 GA4 產品數據助理 System Prompt："
                 )
-                active_prompt_val = st.session_state.custom_prompt_en if is_en else st.session_state.custom_prompt_zh
+                active_prompt_val = (
+                    st.session_state.custom_prompt_en
+                    if is_en
+                    else st.session_state.custom_prompt_zh
+                )
                 edited_prompt = st.text_area(
                     "Prompt Editor:" if is_en else "Prompt 編輯區：",
                     value=active_prompt_val,
@@ -1930,17 +2859,31 @@ ORDER BY event_date ASC;""",
                 )
                 p_col1, p_col2 = st.columns(2)
                 with p_col1:
-                    btn_apply_label = "💾 Apply Custom Prompt" if is_en else "💾 套用自訂 Prompt"
-                    if st.button(btn_apply_label, use_container_width=True, key="btn_apply_sys_prompt"):
+                    btn_apply_label = (
+                        "💾 Apply Custom Prompt" if is_en else "💾 套用自訂 Prompt"
+                    )
+                    if st.button(
+                        btn_apply_label,
+                        use_container_width=True,
+                        key="btn_apply_sys_prompt",
+                    ):
                         if is_en:
                             st.session_state.custom_prompt_en = edited_prompt
                         else:
                             st.session_state.custom_prompt_zh = edited_prompt
-                        inject_stealth_telemetry("portfolio_ai_tested", {"action": "custom_prompt_applied"})
+                        inject_stealth_telemetry(
+                            "portfolio_ai_tested", {"action": "custom_prompt_applied"}
+                        )
                         st.success("✅ " + ("Applied!" if is_en else "已套用！"))
                 with p_col2:
-                    btn_reset_label = "🔄 Reset to Default" if is_en else "🔄 還原預設值"
-                    if st.button(btn_reset_label, use_container_width=True, key="btn_reset_sys_prompt"):
+                    btn_reset_label = (
+                        "🔄 Reset to Default" if is_en else "🔄 還原預設值"
+                    )
+                    if st.button(
+                        btn_reset_label,
+                        use_container_width=True,
+                        key="btn_reset_sys_prompt",
+                    ):
                         if is_en:
                             st.session_state.custom_prompt_en = DEFAULT_SYSTEM_PROMPT_EN
                         else:
@@ -1966,8 +2909,12 @@ ORDER BY event_date ASC;""",
             prompt_to_send = user_input or st.session_state.pop("quick_ai_prompt", None)
 
             if prompt_to_send:
-                inject_stealth_telemetry("portfolio_ai_tested", {"action": "chat_inquiry"})
-                st.session_state.chat_history.append({"role": "user", "content": prompt_to_send})
+                inject_stealth_telemetry(
+                    "portfolio_ai_tested", {"action": "chat_inquiry"}
+                )
+                st.session_state.chat_history.append(
+                    {"role": "user", "content": prompt_to_send}
+                )
 
                 if not is_key_valid:
                     warn_lock = (
@@ -1979,10 +2926,16 @@ ORDER BY event_date ASC;""",
                         "FastMCP guess engine is strictly disabled. Please enter a valid Google AI Studio Gemini API Key (starts with `AIzaSy`) in the key field above to enable live AI reasoning.\n\n"
                         "[👉 Get a Free Gemini API Key at Google AI Studio](https://aistudio.google.com/app/apikey)"
                     )
-                    st.session_state.chat_history.append({"role": "assistant", "content": warn_lock})
+                    st.session_state.chat_history.append(
+                        {"role": "assistant", "content": warn_lock}
+                    )
                     st.rerun()
 
-                current_sys_prompt = st.session_state.custom_prompt_en if is_en else st.session_state.custom_prompt_zh
+                current_sys_prompt = (
+                    st.session_state.custom_prompt_en
+                    if is_en
+                    else st.session_state.custom_prompt_zh
+                )
                 with st.spinner(
                     "🤖 AI is querying BigQuery lakehouse and generating PLG diagnostics..."
                     if is_en
@@ -1991,13 +2944,18 @@ ORDER BY event_date ASC;""",
                     diagnosis_reply = generate_tab_diagnosis(
                         tab_key="gold_mart",
                         tab_title="ReadCall PLG Gold Marts",
-                        tab_payload={"byok": byok_funnel_calc, "referral": ref_loop_calc},
+                        tab_payload={
+                            "byok": byok_funnel_calc,
+                            "referral": ref_loop_calc,
+                        },
                         user_query=prompt_to_send,
                         api_key=effective_gemini_key,
                         language="en" if is_en else "zh",
                         custom_system_prompt=current_sys_prompt,
                     )
-                st.session_state.chat_history.append({"role": "assistant", "content": diagnosis_reply})
+                st.session_state.chat_history.append(
+                    {"role": "assistant", "content": diagnosis_reply}
+                )
                 st.rerun()
 
     st.markdown("---")
