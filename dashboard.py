@@ -490,6 +490,10 @@ class DashboardScope:
         df_fe = raw_dict.get("feature_events", pd.DataFrame())
         df_fe_filtered = self._filter_date(df_fe, "event_date", start_date, end_date)
         if not df_fe_filtered.empty and "event_count" in df_fe_filtered.columns and "event_name" in df_fe_filtered.columns:
+            df_cat = raw_dict.get("catalog", pd.DataFrame())
+            if not df_cat.empty and "event_name" in df_cat.columns:
+                cat_cols = [c for c in ["event_name", "module_category", "aarrr_stage", "source_component", "is_aha_moment", "is_ai_inference_event"] if c in df_cat.columns]
+                df_fe_filtered = pd.merge(df_fe_filtered, df_cat[cat_cols].drop_duplicates("event_name"), on="event_name", how="left")
             cols = [c for c in ["event_name", "module_category", "aarrr_stage", "source_component", "is_aha_moment", "is_ai_inference_event"] if c in df_fe_filtered.columns]
             df_agg = (
                 df_fe_filtered.groupby(cols, as_index=False)
@@ -1095,7 +1099,8 @@ def main():
                                 df_geo["is_dach_region"] = df_geo["country"].isin(["Germany", "Austria", "Switzerland"])
 
                         if not df_tr.empty:
-                            df_tr_star = df_tr.copy()
+                            pure_tr_cols = [c for c in df_tr.columns if c not in ["acquisition_type", "is_dach_region"]]
+                            df_tr_star = df_tr[pure_tr_cols].copy()
                             if not df_ch.empty and "channel_key" in df_tr_star.columns and "channel_key" in df_ch.columns and "acquisition_type" in df_ch.columns:
                                 df_tr_star = pd.merge(
                                     df_tr_star,
@@ -1110,7 +1115,20 @@ def main():
                                     on="device_geo_key",
                                     how="left",
                                 )
-                            disp_cols = [c for c in ["traffic_record_id", "event_date", "acquisition_type", "channel_group", "country", "is_dach_region", "sessions", "active_users", "engagement_rate"] if c in df_tr_star.columns]
+                            disp_cols = [c for c in [
+                                "traffic_record_id",
+                                "event_date",
+                                "acquisition_type",
+                                "channel_group",
+                                "source_medium",
+                                "device_category",
+                                "country",
+                                "is_dach_region",
+                                "sessions",
+                                "engaged_sessions",
+                                "active_users",
+                                "engagement_rate"
+                            ] if c in df_tr_star.columns]
                             st.dataframe(df_tr_star[disp_cols].head(15), use_container_width=True, height=360)
                         else:
                             st.info("No traffic records found." if is_en else "無可用流量記錄。")
@@ -1185,17 +1203,38 @@ ORDER BY t.event_date DESC, t.sessions DESC;""",
                         df_fe_raw = data_dict.get("feature_events", pd.DataFrame()).copy()
                         df_cat = data_dict.get("catalog", pd.DataFrame()).copy()
 
+                        if df_cat.empty or "event_name" not in df_cat.columns:
+                            from mcp_server.server import load_gold_dataframe
+                            df_cat = load_gold_dataframe("dim_feature_catalog")
+
                         if not df_fe_raw.empty:
-                            df_ev_star = df_fe_raw.copy()
-                            if not df_cat.empty and "event_name" in df_ev_star.columns and "event_name" in df_cat.columns:
-                                cat_cols = [c for c in ["event_name", "module_category", "aarrr_stage", "source_component", "is_aha_moment", "is_ai_inference_event"] if c in df_cat.columns]
+                            pure_fact_cols = [c for c in ["event_record_id", "event_date", "event_name", "device_category", "channel_group", "event_count", "total_users", "events_per_user", "updated_at"] if c in df_fe_raw.columns]
+                            df_fe_pure = df_fe_raw[pure_fact_cols] if pure_fact_cols else df_fe_raw.copy()
+
+                            cat_cols = [c for c in ["event_name", "aarrr_stage", "module_category", "source_component", "is_aha_moment", "is_ai_inference_event"] if c in df_cat.columns]
+                            if not df_cat.empty and "event_name" in df_cat.columns and len(cat_cols) > 1:
                                 df_ev_star = pd.merge(
-                                    df_ev_star,
+                                    df_fe_pure,
                                     df_cat[cat_cols].drop_duplicates("event_name"),
                                     on="event_name",
                                     how="left",
                                 )
-                            disp_cols = [c for c in ["event_record_id", "event_date", "event_name", "aarrr_stage", "module_category", "is_aha_moment", "event_count", "total_users", "events_per_user"] if c in df_ev_star.columns]
+                            else:
+                                df_ev_star = df_fe_pure.copy()
+
+                            disp_cols = [c for c in [
+                                "event_record_id",
+                                "event_date",
+                                "event_name",
+                                "aarrr_stage",
+                                "module_category",
+                                "source_component",
+                                "is_aha_moment",
+                                "is_ai_inference_event",
+                                "event_count",
+                                "total_users",
+                                "events_per_user",
+                            ] if c in df_ev_star.columns]
                             st.dataframe(df_ev_star[disp_cols].head(15), use_container_width=True, height=360)
                         else:
                             st.info("No feature event records found." if is_en else "無可用功能事件記錄。")

@@ -537,9 +537,9 @@ def load_gold_dataframe(table_name: str):
         return dg[["device_geo_key", "device_category", "country", "is_dach_region"]]
 
     if table_name == "fct_feature_events":
-        fe_merged = pd.merge(df_events_raw, df_meta, on="event_name", how="left")
-        fe_merged["events_per_user"] = (fe_merged["event_count"] / fe_merged["total_users"].clip(lower=1)).round(2)
-        return fe_merged.sort_values(["event_date", "event_count"], ascending=[False, False]).reset_index(drop=True)
+        df_events_raw["events_per_user"] = (df_events_raw["event_count"] / df_events_raw["total_users"].clip(lower=1)).round(2)
+        fact_cols = ["event_record_id", "event_date", "event_name", "device_category", "channel_group", "event_count", "total_users", "events_per_user", "updated_at"]
+        return df_events_raw[[c for c in fact_cols if c in df_events_raw.columns]].sort_values(["event_date", "event_count"], ascending=[False, False]).reset_index(drop=True)
 
     if table_name == "fct_daily_traffic":
         df_traffic_raw["session_default_channel_group"] = df_traffic_raw["channel_group"]
