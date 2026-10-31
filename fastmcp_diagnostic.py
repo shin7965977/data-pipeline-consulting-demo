@@ -711,9 +711,7 @@ def render_fastmcp_chat_widget(
                 key=f"input_box_{unique_key}_{turn_idx}",
             )
         with col_send:
-            send_btn = st.form_submit_button(
-                "發送 💬", type="primary", width="stretch"
-            )
+            send_btn = st.form_submit_button("發送 💬", type="primary", width="stretch")
 
     query_to_send = preset_query or (
         user_input.strip() if send_btn and user_input.strip() else None
@@ -761,7 +759,9 @@ def _synthesize_offline_tab_report(
 ) -> str:
     """Offline rule-based MBB diagnostic synthesis grounded on full visibility with current focus priority."""
     gmv_val = kpis.get("總銷售額 (GMV)", kpis.get("gmv", "$1,248,500.00"))
-    net_val = kpis.get("實質淨營收 (Net Revenue)", kpis.get("net_revenue", "$1,085,200.00"))
+    net_val = kpis.get(
+        "實質淨營收 (Net Revenue)", kpis.get("net_revenue", "$1,085,200.00")
+    )
     aov_val = kpis.get("客單價 (AOV)", kpis.get("aov", "$85.50"))
     cancel_val = kpis.get("取消率", "4.2%")
     refund_val = kpis.get("退款率", "2.8%")
@@ -892,7 +892,9 @@ def _execute_tab_scoped_diagnostic(
             from google.genai import types
 
             client = genai.Client(api_key=clean_key)
-            candidate_models = get_gemini_candidate_models(client, preferred_model=preferred_model)
+            candidate_models = get_gemini_candidate_models(
+                client, preferred_model=preferred_model
+            )
 
             for cand in candidate_models:
                 try:
@@ -905,11 +907,24 @@ def _execute_tab_scoped_diagnostic(
                         ),
                     )
                     if resp and resp.text:
-                        badge = f"✨ **[模型：`{cand}` · 全盤視野 ＋ 當前焦點加權]**\n\n"
+                        badge = (
+                            f"✨ **[模型：`{cand}` · 全盤視野 ＋ 當前焦點加權]**\n\n"
+                        )
                         return badge + resp.text
                 except Exception as e:
                     err_msg = str(e)
-                    if any(k in err_msg for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "high demand", "404", "NOT_FOUND"]):
+                    if any(
+                        k in err_msg
+                        for k in [
+                            "503",
+                            "UNAVAILABLE",
+                            "429",
+                            "RESOURCE_EXHAUSTED",
+                            "high demand",
+                            "404",
+                            "NOT_FOUND",
+                        ]
+                    ):
                         continue
                     raise e
         except Exception:  # noqa: BLE001
@@ -917,7 +932,9 @@ def _execute_tab_scoped_diagnostic(
 
     # Offline Fallback MBB synthesis based on tab_payload + all_tabs_payload
     kpis = tab_payload.get("kpis", {})
-    return _synthesize_offline_tab_report(user_query, tab_title, kpis, tab_payload, all_tabs_payload, is_zh)
+    return _synthesize_offline_tab_report(
+        user_query, tab_title, kpis, tab_payload, all_tabs_payload, is_zh
+    )
 
 
 def render_fastmcp_advisor_drawer(
@@ -953,7 +970,11 @@ def render_fastmcp_advisor_drawer(
                     active_scope = k
                     break
     if not active_scope:
-        active_scope = base_tab_titles[0] if base_tab_titles else (list(tab_data_map.keys())[0] if tab_data_map else "")
+        active_scope = (
+            base_tab_titles[0]
+            if base_tab_titles
+            else (list(tab_data_map.keys())[0] if tab_data_map else "")
+        )
 
     tab_payload = tab_data_map.get(active_scope, {})
     tab_display_title = tab_payload.get("title", active_scope)
@@ -1132,12 +1153,12 @@ def render_fastmcp_advisor_drawer(
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
                     <span style="font-size: 1.2rem;">✨</span>
                     <span style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">
-                        {'AI 決策顧問' if is_zh else 'AI Operations Advisor'}
+                        {"AI 決策顧問" if is_zh else "AI Operations Advisor"}
                     </span>
                     <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(99, 102, 241, 0.1); color: #4f46e5; border: 1px solid rgba(99, 102, 241, 0.25); font-weight: 700; font-family: monospace;">FAST MCP</span>
                 </div>
                 <div style="font-size: 0.76rem; color: #64748b; margin-top: 4px; line-height: 1.4;">
-                    🌐 {'全盤湖倉視野' if is_zh else 'Global Visibility'} · 🎯 {'當前焦點：' if is_zh else 'Focus: '}<strong style="color: #2563eb;">【{tab_display_title}】</strong>
+                    🌐 {"全盤湖倉視野" if is_zh else "Global Visibility"} · 🎯 {"當前焦點：" if is_zh else "Focus: "}<strong style="color: #2563eb;">【{tab_display_title}】</strong>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -1147,18 +1168,23 @@ def render_fastmcp_advisor_drawer(
                 ">>",
                 key=f"btn_collapse_advisor_{safe_scope_id}",
                 width="stretch",
-                help="收起 AI 顧問右側邊欄 (>>)" if is_zh else "Collapse Right Sidebar (>>)",
+                help="收起 AI 顧問右側邊欄 (>>)"
+                if is_zh
+                else "Collapse Right Sidebar (>>)",
             ):
                 st.session_state["show_ai_drawer"] = False
                 st.rerun()
 
-        st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
+        st.markdown(
+            "<hr style='margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;'>",
+            unsafe_allow_html=True,
+        )
 
         # One-Click Diagnostic Recommendations (Directly matching ERP ai-consultant-drawer.tsx)
         st.markdown(
             f"""
             <div style="font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
-                <span>⚡</span> {'一鍵管理診斷推薦：' if is_zh else 'One-Click Quick Diagnostics:'}
+                <span>⚡</span> {"一鍵管理診斷推薦：" if is_zh else "One-Click Quick Diagnostics:"}
             </div>
             """,
             unsafe_allow_html=True,
@@ -1190,7 +1216,12 @@ def render_fastmcp_advisor_drawer(
         cols = [qp_col1, qp_col2, qp_col3]
         for idx, p in enumerate(quick_prompts):
             with cols[idx]:
-                if st.button(p["label"], key=f"quick_prompt_{idx}_{safe_scope_id}", width="stretch", help=p["query"]):
+                if st.button(
+                    p["label"],
+                    key=f"quick_prompt_{idx}_{safe_scope_id}",
+                    width="stretch",
+                    help=p["query"],
+                ):
                     clicked_prompt_query = p["query"]
 
         # Chat history state for active tab scope
@@ -1207,7 +1238,9 @@ def render_fastmcp_advisor_drawer(
                 f"🎯 **Current Focus**: Anchored on **【{tab_display_title}】**.\n\n"
                 f"Ask any question or click the quick diagnostics above!"
             )
-            st.session_state[hist_key] = [{"role": "assistant", "content": welcome_intro}]
+            st.session_state[hist_key] = [
+                {"role": "assistant", "content": welcome_intro}
+            ]
 
         # Chat conversation messages container (Vertically expanded to fill full height)
         with st.container(height=540, border=True):
@@ -1222,33 +1255,49 @@ def render_fastmcp_advisor_drawer(
             with f_inp:
                 form_text = st.text_input(
                     "向 AI 顧問提問...",
-                    placeholder="向 AI 顧問提問（例：分析指標異常、制定改善策略...）" if is_zh else "Ask AI Advisor...",
+                    placeholder="向 AI 顧問提問（例：分析指標異常、制定改善策略...）"
+                    if is_zh
+                    else "Ask AI Advisor...",
                     label_visibility="collapsed",
                     key=f"inp_text_{safe_scope_id}",
                 )
             with f_btn:
-                form_submitted = st.form_submit_button("送出 🚀" if is_zh else "Send 🚀", type="primary", width="stretch")
+                form_submitted = st.form_submit_button(
+                    "送出 🚀" if is_zh else "Send 🚀", type="primary", width="stretch"
+                )
 
-        query_to_run = clicked_prompt_query or (form_text.strip() if form_submitted and form_text.strip() else None)
+        query_to_run = clicked_prompt_query or (
+            form_text.strip() if form_submitted and form_text.strip() else None
+        )
 
         if query_to_run:
             st.session_state[hist_key].append({"role": "user", "content": query_to_run})
 
-            with st.spinner("🤖 Gemini 正在調用 MBB 顧問框架推演模型..." if is_zh else "🤖 Gemini analyzing with MBB consulting framework..."):
+            with st.spinner(
+                "🤖 Gemini 正在調用 MBB 顧問框架推演模型..."
+                if is_zh
+                else "🤖 Gemini analyzing with MBB consulting framework..."
+            ):
                 reply_report = _execute_tab_scoped_diagnostic(
                     user_query=query_to_run,
                     tab_title=tab_display_title,
                     tab_payload=tab_payload,
                     all_tabs_payload=tab_data_map,
                     api_key=st.session_state.get("gemini_api_key", ""),
-                    preferred_model=st.session_state.get("drawer_selected_model", "auto"),
+                    preferred_model=st.session_state.get(
+                        "drawer_selected_model", "auto"
+                    ),
                     language=language,
                 )
-                st.session_state[hist_key].append({"role": "assistant", "content": reply_report})
+                st.session_state[hist_key].append(
+                    {"role": "assistant", "content": reply_report}
+                )
             st.rerun()
 
         # Collapsible Settings Expander (Matching ERP's API key toggle, collapsed by default)
-        current_key = st.session_state.get("gemini_api_key", "") or os.getenv("GEMINI_API_KEY", "")
+        current_key = st.session_state.get("gemini_api_key", "") or os.getenv(
+            "GEMINI_API_KEY", ""
+        )
         expander_title = (
             f"⚙️ 設定 Gemini API Key {'(✅ 已連線即時模型)' if current_key else '(💡 使用內建 MBB 推演·可點此填寫金鑰)'}"
             if is_zh
@@ -1280,7 +1329,9 @@ def render_fastmcp_advisor_drawer(
             )
 
             user_input_key = st.text_input(
-                "輸入 Google Gemini API Key" if is_zh else "Enter Google Gemini API Key",
+                "輸入 Google Gemini API Key"
+                if is_zh
+                else "Enter Google Gemini API Key",
                 type="password",
                 value=current_key,
                 placeholder="AIzaSy...",
@@ -1298,14 +1349,28 @@ def render_fastmcp_advisor_drawer(
                 st.session_state["gemini_api_key"] = user_input_key.strip()
                 clean_k = user_input_key.strip()
                 if clean_k.startswith("AIza"):
-                    st.success("✅ 金鑰格式正確 (AIzaSy...)" if is_zh else "✅ Valid API Key format")
+                    st.success(
+                        "✅ 金鑰格式正確 (AIzaSy...)"
+                        if is_zh
+                        else "✅ Valid API Key format"
+                    )
                 elif clean_k.startswith("AQ.") or clean_k.startswith("ya29."):
-                    st.error("❌ OAuth 憑證，非 Gemini API Key" if is_zh else "❌ OAuth token, not Gemini Key")
+                    st.error(
+                        "❌ OAuth 憑證，非 Gemini API Key"
+                        if is_zh
+                        else "❌ OAuth token, not Gemini Key"
+                    )
                 else:
-                    st.warning("⚠️ 提醒：通常以 AIzaSy 開頭" if is_zh else "⚠️ Notice: Usually starts with AIzaSy")
+                    st.warning(
+                        "⚠️ 提醒：通常以 AIzaSy 開頭"
+                        if is_zh
+                        else "⚠️ Notice: Usually starts with AIzaSy"
+                    )
 
             remember_key = st.checkbox(
-                "💾 在此瀏覽器記住金鑰 (LocalStorage)" if is_zh else "💾 Remember Key in browser",
+                "💾 在此瀏覽器記住金鑰 (LocalStorage)"
+                if is_zh
+                else "💾 Remember Key in browser",
                 value=st.session_state.get("remember_gemini_key", False),
                 key=f"remember_key_cb_{safe_scope_id}",
             )
@@ -1337,19 +1402,36 @@ def render_fastmcp_advisor_drawer(
 
             st.selectbox(
                 "⚡ 偏好 Gemini 模型：" if is_zh else "⚡ Preferred Model:",
-                options=["auto", "gemini-2.5-flash", "gemini-3.6-flash", "gemini-3.8-flash"],
+                options=[
+                    "auto",
+                    "gemini-2.5-flash",
+                    "gemini-3.6-flash",
+                    "gemini-3.8-flash",
+                ],
                 format_func=lambda x: {
-                    "auto": "🚀 自動最適配（遇負載自動降級）" if is_zh else "🚀 Auto Adaptive",
-                    "gemini-2.5-flash": "🛡️ Gemini 2.5 Flash（穩定推薦）" if is_zh else "🛡️ Gemini 2.5 Flash",
-                    "gemini-3.6-flash": "⚡ Gemini 3.6 Flash" if is_zh else "⚡ Gemini 3.6 Flash",
-                    "gemini-3.8-flash": "⭐ Gemini 3.8 Flash" if is_zh else "⭐ Gemini 3.8 Flash",
+                    "auto": "🚀 自動最適配（遇負載自動降級）"
+                    if is_zh
+                    else "🚀 Auto Adaptive",
+                    "gemini-2.5-flash": "🛡️ Gemini 2.5 Flash（穩定推薦）"
+                    if is_zh
+                    else "🛡️ Gemini 2.5 Flash",
+                    "gemini-3.6-flash": "⚡ Gemini 3.6 Flash"
+                    if is_zh
+                    else "⚡ Gemini 3.6 Flash",
+                    "gemini-3.8-flash": "⭐ Gemini 3.8 Flash"
+                    if is_zh
+                    else "⭐ Gemini 3.8 Flash",
                 }.get(x, x),
                 key=f"model_sel_{safe_scope_id}",
             )
 
         # Clear Chat History Button
         if len(st.session_state[hist_key]) > 1:
-            if st.button("🗑️ 清空對話記錄" if is_zh else "🗑️ Clear Chat History", key=f"clear_hist_{safe_scope_id}", width="stretch", type="secondary"):
+            if st.button(
+                "🗑️ 清空對話記錄" if is_zh else "🗑️ Clear Chat History",
+                key=f"clear_hist_{safe_scope_id}",
+                width="stretch",
+                type="secondary",
+            ):
                 del st.session_state[hist_key]
                 st.rerun()
-

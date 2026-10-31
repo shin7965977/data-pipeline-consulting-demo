@@ -33,7 +33,9 @@ def trigger_pipeline_workflow(
     if not token:
         return False, f"無法獲取 GCP 認證憑證：{proj}"
 
-    eff_project = project_id or os.getenv("GCP_PROJECT_ID") or proj or "de-consulting-508822"
+    eff_project = (
+        project_id or os.getenv("GCP_PROJECT_ID") or proj or "de-consulting-508822"
+    )
     url = (
         f"https://workflowexecutions.googleapis.com/v1/"
         f"projects/{eff_project}/locations/{location}/workflows/{workflow_id}/executions"
@@ -53,7 +55,9 @@ def trigger_pipeline_workflow(
         return False, f"連線至 GCP Workflows 失敗: {ex}"
 
 
-def get_workflow_execution_status(execution_name: str) -> tuple[bool, dict[str, Any] | str]:
+def get_workflow_execution_status(
+    execution_name: str,
+) -> tuple[bool, dict[str, Any] | str]:
     """Query the status of an ongoing Cloud Workflows execution."""
     token, proj = get_gcp_auth_token()
     if not token:
