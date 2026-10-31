@@ -1357,17 +1357,25 @@ FROM `readcall_silver.fct_daily_traffic` t
 JOIN `readcall_silver.dim_channels` c ON t.channel_key = c.channel_key
 GROUP BY 1, 2 ORDER BY 3 DESC;""", language="sql")
                             df_ch_dim = data_dict.get("channels", pd.DataFrame())
-                            if not df_traffic.empty and not df_ch_dim.empty and "channel_key" in df_traffic.columns and "channel_key" in df_ch_dim.columns and "acquisition_type" in df_ch_dim.columns:
-                                ch_joined = pd.merge(df_traffic, df_ch_dim[["channel_key", "acquisition_type"]].drop_duplicates("channel_key"), on="channel_key", how="left")
+                            df_tr_ch = df_traffic.drop(columns=[c for c in ["acquisition_type"] if c in df_traffic.columns]).copy()
+                            if not df_tr_ch.empty and not df_ch_dim.empty and "channel_key" in df_tr_ch.columns and "channel_key" in df_ch_dim.columns and "acquisition_type" in df_ch_dim.columns:
+                                ch_joined = pd.merge(df_tr_ch, df_ch_dim[["channel_key", "acquisition_type"]].drop_duplicates("channel_key"), on="channel_key", how="left")
                             else:
-                                ch_joined = df_traffic.copy()
-                                ch_joined["acquisition_type"] = ch_joined["channel_group"].map({
-                                    "Organic Search": "pSEO / Organic Search",
-                                    "Referral": "Viral Referral Loop",
-                                    "Organic Social": "Community / Social",
-                                }).fillna("Direct / Bookmark")
-                            ch_sql_agg = ch_joined.groupby(["acquisition_type", "channel_group"], as_index=False)["active_users"].sum().sort_values("active_users", ascending=False)
-                            st.dataframe(ch_sql_agg[["acquisition_type", "channel_group", "active_users"]].reset_index(drop=True), use_container_width=True, height=160)
+                                ch_joined = df_tr_ch.copy()
+                                if "channel_group" in ch_joined.columns:
+                                    ch_joined["acquisition_type"] = ch_joined["channel_group"].map({
+                                        "Organic Search": "pSEO / Organic Search",
+                                        "Referral": "Viral Referral Loop",
+                                        "Organic Social": "Community / Social",
+                                    }).fillna("Direct / Bookmark")
+                                else:
+                                    ch_joined["acquisition_type"] = "Direct / Bookmark"
+                            ch_grp_cols = [c for c in ["acquisition_type", "channel_group"] if c in ch_joined.columns]
+                            if len(ch_grp_cols) == 2 and "active_users" in ch_joined.columns and not ch_joined.empty:
+                                ch_sql_agg = ch_joined.groupby(ch_grp_cols, as_index=False)["active_users"].sum().sort_values("active_users", ascending=False)
+                                st.dataframe(ch_sql_agg[["acquisition_type", "channel_group", "active_users"]].reset_index(drop=True), use_container_width=True, height=160)
+                            else:
+                                st.dataframe(df_traffic.head(5), use_container_width=True, height=160)
                 with col_t2:
                     st.markdown("##### " + ("DACH vs. Global Learners" if is_en else "DACH 德語區 vs. 全球學習者分佈"))
                     if not df_traffic.empty and "country" in df_traffic.columns:
@@ -1399,13 +1407,21 @@ FROM `readcall_silver.fct_daily_traffic` t
 JOIN `readcall_silver.dim_devices_geo` g ON t.device_geo_key = g.device_geo_key
 GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 5;""", language="sql")
                             df_geo_dim = data_dict.get("devices_geo", pd.DataFrame())
-                            if not df_traffic.empty and not df_geo_dim.empty and "device_geo_key" in df_traffic.columns and "device_geo_key" in df_geo_dim.columns and "is_dach_region" in df_geo_dim.columns:
-                                geo_joined = pd.merge(df_traffic, df_geo_dim[["device_geo_key", "is_dach_region"]].drop_duplicates("device_geo_key"), on="device_geo_key", how="left")
+                            df_tr_geo = df_traffic.drop(columns=[c for c in ["is_dach_region"] if c in df_traffic.columns]).copy()
+                            if not df_tr_geo.empty and not df_geo_dim.empty and "device_geo_key" in df_tr_geo.columns and "device_geo_key" in df_geo_dim.columns and "is_dach_region" in df_geo_dim.columns:
+                                geo_joined = pd.merge(df_tr_geo, df_geo_dim[["device_geo_key", "is_dach_region"]].drop_duplicates("device_geo_key"), on="device_geo_key", how="left")
                             else:
-                                geo_joined = df_traffic.copy()
-                                geo_joined["is_dach_region"] = geo_joined["country"].isin(["Germany", "Austria", "Switzerland"])
-                            geo_sql_agg = geo_joined.groupby(["country", "is_dach_region"], as_index=False)["active_users"].sum().sort_values("active_users", ascending=False).head(5)
-                            st.dataframe(geo_sql_agg[["country", "is_dach_region", "active_users"]].reset_index(drop=True), use_container_width=True, height=160)
+                                geo_joined = df_tr_geo.copy()
+                                if "country" in geo_joined.columns:
+                                    geo_joined["is_dach_region"] = geo_joined["country"].isin(["Germany", "Austria", "Switzerland"])
+                                else:
+                                    geo_joined["is_dach_region"] = False
+                            geo_grp_cols = [c for c in ["country", "is_dach_region"] if c in geo_joined.columns]
+                            if len(geo_grp_cols) == 2 and "active_users" in geo_joined.columns and not geo_joined.empty:
+                                geo_sql_agg = geo_joined.groupby(geo_grp_cols, as_index=False)["active_users"].sum().sort_values("active_users", ascending=False).head(5)
+                                st.dataframe(geo_sql_agg[["country", "is_dach_region", "active_users"]].reset_index(drop=True), use_container_width=True, height=160)
+                            else:
+                                st.dataframe(df_traffic.head(5), use_container_width=True, height=160)
 
             # TAB 2: BYOK FUNNEL & REFERRAL LOOP
             with tab2:
