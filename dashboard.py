@@ -1260,10 +1260,8 @@ ORDER BY e.event_date DESC, e.event_count DESC;""",
                         yaxis={"gridcolor": "#f1f5f9"},
                         xaxis={"gridcolor": "#f1f5f9"},
                     )
-                    col_dau_chart, col_dau_meta = st.columns([1.15, 0.85])
-                    with col_dau_chart:
-                        st.plotly_chart(fig_trend, use_container_width=True)
-                    with col_dau_meta:
+                    st.plotly_chart(fig_trend, use_container_width=True)
+                    with st.expander("📋 " + ("Source Mart Table & dbt SQL" if is_en else "查看底層業務集市表與 dbt SQL 語法"), expanded=False):
                         st.markdown(
                             f"""
                             <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(226, 232, 240, 0.9); border-radius:10px; padding:0.65rem 0.9rem; margin-bottom:0.4rem;">
@@ -1520,10 +1518,8 @@ FROM `de-consulting-508822.readcall_gold.gold_referral_loop`;""", language="sql"
                         legend={"orientation": "h", "y": 1.15},
                         yaxis={"gridcolor": "#f1f5f9"},
                     )
-                    c_fric_chart, c_fric_meta = st.columns([1.15, 0.85])
-                    with c_fric_chart:
-                        st.plotly_chart(fig_fric, use_container_width=True)
-                    with c_fric_meta:
+                    st.plotly_chart(fig_fric, use_container_width=True)
+                    with st.expander("📋 " + ("Source Mart Table & Friction Monitoring SQL" if is_en else "查看底層業務集市表與摩擦監控 SQL 語法"), expanded=False):
                         st.markdown(
                             f"""
                             <div style="background:var(--secondary-background-color, #ffffff); border:1px solid rgba(226, 232, 240, 0.9); border-radius:10px; padding:0.65rem 0.9rem; margin-bottom:0.4rem;">
