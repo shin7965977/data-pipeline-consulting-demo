@@ -13,7 +13,33 @@ from typing import Any, Callable
 
 import pandas as pd
 import streamlit as st
-from cockpit_core import BaseCockpitAdapter, KPICardSpec, MedallionTabSpec
+
+try:
+    from cockpit_core import BaseCockpitAdapter, KPICardSpec, MedallionTabSpec
+except (ImportError, ModuleNotFoundError):
+    from dataclasses import dataclass
+
+    @dataclass
+    class KPICardSpec:  # type: ignore[no-redef]
+        key: str
+        title_zh: str
+        title_en: str
+        metric_formula: str
+        target_rule: str
+        calculate: Callable[[dict[str, Any]], dict[str, Any]]
+        accent_color: str = "#6366f1"
+
+    @dataclass
+    class MedallionTabSpec:  # type: ignore[no-redef]
+        tab_id: str
+        title_zh: str
+        title_en: str
+        render_content: Callable[[dict[str, Any], bool, Any], None]
+
+    class BaseCockpitAdapter:  # type: ignore[no-redef]
+        pass
+
+
 from fastmcp_diagnostic import (
     DEFAULT_SYSTEM_PROMPT_EN,
     DEFAULT_SYSTEM_PROMPT_ZH,

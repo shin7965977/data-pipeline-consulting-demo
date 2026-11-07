@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: recursive
 
       - name: 'Principle 4: Secret Scanning (TruffleHog)'
         uses: trufflesecurity/trufflehog@main
@@ -35,8 +36,8 @@ jobs:
 
       - name: 'Principle 1: Code Style & Syntax - Python (Ruff)'
         run: |
-          ruff check ingestion/ tests/ mcp_server/ pipeline_runner.py chart_generator.py
-          ruff format --check ingestion/ tests/ mcp_server/ pipeline_runner.py chart_generator.py
+          ruff check ingestion/ tests/ mcp_server/ pipeline_runner.py chart_generator.py platzi_adapter.py
+          ruff format --check ingestion/ tests/ mcp_server/ pipeline_runner.py chart_generator.py platzi_adapter.py
 
       - name: 'Principle 1: Code Style & Syntax - dbt SQL (SQLFluff)'
         run: |
