@@ -14,6 +14,218 @@ from pathlib import Path
 from typing import Any
 
 
+def recommend_dynamic_charts(
+    columns: list[str] | dict[str, str], domain_hint: str = ""
+) -> list[dict[str, Any]]:
+    """Dynamically recommend high-impact executive charts based on actual data columns.
+
+    Analyzes temporal, categorical, numeric, and lifecycle columns to synthesize
+    custom visual blueprints without domain hardcoding.
+    """
+    col_names = list(columns.keys()) if isinstance(columns, dict) else list(columns)
+    low_cols = [c.lower() for c in col_names]
+
+    # 1. Classify columns
+    temporal_cols = [
+        orig
+        for orig, low in zip(col_names, low_cols)
+        if any(
+            k in low
+            for k in [
+                "date",
+                "time",
+                "timestamp",
+                "created",
+                "updated",
+                "year",
+                "month",
+                "day",
+            ]
+        )
+    ]
+    status_cols = [
+        orig
+        for orig, low in zip(col_names, low_cols)
+        if any(k in low for k in ["status", "stage", "phase", "state", "step"])
+    ]
+    id_cols = [
+        orig
+        for orig, low in zip(col_names, low_cols)
+        if low.endswith("_id") or low in ["id", "uuid", "guid", "key"]
+    ]
+    numeric_keywords = [
+        "amount",
+        "price",
+        "cost",
+        "revenue",
+        "sales",
+        "gmv",
+        "aov",
+        "profit",
+        "qty",
+        "quantity",
+        "count",
+        "rate",
+        "ratio",
+        "score",
+        "value",
+        "val",
+        "temp",
+        "temperature",
+        "voltage",
+        "volt",
+        "watt",
+        "amp",
+        "power",
+        "energy",
+        "pressure",
+        "speed",
+        "humidity",
+        "salary",
+        "wage",
+        "pay",
+        "income",
+        "comp",
+        "bonus",
+        "latency",
+        "load",
+        "cpu",
+        "memory",
+        "duration",
+        "tenure",
+        "age",
+        "loss",
+        "margin",
+        "balance",
+        "kpi",
+        "metric",
+        "index",
+    ]
+
+    dtype_map = columns if isinstance(columns, dict) else {}
+
+    def is_numeric_col(orig: str, low: str) -> bool:
+        if orig in id_cols or orig in temporal_cols or orig in status_cols:
+            return False
+        dtype = str(dtype_map.get(orig, "")).lower()
+        if any(t in dtype for t in ["int", "float", "double", "num", "decimal"]):
+            return True
+        return any(k in low for k in numeric_keywords)
+
+    numeric_cols = [
+        orig for orig, low in zip(col_names, low_cols) if is_numeric_col(orig, low)
+    ]
+    categorical_cols = [
+        orig
+        for orig in col_names
+        if orig not in id_cols
+        and orig not in temporal_cols
+        and orig not in numeric_cols
+    ]
+
+    recommendations = []
+
+    # Rule A: Status / Lifecycle Funnel / Waterfall
+    if status_cols and numeric_cols:
+        status_col = status_cols[0]
+        num_col = numeric_cols[0]
+        recommendations.append(
+            {
+                "chart_type": "waterfall",
+                "title": f"Lifecycle Conversion & Attrition Waterfall ({status_col})",
+                "action_title": f"Quantify drop-offs and realization of {num_col} across {status_col} stages",
+                "x": status_col,
+                "y": num_col,
+                "description": f"Break down total {num_col} across progression states in {status_col} to highlight leakage points.",
+            }
+        )
+    elif status_cols:
+        status_col = status_cols[0]
+        recommendations.append(
+            {
+                "chart_type": "funnel",
+                "title": f"Process Stage Distribution Funnel ({status_col})",
+                "action_title": f"Volume transition through sequential {status_col} states",
+                "x": status_col,
+                "y": "count",
+                "description": f"Examine volumetric distribution across {status_col} stages.",
+            }
+        )
+
+    # Rule B: Temporal Longitudinal Trend
+    if temporal_cols and numeric_cols:
+        time_col = temporal_cols[0]
+        num_col = numeric_cols[0]
+        recommendations.append(
+            {
+                "chart_type": "line",
+                "title": f"Longitudinal Trend Analysis ({num_col} over {time_col})",
+                "action_title": f"Track temporal momentum and isolate volatility in {num_col}",
+                "x": time_col,
+                "y": num_col,
+                "description": f"Analyze historical time-series patterns and variance for {num_col}.",
+            }
+        )
+
+    # Rule C: Strategic 2x2 Quadrant Matrix (if 2+ numeric measures and a categorical entity)
+    if len(numeric_cols) >= 2 and (categorical_cols or id_cols):
+        cat_col = categorical_cols[0] if categorical_cols else id_cols[0]
+        x_metric = numeric_cols[0]
+        y_metric = numeric_cols[1]
+        recommendations.append(
+            {
+                "chart_type": "quadrant_2x2",
+                "title": f"Strategic 2x2 Decision Matrix ({x_metric} vs. {y_metric})",
+                "action_title": f"Quadrant segmentation of {cat_col} by {x_metric} and {y_metric}",
+                "x": x_metric,
+                "y": y_metric,
+                "group": cat_col,
+                "description": f"Classify {cat_col} entities into 4 performance quadrants based on {x_metric} and {y_metric}.",
+            }
+        )
+
+    # Rule D: Pareto Top-N Distribution (Categorical + Numeric)
+    if categorical_cols and numeric_cols:
+        cat_col = categorical_cols[0]
+        num_col = numeric_cols[0]
+        if not any(r["chart_type"] == "pareto_bar" for r in recommendations):
+            recommendations.append(
+                {
+                    "chart_type": "pareto_bar",
+                    "title": f"Pareto 80/20 Contribution Ranking ({cat_col} by {num_col})",
+                    "action_title": f"Identify concentration and top-tier contributors in {cat_col}",
+                    "x": cat_col,
+                    "y": num_col,
+                    "description": f"Rank top {cat_col} segments by cumulative share of {num_col}.",
+                }
+            )
+
+    # Rule E: Fallback if few columns or generic data
+    if len(recommendations) < 3:
+        target_col = (
+            numeric_cols[0]
+            if numeric_cols
+            else (col_names[0] if col_names else "metric")
+        )
+        group_col = (
+            categorical_cols[0]
+            if categorical_cols
+            else (temporal_cols[0] if temporal_cols else "entity")
+        )
+        recommendations.append(
+            {
+                "chart_type": "bar",
+                "title": f"Comparative Distribution Analysis ({group_col} vs. {target_col})",
+                "action_title": f"Comparative breakdown of {target_col} across {group_col}",
+                "x": group_col,
+                "y": target_col,
+                "description": f"Directly compare magnitude of {target_col} partitioned by {group_col}.",
+            }
+        )
+
+    return recommendations[:3]
+
+
 def introspect_codebase(base_dir: str | Path | None = None) -> dict[str, Any]:
     """Dynamically scan the repository to extract all available lakehouse capabilities.
 
@@ -161,7 +373,18 @@ def main():
         action="store_true",
         help="Format output as formatted JSON string",
     )
+    parser.add_argument(
+        "--recommend-charts",
+        nargs="+",
+        metavar="COL",
+        help="Dynamically recommend charts based on a list of column names",
+    )
     args = parser.parse_args()
+
+    if args.recommend_charts:
+        charts = recommend_dynamic_charts(args.recommend_charts)
+        print(json.dumps(charts, indent=2, ensure_ascii=False))
+        return
 
     result = introspect_codebase()
 

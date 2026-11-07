@@ -117,15 +117,31 @@ flowchart TD
 
 ---
 
-### 階段 5：AI 顧問圖表推薦與定制 (C-T-D-S-A Consulting Charts)
+### 階段 5：AI 顧問圖表動態推薦與定制 (Data-Driven C-T-D-S-A Chart Ideation)
 
-1. **基於 Gold Marts 欄位特徵主動發想**：
-   - 絕不讓使用者面對空白畫布！運用 **C-T-D-S-A 框架**（`CHART_PROMPT_GUIDE.md`）主動提出 3 個具備商業決策價值的圖表提案：
-     - **提案 1：淨營收漏斗瀑布圖（Profit Waterfall）**：量化取消與退貨金額，揭示真實營收實現率。
-     - **提案 2：商品 2x2 獲利貢獻矩陣（BCG Matrix）**：交叉分析銷量與毛利，鎖定主力金牛品。
-     - **提案 3：顧客 LTV 價值階梯圖（Customer Cohorts）**：觀察不同群體終身價值與留存。
-2. **客製化需求支援**：
-   - 使用者可自由提出額外問題，Agent 調用 `chart_generator.py` 即時生成 Plotly 程式碼配置。
+> **嚴禁圖表硬編碼（Never Hardcode Charts）**：
+> 絕不可死板套用「電商瀑布圖/BCG/LTV」！你必須**針對使用者當前提供的實際資料欄位與領域特徵**進行語意解析，並動態推導出最適切的圖表選項（可調用 `python onboarding_wizard.py --recommend-charts <欄位清單>` 輔助推導）：
+
+1. **資料欄位特徵檢驗與分類（Field Semantics Profiling）**：
+   - **時間欄位（Temporal）**：偵測 `date`, `timestamp`, `created_at`, `year`, `month` 等時間序列維度。
+   - **數值指標（Measures）**：偵測 `amount`, `revenue`, `cost`, `temperature`, `sensor_val`, `quantity`, `score`, `duration` 等量化指標。
+   - **狀態與階段（Lifecycle/Status）**：偵測 `status`, `stage`, `phase`, `state`, `step` 等進程狀態。
+   - **實體維度（Categorical）**：偵測 `category`, `region`, `device_type`, `department`, `tier` 等分組實體。
+
+2. **通用意圖圖表推薦決策矩陣（Universal Decision Matrix）**：
+   - **若具備【狀態階段 ＋ 數值指標】** ➔ 推薦 **進程漏斗或流失瀑布圖（Funnel / Waterfall）**：
+     - *範例*：若為醫療數據（診斷階段 ➔ 治療進程），推薦「病程轉換率漏斗」；若為物聯網（通訊狀態 ➔ 封包遺失），推薦「連線異常流失瀑布」。
+   - **若具備【時間維度 ＋ 數值指標】** ➔ 推薦 **時間序列趨勢與異常波動圖（Longitudinal Trend & Anomaly Line）**：
+     - *範例*：動態追蹤 `{measure_column}` 隨 `{temporal_column}` 的走勢與移動平均線。
+   - **若具備【2 個以上數值指標 ＋ 實體維度】** ➔ 推薦 **戰略 2x2 四象限散佈/氣泡矩陣（Strategic 2x2 Quadrant Matrix）**：
+     - *範例*：以 `{measure_A}` 為 X 軸、`{measure_B}` 為 Y 軸，按 `{entity_column}` 分群定位關鍵對象。
+   - **若具備【實體分類 ＋ 單一關鍵數值】** ➔ 推薦 **帕累托 80/20 貢獻排序圖（Pareto Top-N Bar Chart）**：
+     - *範例*：辨識前 20% `{category_column}` 對 80% `{measure_column}` 的集中度。
+
+3. **動態生成顧問級 Action Title 與提案確認**：
+   - 將使用者的真實欄位名稱帶入 Action Title（例如：「*透過 {status_col} 階段分析量化 {measure_col} 的流失節點*」）。
+   - 向使用者呈現專屬的 3 項圖表提案並由其選定或提出自訂調整。
+   - 調用 `chart_generator.py` 即時生成 Plotly 程式碼配置。
 
 ---
 
