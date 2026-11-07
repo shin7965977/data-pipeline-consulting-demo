@@ -14,218 +14,6 @@ from pathlib import Path
 from typing import Any
 
 
-def recommend_dynamic_charts(
-    columns: list[str] | dict[str, str], domain_hint: str = ""
-) -> list[dict[str, Any]]:
-    """Dynamically recommend high-impact executive charts based on actual data columns.
-
-    Analyzes temporal, categorical, numeric, and lifecycle columns to synthesize
-    custom visual blueprints without domain hardcoding.
-    """
-    col_names = list(columns.keys()) if isinstance(columns, dict) else list(columns)
-    low_cols = [c.lower() for c in col_names]
-
-    # 1. Classify columns
-    temporal_cols = [
-        orig
-        for orig, low in zip(col_names, low_cols)
-        if any(
-            k in low
-            for k in [
-                "date",
-                "time",
-                "timestamp",
-                "created",
-                "updated",
-                "year",
-                "month",
-                "day",
-            ]
-        )
-    ]
-    status_cols = [
-        orig
-        for orig, low in zip(col_names, low_cols)
-        if any(k in low for k in ["status", "stage", "phase", "state", "step"])
-    ]
-    id_cols = [
-        orig
-        for orig, low in zip(col_names, low_cols)
-        if low.endswith("_id") or low in ["id", "uuid", "guid", "key"]
-    ]
-    numeric_keywords = [
-        "amount",
-        "price",
-        "cost",
-        "revenue",
-        "sales",
-        "gmv",
-        "aov",
-        "profit",
-        "qty",
-        "quantity",
-        "count",
-        "rate",
-        "ratio",
-        "score",
-        "value",
-        "val",
-        "temp",
-        "temperature",
-        "voltage",
-        "volt",
-        "watt",
-        "amp",
-        "power",
-        "energy",
-        "pressure",
-        "speed",
-        "humidity",
-        "salary",
-        "wage",
-        "pay",
-        "income",
-        "comp",
-        "bonus",
-        "latency",
-        "load",
-        "cpu",
-        "memory",
-        "duration",
-        "tenure",
-        "age",
-        "loss",
-        "margin",
-        "balance",
-        "kpi",
-        "metric",
-        "index",
-    ]
-
-    dtype_map = columns if isinstance(columns, dict) else {}
-
-    def is_numeric_col(orig: str, low: str) -> bool:
-        if orig in id_cols or orig in temporal_cols or orig in status_cols:
-            return False
-        dtype = str(dtype_map.get(orig, "")).lower()
-        if any(t in dtype for t in ["int", "float", "double", "num", "decimal"]):
-            return True
-        return any(k in low for k in numeric_keywords)
-
-    numeric_cols = [
-        orig for orig, low in zip(col_names, low_cols) if is_numeric_col(orig, low)
-    ]
-    categorical_cols = [
-        orig
-        for orig in col_names
-        if orig not in id_cols
-        and orig not in temporal_cols
-        and orig not in numeric_cols
-    ]
-
-    recommendations = []
-
-    # Rule A: Status / Lifecycle Funnel / Waterfall
-    if status_cols and numeric_cols:
-        status_col = status_cols[0]
-        num_col = numeric_cols[0]
-        recommendations.append(
-            {
-                "chart_type": "waterfall",
-                "title": f"Lifecycle Conversion & Attrition Waterfall ({status_col})",
-                "action_title": f"Quantify drop-offs and realization of {num_col} across {status_col} stages",
-                "x": status_col,
-                "y": num_col,
-                "description": f"Break down total {num_col} across progression states in {status_col} to highlight leakage points.",
-            }
-        )
-    elif status_cols:
-        status_col = status_cols[0]
-        recommendations.append(
-            {
-                "chart_type": "funnel",
-                "title": f"Process Stage Distribution Funnel ({status_col})",
-                "action_title": f"Volume transition through sequential {status_col} states",
-                "x": status_col,
-                "y": "count",
-                "description": f"Examine volumetric distribution across {status_col} stages.",
-            }
-        )
-
-    # Rule B: Temporal Longitudinal Trend
-    if temporal_cols and numeric_cols:
-        time_col = temporal_cols[0]
-        num_col = numeric_cols[0]
-        recommendations.append(
-            {
-                "chart_type": "line",
-                "title": f"Longitudinal Trend Analysis ({num_col} over {time_col})",
-                "action_title": f"Track temporal momentum and isolate volatility in {num_col}",
-                "x": time_col,
-                "y": num_col,
-                "description": f"Analyze historical time-series patterns and variance for {num_col}.",
-            }
-        )
-
-    # Rule C: Strategic 2x2 Quadrant Matrix (if 2+ numeric measures and a categorical entity)
-    if len(numeric_cols) >= 2 and (categorical_cols or id_cols):
-        cat_col = categorical_cols[0] if categorical_cols else id_cols[0]
-        x_metric = numeric_cols[0]
-        y_metric = numeric_cols[1]
-        recommendations.append(
-            {
-                "chart_type": "quadrant_2x2",
-                "title": f"Strategic 2x2 Decision Matrix ({x_metric} vs. {y_metric})",
-                "action_title": f"Quadrant segmentation of {cat_col} by {x_metric} and {y_metric}",
-                "x": x_metric,
-                "y": y_metric,
-                "group": cat_col,
-                "description": f"Classify {cat_col} entities into 4 performance quadrants based on {x_metric} and {y_metric}.",
-            }
-        )
-
-    # Rule D: Pareto Top-N Distribution (Categorical + Numeric)
-    if categorical_cols and numeric_cols:
-        cat_col = categorical_cols[0]
-        num_col = numeric_cols[0]
-        if not any(r["chart_type"] == "pareto_bar" for r in recommendations):
-            recommendations.append(
-                {
-                    "chart_type": "pareto_bar",
-                    "title": f"Pareto 80/20 Contribution Ranking ({cat_col} by {num_col})",
-                    "action_title": f"Identify concentration and top-tier contributors in {cat_col}",
-                    "x": cat_col,
-                    "y": num_col,
-                    "description": f"Rank top {cat_col} segments by cumulative share of {num_col}.",
-                }
-            )
-
-    # Rule E: Fallback if few columns or generic data
-    if len(recommendations) < 3:
-        target_col = (
-            numeric_cols[0]
-            if numeric_cols
-            else (col_names[0] if col_names else "metric")
-        )
-        group_col = (
-            categorical_cols[0]
-            if categorical_cols
-            else (temporal_cols[0] if temporal_cols else "entity")
-        )
-        recommendations.append(
-            {
-                "chart_type": "bar",
-                "title": f"Comparative Distribution Analysis ({group_col} vs. {target_col})",
-                "action_title": f"Comparative breakdown of {target_col} across {group_col}",
-                "x": group_col,
-                "y": target_col,
-                "description": f"Directly compare magnitude of {target_col} partitioned by {group_col}.",
-            }
-        )
-
-    return recommendations[:3]
-
-
 def introspect_codebase(base_dir: str | Path | None = None) -> dict[str, Any]:
     """Dynamically scan the repository to extract all available lakehouse capabilities.
 
@@ -334,12 +122,10 @@ def introspect_codebase(base_dir: str | Path | None = None) -> dict[str, Any]:
 
     # 6. Environment & Credential Health
     env_file = root / ".env"
-    has_gemini_key = bool(
-        os.getenv("GEMINI_API_KEY")
-        or (
-            env_file.exists()
-            and "GEMINI_API_KEY" in env_file.read_text(encoding="utf-8")
-        )
+    env_text = env_file.read_text(encoding="utf-8") if env_file.exists() else ""
+    has_gemini_key = bool(os.getenv("GEMINI_API_KEY") or "GEMINI_API_KEY" in env_text)
+    has_looker_embed = bool(
+        os.getenv("LOOKER_STUDIO_EMBED_URL") or "LOOKER_STUDIO_EMBED_URL" in env_text
     )
     has_local_duckdb = (root / "local_warehouse.duckdb").exists()
     has_gcp_key = (root / "gcp-key.json").exists()
@@ -352,11 +138,162 @@ def introspect_codebase(base_dir: str | Path | None = None) -> dict[str, Any]:
         "deliverables": deliverables,
         "health": {
             "has_gemini_key": has_gemini_key,
+            "has_looker_embed": has_looker_embed,
             "has_local_duckdb": has_local_duckdb,
             "has_gcp_key": has_gcp_key,
             "finops_budget_limit_mb": 100,
+            "default_bi_engine": "Looker Studio (Embedded in Streamlit)",
         },
     }
+
+
+def synthesize_dynamic_chart_proposals(
+    columns: list[str] | dict[str, list[str]],
+) -> list[dict[str, Any]]:
+    """Dynamically formulate consultant-grade chart proposals based on actual data columns.
+
+    Analyzes continuous measures, categorical dimensions, and temporal axes to construct
+    C-T-D-S-A (Context, Type, Data, Styling, Action Title) proposals with Looker Studio
+    as the primary default BI engine embedded directly within Streamlit.
+    """
+    col_list = []
+    if isinstance(columns, dict):
+        for table_cols in columns.values():
+            col_list.extend(table_cols)
+    else:
+        col_list = list(columns)
+
+    normalized_cols = [c.lower() for c in col_list]
+
+    # 1. Classify column semantics
+    time_cols = [
+        c
+        for c in normalized_cols
+        if any(
+            t in c
+            for t in [
+                "date",
+                "time",
+                "timestamp",
+                "year",
+                "month",
+                "day",
+                "created",
+                "period",
+            ]
+        )
+    ]
+    measure_cols = [
+        c
+        for c in normalized_cols
+        if any(
+            m in c
+            for m in [
+                "amount",
+                "revenue",
+                "price",
+                "gmv",
+                "cost",
+                "total",
+                "count",
+                "orders",
+                "units",
+                "quantity",
+                "sales",
+                "profit",
+                "rate",
+                "pct",
+                "ratio",
+                "score",
+                "churn",
+                "clicks",
+                "impressions",
+                "value",
+                "ltv",
+                "margin",
+                "salary",
+                "headcount",
+                "spend",
+                "budget",
+            ]
+        )
+        and c not in time_cols
+    ]
+    # Any column that is not temporal or measure is classified as a dimension
+    dim_cols = [
+        c for c in normalized_cols if c not in time_cols and c not in measure_cols
+    ]
+
+    # Fallback defaults if columns are generic
+    primary_measure = measure_cols[0] if measure_cols else "record_count"
+    secondary_measure = measure_cols[1] if len(measure_cols) > 1 else primary_measure
+    primary_dim = dim_cols[0] if dim_cols else "category"
+    primary_time = time_cols[0] if time_cols else "timestamp"
+
+    proposals = []
+
+    # Proposal 1: Time Series Trend & Volatility
+    proposals.append(
+        {
+            "proposal_id": 1,
+            "title": f"Temporal Performance & Trend ({primary_measure} over {primary_time})",
+            "framework": {
+                "C_Tool_Engine": "Google Looker Studio (Embedded in Streamlit Cockpit)",
+                "T_Chart_Type": "Dual-Axis Time Series / Trend Line with 30-Day Moving Average",
+                "D_Data_Specs": {
+                    "x_axis": primary_time,
+                    "y_axis": primary_measure,
+                    "secondary_y": secondary_measure
+                    if secondary_measure != primary_measure
+                    else None,
+                    "sort": f"Chronological ({primary_time} ASC)",
+                },
+                "S_Styling_Focus": "Corporate Navy & Emerald; suppress background clutter, highlight period peaks",
+                "A_Action_Title": f"Trajectory and cyclical patterns in {primary_measure} indicate core demand elasticity",
+            },
+        }
+    )
+
+    # Proposal 2: Dimensional Pareto / Contribution
+    proposals.append(
+        {
+            "proposal_id": 2,
+            "title": f"Concentration & Pareto Breakdown ({primary_dim} vs {primary_measure})",
+            "framework": {
+                "C_Tool_Engine": "Google Looker Studio (Embedded in Streamlit Cockpit)",
+                "T_Chart_Type": "Horizontal Ranked Bar Chart / Treemap",
+                "D_Data_Specs": {
+                    "dimension": primary_dim,
+                    "metric": primary_measure,
+                    "sort": f"Descending ({primary_measure} DESC)",
+                    "top_n": 10,
+                },
+                "S_Styling_Focus": "Monochrome slate with accent color on top 20% contributors (80/20 Rule)",
+                "A_Action_Title": f"Top {primary_dim} segments drive majority of {primary_measure}, revealing structural dependency",
+            },
+        }
+    )
+
+    # Proposal 3: Correlation, Ratio, or Funnel
+    proposals.append(
+        {
+            "proposal_id": 3,
+            "title": f"Efficiency & Diagnostic Variance ({primary_dim} cross-analyzed by {secondary_measure})",
+            "framework": {
+                "C_Tool_Engine": "Google Looker Studio (Embedded in Streamlit Cockpit)",
+                "T_Chart_Type": "2x2 Quadrant Matrix / Conversion Funnel / Variance Waterfall",
+                "D_Data_Specs": {
+                    "primary_dimension": primary_dim,
+                    "x_metric": primary_measure,
+                    "y_metric": secondary_measure,
+                },
+                "S_Styling_Focus": "Crimson highlight for leakages/underperformers; neutral gray baseline",
+                "A_Action_Title": f"Variance between {primary_measure} and {secondary_measure} reveals actionable optimization margin",
+            },
+        }
+    )
+
+    return proposals
 
 
 def main():
@@ -373,18 +310,7 @@ def main():
         action="store_true",
         help="Format output as formatted JSON string",
     )
-    parser.add_argument(
-        "--recommend-charts",
-        nargs="+",
-        metavar="COL",
-        help="Dynamically recommend charts based on a list of column names",
-    )
     args = parser.parse_args()
-
-    if args.recommend_charts:
-        charts = recommend_dynamic_charts(args.recommend_charts)
-        print(json.dumps(charts, indent=2, ensure_ascii=False))
-        return
 
     result = introspect_codebase()
 
@@ -408,6 +334,10 @@ def main():
     )
     print(f"Local DuckDB existing: {'[YES]' if health['has_local_duckdb'] else '[NO]'}")
     print(f"GCP Service Account key: {'[YES]' if health['has_gcp_key'] else '[NO]'}")
+    print(
+        f"Looker Studio Embed configured: {'[YES]' if health['has_looker_embed'] else '[NO]'}"
+    )
+    print(f"Default BI Visualization Engine: {health['default_bi_engine']}")
     print(f"FinOps Budget Guardrail: {health['finops_budget_limit_mb']} MB")
     print("=" * 60)
     print(

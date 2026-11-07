@@ -360,6 +360,12 @@ class PlatziAdapter(BaseCockpitAdapter):
                         title_en="👥 Customer Cohorts",
                         render_content=self._render_gold_customers_tab,
                     ),
+                    MedallionTabSpec(
+                        tab_id="tab_looker_studio",
+                        title_zh="📈 Looker 互動商業儀表板",
+                        title_en="📈 Looker BI Dashboard",
+                        render_content=self._render_looker_studio_tab,
+                    ),
                 ]
             },
             "silver": {
@@ -488,3 +494,56 @@ class PlatziAdapter(BaseCockpitAdapter):
             hole=0.4,
         )
         st.plotly_chart(fig, use_container_width=True)
+
+    def _render_looker_studio_tab(
+        self, data: dict[str, pd.DataFrame], is_en: bool, adapter: Any
+    ) -> None:
+        """Render Google Looker Studio BI Dashboard embedded directly in Streamlit."""
+        import streamlit.components.v1 as components
+
+        embed_url = os.getenv("LOOKER_STUDIO_EMBED_URL", "").strip()
+
+        st.markdown(
+            "### 📈 Google Looker Studio BI Dashboard"
+            if is_en
+            else "### 📈 Google Looker Studio 商業智慧儀表板"
+        )
+        st.caption(
+            "Enterprise-grade serverless BI report embedded directly inside Streamlit Cockpit."
+            if is_en
+            else "企業級零主機費用之商業 BI 報表，直接內嵌於 Streamlit 戰情室中操作。"
+        )
+
+        if embed_url:
+            components.iframe(embed_url, height=850, scrolling=True)
+        else:
+            st.info(
+                "💡 **Looker Studio Embed Ready**: Set `LOOKER_STUDIO_EMBED_URL` in `.env` to embed your live Looker Studio report.\n\n"
+                "To connect BigQuery Gold dataset to Looker Studio for 100% free BI, refer to `docs/technical/zh/looker_studio_guide.md`."
+                if is_en
+                else "💡 **Looker Studio 嵌入就緒**：請在 `.env` 中設定 `LOOKER_STUDIO_EMBED_URL` 即可於此處直接操作 Looker 互動圖表。\n\n"
+                "欲將 BigQuery Gold 資料集串接至 Looker Studio 打造 0 元授權 BI，請參考 `docs/technical/zh/looker_studio_guide.md`。"
+            )
+            df_kpi = data.get("kpi", pd.DataFrame())
+            if (
+                not df_kpi.empty
+                and "order_date" in df_kpi.columns
+                and "gmv" in df_kpi.columns
+            ):
+                import plotly.express as px
+
+                st.markdown(
+                    "#### 📊 Local BI Preview (Plotly Engine)"
+                    if is_en
+                    else "#### 📊 本機 BI 預覽（Plotly 引擎）"
+                )
+                fig = px.bar(
+                    df_kpi.tail(30),
+                    x="order_date",
+                    y="gmv",
+                    title="Gross Merchandise Value Trend (Local Preview)"
+                    if is_en
+                    else "商品交易總額 GMV 歷史走勢 (本機預覽)",
+                    template="plotly_white",
+                )
+                st.plotly_chart(fig, use_container_width=True)

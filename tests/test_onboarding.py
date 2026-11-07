@@ -3,7 +3,11 @@
 import json
 from pathlib import Path
 
-from onboarding_wizard import introspect_codebase, main
+from onboarding_wizard import (
+    introspect_codebase,
+    main,
+    synthesize_dynamic_chart_proposals,
+)
 
 
 def test_introspect_codebase_detects_existing_modules():
@@ -32,9 +36,47 @@ def test_introspect_codebase_detects_existing_modules():
     assert "generate_pitch_deck.py" in deliverable_names
     assert "chart_generator.py" in deliverable_names
 
-    # Health & FinOps
+    # Health & FinOps & Looker
     assert "finops_budget_limit_mb" in result["health"]
     assert result["health"]["finops_budget_limit_mb"] == 100
+    assert "Looker Studio" in result["health"]["default_bi_engine"]
+
+
+def test_dynamic_chart_proposals_data_driven():
+    """Verify chart proposals dynamically adapt to arbitrary datasets and default to Looker on Streamlit."""
+    # Scenario A: Ad Marketing Campaign Data
+    marketing_cols = [
+        "campaign_date",
+        "ad_channel",
+        "clicks",
+        "impressions",
+        "cost",
+        "conversions",
+    ]
+    proposals_mkt = synthesize_dynamic_chart_proposals(marketing_cols)
+    assert len(proposals_mkt) == 3
+
+    # Engine must default to Looker Studio embedded in Streamlit Cockpit
+    for p in proposals_mkt:
+        assert "Looker Studio" in p["framework"]["C_Tool_Engine"]
+        assert "Streamlit" in p["framework"]["C_Tool_Engine"]
+
+    # Proposals must reference the actual marketing fields, not hardcoded retail terms
+    assert "campaign_date" in str(proposals_mkt[0]["framework"]["D_Data_Specs"])
+    assert any(
+        col in str(proposals_mkt[1]["framework"]["D_Data_Specs"])
+        for col in ["ad_channel", "clicks", "cost", "conversions"]
+    )
+
+    # Scenario B: Human Resources / Staffing Data
+    hr_cols = ["hire_date", "department", "headcount", "salary", "attrition_rate"]
+    proposals_hr = synthesize_dynamic_chart_proposals(hr_cols)
+    assert len(proposals_hr) == 3
+    assert "department" in str(proposals_hr[1]["framework"]["D_Data_Specs"])
+    # Ensure no hardcoded retail terms appear
+    for p in proposals_hr:
+        assert "gmv" not in str(p).lower()
+        assert "platzi" not in str(p).lower()
 
 
 def test_dynamic_adaptation_on_new_modules(tmp_path: Path):
@@ -77,65 +119,3 @@ def test_onboarding_wizard_cli_json(monkeypatch, capsys):
     assert "sources" in data
     assert "gold_marts" in data
     assert "health" in data
-
-
-def test_recommend_dynamic_charts_iot_domain():
-    """Verify chart recommendations for non-ecommerce IoT sensor data."""
-    iot_cols = ["device_id", "timestamp", "temperature", "voltage", "status"]
-    from onboarding_wizard import recommend_dynamic_charts
-
-    charts = recommend_dynamic_charts(iot_cols)
-    assert len(charts) == 3
-
-    # Must suggest waterfall or funnel for status + metric
-    assert any(c["chart_type"] in ["waterfall", "funnel"] for c in charts)
-    # Must suggest line trend for timestamp + metric
-    assert any(c["chart_type"] == "line" for c in charts)
-    # Must suggest 2x2 quadrant for temperature vs voltage
-    assert any(c["chart_type"] == "quadrant_2x2" for c in charts)
-    # Assert column names are dynamically embedded in titles
-    assert any(
-        "temperature" in c["action_title"].lower()
-        or "voltage" in c["action_title"].lower()
-        for c in charts
-    )
-
-
-def test_recommend_dynamic_charts_hr_domain():
-    """Verify chart recommendations for HR workforce dataset."""
-    hr_cols = [
-        "employee_id",
-        "department",
-        "salary",
-        "performance_score",
-        "attrition_status",
-    ]
-    from onboarding_wizard import recommend_dynamic_charts
-
-    charts = recommend_dynamic_charts(hr_cols)
-    assert len(charts) == 3
-
-    # Must suggest status attrition waterfall
-    assert any(c["chart_type"] == "waterfall" for c in charts)
-    # Must suggest 2x2 matrix for salary vs performance_score
-    assert any(c["chart_type"] == "quadrant_2x2" for c in charts)
-
-
-def test_onboarding_wizard_cli_recommend_charts(monkeypatch, capsys):
-    """Test CLI --recommend-charts flag output."""
-    monkeypatch.setattr(
-        "sys.argv",
-        [
-            "onboarding_wizard.py",
-            "--recommend-charts",
-            "event_time",
-            "severity_score",
-            "cluster_region",
-            "stage",
-        ],
-    )
-    main()
-    captured = capsys.readouterr()
-    charts = json.loads(captured.out)
-    assert len(charts) >= 2
-    assert any("severity_score" in c["y"] or "severity_score" in c["x"] for c in charts)

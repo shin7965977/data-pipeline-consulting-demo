@@ -23,7 +23,7 @@ When answering questions about business diagnostics, financial metrics, e-commer
 The repository includes the [Lakehouse Onboarding Skill](.agents/skills/lakehouse-onboarding/SKILL.md) for conversational platform setup.
 When the user says "開始安裝", "/install", "setup", or asks to configure the lakehouse platform:
 - **Dynamic Codebase Introspection**: Run `python onboarding_wizard.py --introspect` before posing questions to detect available sources, gold marts, storage engines, and environment status.
-- **Zero Hardcoding**: Dynamically assemble menus and recommendations based on current repository capabilities.
-- **7-Stage Onboarding Flow**: Guide through Ingestion -> Storage & FinOps 100MB Guardrail -> AI Intelligence -> ELT Pipeline Run -> C-T-D-S-A Chart Ideation -> Streamlit Cockpit Launch.
+- **Zero Hardcoding & Data-Driven Charts**: Dynamically assemble menus and recommendations based on current repository capabilities. Never hardcode chart lists; dynamically profile user measures/dimensions/time and default to **Google Looker Studio embedded inside Streamlit**.
+- **7-Stage Onboarding Flow**: Guide through Ingestion -> Storage & FinOps 100MB Guardrail -> AI Intelligence -> ELT Pipeline Run -> Data-Driven C-T-D-S-A Chart Ideation (Looker on Streamlit) -> Streamlit Cockpit Launch.
 
 

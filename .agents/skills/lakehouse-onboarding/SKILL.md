@@ -117,31 +117,38 @@ flowchart TD
 
 ---
 
-### 階段 5：AI 顧問圖表動態推薦與定制 (Data-Driven C-T-D-S-A Chart Ideation)
+### 階段 5：AI 顧問圖表動態推薦與定制 (Data-Driven C-T-D-S-A on Looker & Streamlit)
 
-> **嚴禁圖表硬編碼（Never Hardcode Charts）**：
-> 絕不可死板套用「電商瀑布圖/BCG/LTV」！你必須**針對使用者當前提供的實際資料欄位與領域特徵**進行語意解析，並動態推導出最適切的圖表選項（可調用 `python onboarding_wizard.py --recommend-charts <欄位清單>` 輔助推導）：
+> **圖表非硬編碼原則（No Hardcoded Chart Lists）**：
+> 嚴禁直接向使用者丟出固定的「利潤瀑布圖、BCG 2x2 矩陣、LTV 階梯圖」等特定零售零售範本。Agent 必須依據使用者在前面步驟實際提供的資料欄位（或 Gold Marts 欄位）進行**即時資料結構分析（Data Profiling）**，動態組合出最切合其商業情境的圖表選項！
 
-1. **資料欄位特徵檢驗與分類（Field Semantics Profiling）**：
-   - **時間欄位（Temporal）**：偵測 `date`, `timestamp`, `created_at`, `year`, `month` 等時間序列維度。
-   - **數值指標（Measures）**：偵測 `amount`, `revenue`, `cost`, `temperature`, `sensor_val`, `quantity`, `score`, `duration` 等量化指標。
-   - **狀態與階段（Lifecycle/Status）**：偵測 `status`, `stage`, `phase`, `state`, `step` 等進程狀態。
-   - **實體維度（Categorical）**：偵測 `category`, `region`, `device_type`, `department`, `tier` 等分組實體。
-
-2. **通用意圖圖表推薦決策矩陣（Universal Decision Matrix）**：
-   - **若具備【狀態階段 ＋ 數值指標】** ➔ 推薦 **進程漏斗或流失瀑布圖（Funnel / Waterfall）**：
-     - *範例*：若為醫療數據（診斷階段 ➔ 治療進程），推薦「病程轉換率漏斗」；若為物聯網（通訊狀態 ➔ 封包遺失），推薦「連線異常流失瀑布」。
-   - **若具備【時間維度 ＋ 數值指標】** ➔ 推薦 **時間序列趨勢與異常波動圖（Longitudinal Trend & Anomaly Line）**：
-     - *範例*：動態追蹤 `{measure_column}` 隨 `{temporal_column}` 的走勢與移動平均線。
-   - **若具備【2 個以上數值指標 ＋ 實體維度】** ➔ 推薦 **戰略 2x2 四象限散佈/氣泡矩陣（Strategic 2x2 Quadrant Matrix）**：
-     - *範例*：以 `{measure_A}` 為 X 軸、`{measure_B}` 為 Y 軸，按 `{entity_column}` 分群定位關鍵對象。
-   - **若具備【實體分類 ＋ 單一關鍵數值】** ➔ 推薦 **帕累托 80/20 貢獻排序圖（Pareto Top-N Bar Chart）**：
-     - *範例*：辨識前 20% `{category_column}` 對 80% `{measure_column}` 的集中度。
-
-3. **動態生成顧問級 Action Title 與提案確認**：
-   - 將使用者的真實欄位名稱帶入 Action Title（例如：「*透過 {status_col} 階段分析量化 {measure_col} 的流失節點*」）。
-   - 向使用者呈現專屬的 3 項圖表提案並由其選定或提出自訂調整。
-   - 調用 `chart_generator.py` 即時生成 Plotly 程式碼配置。
+1. **即時欄位特性分類（Data Profiling）**：
+   - **連續數值指標（Measures）**：金額、數量、點擊數、轉換率、成本、時長、評分等。
+   - **離散類別維度（Dimensions）**：部門、類別、地區、通路、客戶群、狀態、品牌等。
+   - **時間序列維度（Time Axes）**：日期、時間戳、月份、季度、年份等。
+2. **動態合成 3~4 個專屬圖表提案（C-T-D-S-A 顧問框架）**：
+   - **提案 1：時序趨勢與波動分析（Time vs. Primary Measure）**
+     - *C (Tool & Engine)*: **Google Looker Studio（預設內嵌於 Streamlit 戰情室）**
+     - *T (Chart Type)*: 雙軸時序折線/柱狀圖（Dual-Axis Time-Series）
+     - *D (Data Specs)*: 時間維度為 X 軸，核心數值為 Y 軸，附帶 30 天移動平均線
+     - *S (Styling)*: 顧問級深藍/冷灰對比，峰值高亮標註
+     - *A (Action Title)*: 提煉趨勢與週期性波動結論（"So What?"）
+   - **提案 2：核心維度佔比與 Pareto 集中度（Dimension vs. Measure）**
+     - *C (Tool & Engine)*: **Google Looker Studio（預設內嵌於 Streamlit 戰情室）**
+     - *T (Chart Type)*: 橫向排行長條圖或樹狀圖（Ranked Bar / Treemap）
+     - *D (Data Specs)*: 類別維度，降冪排序，聚焦 Top 10 或前 80% 核心貢獻者
+     - *S (Styling)*: 灰階底色，僅針對 Top 20% 高價值群體賦予品牌主色
+     - *A (Action Title)*: 揭示結構集中度與主要貢獻來源
+   - **提案 3：轉換效率、異常漏斗或 2x2 矩陣（Correlation / Diagnostic Matrix）**
+     - *C (Tool & Engine)*: **Google Looker Studio（預設內嵌於 Streamlit 戰情室）**
+     - *T (Chart Type)*: 轉換漏斗圖、2x2 四象限散布圖或流失率預警矩陣
+     - *D (Data Specs)*: 交叉比對兩個核心指標（如成本 vs. 營收、流失率 vs. 客單價）
+     - *S (Styling)*: 異常流失以警示緋紅（Crimson）凸顯，達標項以祖母綠（Emerald）標註
+     - *A (Action Title)*: 一針見血指出運營瓶頸與利潤流失節點
+3. **預設視覺化架構：Looker Studio 架設於 Streamlit 戰情室**：
+   - **預設 BI 引擎**：圖表一律預設以 **Google Looker Studio** 製作，並透過 `st.components.v1.iframe` **直接架設/內嵌於 Streamlit 戰情室中**。
+   - 使用者可在 Streamlit 單一入口享受 Looker 的動態切片器（Slicers）、跨維度下鑽（Drill-down）與零伺服器費用的流暢互動，無需跳出外部視窗。
+   - 本機 DuckDB 或離線模式則自動由本機 Plotly 引擎（`chart_generator.py`）提供無縫預覽。
 
 ---
 
