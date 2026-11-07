@@ -393,7 +393,11 @@ importlib.reload(powerbi_builder)
 importlib.reload(workflow_trigger)
 
 from chart_generator import generate_chart_from_nl
-from fastmcp_diagnostic import render_fastmcp_chat_widget, run_fastmcp_chart_diagnostic, DEFAULT_SYSTEM_PROMPT_ZH, DEFAULT_SYSTEM_PROMPT_EN
+from fastmcp_diagnostic import (
+    render_fastmcp_chat_widget,
+    run_fastmcp_chart_diagnostic,
+    DEFAULT_SYSTEM_PROMPT_ZH,
+)
 from powerbi_builder import render_powerbi_studio
 from workflow_trigger import trigger_pipeline_workflow
 
@@ -463,12 +467,23 @@ def render_fastmcp_copilot():
 
     # PROMINENT SYSTEM PROMPT PLAYGROUND
     with st.expander("🛠️ 檢視 / 修改系統 Prompt", expanded=False):
-        st.caption("檢視或即時手動修改底層 Gemini 顧問 System Prompt（內建 100MB FinOps 防護）：")
-        curr_sys = st.session_state.get("custom_system_prompt_zh", DEFAULT_SYSTEM_PROMPT_ZH)
-        edited_sys = st.text_area("Prompt 編輯區：", value=curr_sys, height=180, key="sidebar_sys_prompt_textarea")
+        st.caption(
+            "檢視或即時手動修改底層 Gemini 顧問 System Prompt（內建 100MB FinOps 防護）："
+        )
+        curr_sys = st.session_state.get(
+            "custom_system_prompt_zh", DEFAULT_SYSTEM_PROMPT_ZH
+        )
+        edited_sys = st.text_area(
+            "Prompt 編輯區：",
+            value=curr_sys,
+            height=180,
+            key="sidebar_sys_prompt_textarea",
+        )
         sb_col1, sb_col2 = st.columns(2)
         with sb_col1:
-            if st.button("💾 套用自訂 Prompt", key="sb_btn_apply_prompt", width="stretch"):
+            if st.button(
+                "💾 套用自訂 Prompt", key="sb_btn_apply_prompt", width="stretch"
+            ):
                 st.session_state["custom_system_prompt_zh"] = edited_sys
                 st.success("✅ 已套用！")
         with sb_col2:
@@ -487,7 +502,9 @@ def render_fastmcp_copilot():
     )
 
     if st.button("送出提問 🚀", type="primary", width="stretch"):
-        with st.spinner("AI 正在查詢 BigQuery 金牌資料集（受 100MB FinOps 預算防護保護）..."):
+        with st.spinner(
+            "AI 正在查詢 BigQuery 金牌資料集（受 100MB FinOps 預算防護保護）..."
+        ):
             from mcp_server.server import (
                 get_customer_metrics,
                 get_daily_sales_kpi,
@@ -544,30 +561,34 @@ def render_fastmcp_copilot():
                         get_customer_metrics,
                     ]
                     sys_override = st.session_state.get("custom_system_prompt_zh", "")
-                    system_prompt = sys_override.strip() if sys_override and sys_override.strip() else (
-                        "你是擁有麥肯錫 (McKinsey) / 貝恩 (Bain) / BCG 資深合夥人（Senior Partner / Engagement Director）水準的頂級管理顧問，"
-                        "專精於 Platzi 零售電商數據診斷與營運獲利優化。\n\n"
-                        "【你的核心方法論規範（源自 claude-skill-management-consultant-B1 知識庫）】：\n"
-                        "1. 嚴格通過「顧問三大檢驗」：\n"
-                        "   - So What?（提煉高階商業洞察，而非單純復述或朗讀數據）\n"
-                        "   - Why So?（MECE 因果歸因與單位經濟學數學論證）\n"
-                        "   - Now What?（高 ROI 且具體可落地的商業行動處方）\n\n"
-                        "2. 金字塔原理 (Pyramid Principle) 與結論先行 (Action Title)：\n"
-                        "   - 嚴禁廢話或寒暄客套（絕對不要以『你好！我是顧問...』開場）。\n"
-                        "   - 報告第一句話必須是加粗顯眼的【核心診斷結論 / Action Title】：一針見血指出當前商業與財務癥結點。\n\n"
-                        "3. MECE 議題樹與獲利算式拆解 (Show the Math)：\n"
-                        "   - 運用獲利樹拆解核心指標：Profit = GMV × (1 - 取消率 - 退款率) × 毛利率 - Opex (物流履約 / CAC)。\n"
-                        "   - 計算淨營收實現率 (Net Realization Rate = Net Revenue / GMV)，明確量化流失的具體金額。\n"
-                        "   - 運用 Pareto 80/20 法則定位關鍵少數商品（Top 20% SKU）與核心高價值會員（Platinum VIP）。\n\n"
-                        "4. 30-60-90 天戰術落地路徑 (Actionable 30-60-90 Day Roadmap)：\n"
-                        "   - Day 1~30 (速贏止血 Quick Wins)：流程與定價微調、高取消率排查、大件商品精準運費重置。\n"
-                        "   - Day 31~60 (系統優化 Structural Plays)：高 LTV 客群留存搭售、品類利潤結構與購物車推薦優化。\n"
-                        "   - Day 61~90 (戰略穩固 Strategic Scale)：供應商採購階梯議價、降低單位 COGS、建立常態預警機制。\n\n"
-                        "【數據調用協議】：\n"
-                        "請主動調用 BigQuery platzi_gold 工具（get_daily_sales_kpi、get_top_products、get_customer_metrics）獲取第一手即時數據。\n\n"
-                        "【業務範疇約束限制】：\n"
-                        "本助手專屬於『Platzi 零售電商營運分析』。如果使用者的問題與本電商業務數據（銷售、營收、GMV、商品、顧客、退款、客單價等）無關"
-                        "（例如政治人物、歷史、演藝娛樂、哲學、生活閒聊等），你必須直接委婉拒絕回答，絕對不要調用查詢工具，也不要輸出不相干的電商數據！"
+                    system_prompt = (
+                        sys_override.strip()
+                        if sys_override and sys_override.strip()
+                        else (
+                            "你是擁有麥肯錫 (McKinsey) / 貝恩 (Bain) / BCG 資深合夥人（Senior Partner / Engagement Director）水準的頂級管理顧問，"
+                            "專精於 Platzi 零售電商數據診斷與營運獲利優化。\n\n"
+                            "【你的核心方法論規範（源自 claude-skill-management-consultant-B1 知識庫）】：\n"
+                            "1. 嚴格通過「顧問三大檢驗」：\n"
+                            "   - So What?（提煉高階商業洞察，而非單純復述或朗讀數據）\n"
+                            "   - Why So?（MECE 因果歸因與單位經濟學數學論證）\n"
+                            "   - Now What?（高 ROI 且具體可落地的商業行動處方）\n\n"
+                            "2. 金字塔原理 (Pyramid Principle) 與結論先行 (Action Title)：\n"
+                            "   - 嚴禁廢話或寒暄客套（絕對不要以『你好！我是顧問...』開場）。\n"
+                            "   - 報告第一句話必須是加粗顯眼的【核心診斷結論 / Action Title】：一針見血指出當前商業與財務癥結點。\n\n"
+                            "3. MECE 議題樹與獲利算式拆解 (Show the Math)：\n"
+                            "   - 運用獲利樹拆解核心指標：Profit = GMV × (1 - 取消率 - 退款率) × 毛利率 - Opex (物流履約 / CAC)。\n"
+                            "   - 計算淨營收實現率 (Net Realization Rate = Net Revenue / GMV)，明確量化流失的具體金額。\n"
+                            "   - 運用 Pareto 80/20 法則定位關鍵少數商品（Top 20% SKU）與核心高價值會員（Platinum VIP）。\n\n"
+                            "4. 30-60-90 天戰術落地路徑 (Actionable 30-60-90 Day Roadmap)：\n"
+                            "   - Day 1~30 (速贏止血 Quick Wins)：流程與定價微調、高取消率排查、大件商品精準運費重置。\n"
+                            "   - Day 31~60 (系統優化 Structural Plays)：高 LTV 客群留存搭售、品類利潤結構與購物車推薦優化。\n"
+                            "   - Day 61~90 (戰略穩固 Strategic Scale)：供應商採購階梯議價、降低單位 COGS、建立常態預警機制。\n\n"
+                            "【數據調用協議】：\n"
+                            "請主動調用 BigQuery platzi_gold 工具（get_daily_sales_kpi、get_top_products、get_customer_metrics）獲取第一手即時數據。\n\n"
+                            "【業務範疇約束限制】：\n"
+                            "本助手專屬於『Platzi 零售電商營運分析』。如果使用者的問題與本電商業務數據（銷售、營收、GMV、商品、顧客、退款、客單價等）無關"
+                            "（例如政治人物、歷史、演藝娛樂、哲學、生活閒聊等），你必須直接委婉拒絕回答，絕對不要調用查詢工具，也不要輸出不相干的電商數據！"
+                        )
                     )
 
                     resp = None

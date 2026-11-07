@@ -1,6 +1,7 @@
 import os
 from typing import Any
 
+
 class _ToolRegistry:
     def tool(self, *args, **kwargs):
         return lambda f: f
@@ -10,6 +11,7 @@ class _ToolRegistry:
 
     def resource(self, *args, **kwargs):
         return lambda f: f
+
 
 # Initialize FastMCP Server
 mcp = _ToolRegistry()

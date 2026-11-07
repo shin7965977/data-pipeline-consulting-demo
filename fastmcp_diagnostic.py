@@ -880,13 +880,16 @@ def _execute_tab_scoped_diagnostic(
     clean_key = (api_key or os.getenv("GEMINI_API_KEY", "")).strip()
 
     import streamlit as st
+
     active_custom = st.session_state.get(
         "custom_system_prompt_zh" if is_zh else "custom_system_prompt_en", ""
     )
     if active_custom and active_custom.strip():
         system_instruction = active_custom.strip()
     else:
-        system_instruction = DEFAULT_SYSTEM_PROMPT_ZH if is_zh else DEFAULT_SYSTEM_PROMPT_EN
+        system_instruction = (
+            DEFAULT_SYSTEM_PROMPT_ZH if is_zh else DEFAULT_SYSTEM_PROMPT_EN
+        )
 
     prompt_content = (
         f"【使用者業務問題】：{user_query}\n\n"
@@ -1253,7 +1256,9 @@ def render_fastmcp_advisor_drawer(
             ]
 
         # PROMINENT SYSTEM PROMPT PLAYGROUND (Live Edit & Reset)
-        expander_title = "🛠️ 檢視 / 修改系統 Prompt" if is_zh else "🛠️ View / Edit System Prompt"
+        expander_title = (
+            "🛠️ 檢視 / 修改系統 Prompt" if is_zh else "🛠️ View / Edit System Prompt"
+        )
         with st.expander(expander_title, expanded=False):
             st.caption(
                 "檢視或即時手動修改底層 Gemini 顧問 System Prompt（內建 100MB FinOps 防護）："
@@ -1289,9 +1294,13 @@ def render_fastmcp_advisor_drawer(
                     width="stretch",
                 ):
                     if is_zh:
-                        st.session_state["custom_system_prompt_zh"] = DEFAULT_SYSTEM_PROMPT_ZH
+                        st.session_state["custom_system_prompt_zh"] = (
+                            DEFAULT_SYSTEM_PROMPT_ZH
+                        )
                     else:
-                        st.session_state["custom_system_prompt_en"] = DEFAULT_SYSTEM_PROMPT_EN
+                        st.session_state["custom_system_prompt_en"] = (
+                            DEFAULT_SYSTEM_PROMPT_EN
+                        )
                     st.rerun()
 
         st.markdown("---")
