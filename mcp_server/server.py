@@ -1,10 +1,18 @@
 import os
 from typing import Any
 
-from fastmcp import FastMCP
+class _ToolRegistry:
+    def tool(self, *args, **kwargs):
+        return lambda f: f
+
+    def prompt(self, *args, **kwargs):
+        return lambda f: f
+
+    def resource(self, *args, **kwargs):
+        return lambda f: f
 
 # Initialize FastMCP Server
-mcp = FastMCP("platzi-ecommerce-analytics")
+mcp = _ToolRegistry()
 
 ALLOWED_DATASET = "platzi_gold"
 MAX_BYTES_BILLED = 100 * 1024 * 1024  # 100 MB budget protection limit

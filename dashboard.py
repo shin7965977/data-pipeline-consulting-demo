@@ -393,7 +393,7 @@ importlib.reload(powerbi_builder)
 importlib.reload(workflow_trigger)
 
 from chart_generator import generate_chart_from_nl
-from fastmcp_diagnostic import render_fastmcp_chat_widget, run_fastmcp_chart_diagnostic
+from fastmcp_diagnostic import render_fastmcp_chat_widget, run_fastmcp_chart_diagnostic, DEFAULT_SYSTEM_PROMPT_ZH, DEFAULT_SYSTEM_PROMPT_EN
 from powerbi_builder import render_powerbi_studio
 from workflow_trigger import trigger_pipeline_workflow
 
@@ -402,8 +402,8 @@ from workflow_trigger import trigger_pipeline_workflow
 # 4. FastMCP AI Operations Copilot Component (Embedded in Sidebar)
 # ==============================================================================
 def render_fastmcp_copilot():
-    st.subheader("🤖 FastMCP 智慧營運顧問")
-    st.caption("AI Operations Lakehouse Copilot · ⚡ Live")
+    st.subheader("🤖 Gemini 智慧營運顧問")
+    st.caption("AI Operations Lakehouse Copilot · ⚡ 100MB FinOps 防護")
     st.caption(f"🔒 鎖定 BigQuery `({PROJECT_ID}.platzi_gold)` 脫敏分析")
 
     # Gemini AI API Key Setting (Strict BYOK - Bring Your Own Key)
@@ -461,6 +461,21 @@ def render_fastmcp_copilot():
         if st.button("🏆 Top 3 熱銷品", key="btn_q2", width="stretch"):
             st.session_state.ai_query = "請列出目前總銷售額排名前三的商品名稱與金額。"
 
+    # PROMINENT SYSTEM PROMPT PLAYGROUND
+    with st.expander("🛠️ 檢視 / 修改系統 Prompt", expanded=False):
+        st.caption("檢視或即時手動修改底層 Gemini 顧問 System Prompt（內建 100MB FinOps 防護）：")
+        curr_sys = st.session_state.get("custom_system_prompt_zh", DEFAULT_SYSTEM_PROMPT_ZH)
+        edited_sys = st.text_area("Prompt 編輯區：", value=curr_sys, height=180, key="sidebar_sys_prompt_textarea")
+        sb_col1, sb_col2 = st.columns(2)
+        with sb_col1:
+            if st.button("💾 套用自訂 Prompt", key="sb_btn_apply_prompt", width="stretch"):
+                st.session_state["custom_system_prompt_zh"] = edited_sys
+                st.success("✅ 已套用！")
+        with sb_col2:
+            if st.button("🔄 還原預設值", key="sb_btn_reset_prompt", width="stretch"):
+                st.session_state["custom_system_prompt_zh"] = DEFAULT_SYSTEM_PROMPT_ZH
+                st.rerun()
+
     user_prompt = st.text_area(
         "輸入業務問題：",
         value=st.session_state.get(
@@ -472,7 +487,7 @@ def render_fastmcp_copilot():
     )
 
     if st.button("送出提問 🚀", type="primary", width="stretch"):
-        with st.spinner("AI 正在透過 FastMCP 查詢 BigQuery 金牌資料集..."):
+        with st.spinner("AI 正在查詢 BigQuery 金牌資料集（受 100MB FinOps 預算防護保護）..."):
             from mcp_server.server import (
                 get_customer_metrics,
                 get_daily_sales_kpi,
@@ -528,7 +543,8 @@ def render_fastmcp_copilot():
                         get_top_products,
                         get_customer_metrics,
                     ]
-                    system_prompt = (
+                    sys_override = st.session_state.get("custom_system_prompt_zh", "")
+                    system_prompt = sys_override.strip() if sys_override and sys_override.strip() else (
                         "你是擁有麥肯錫 (McKinsey) / 貝恩 (Bain) / BCG 資深合夥人（Senior Partner / Engagement Director）水準的頂級管理顧問，"
                         "專精於 Platzi 零售電商數據診斷與營運獲利優化。\n\n"
                         "【你的核心方法論規範（源自 claude-skill-management-consultant-B1 知識庫）】：\n"

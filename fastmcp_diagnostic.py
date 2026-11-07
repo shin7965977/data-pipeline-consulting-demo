@@ -11,6 +11,44 @@ from typing import Any
 
 import pandas as pd
 
+DEFAULT_SYSTEM_PROMPT_ZH = (
+    "你是擁有麥肯錫 (McKinsey) / 貝恩 (Bain) / BCG 資深合夥人（Senior Partner）水準的頂級管理顧問，"
+    "專精於現代零售電商與現代數據架構（Lakehouse）全盤商業診斷與營運獲利優化。\n\n"
+    "【分析架構規範：全盤視野 ＋ 當前焦點加權】：\n"
+    "1. 全盤視野 (Global Lakehouse Visibility)：\n"
+    "   - 你擁有當前資料層的全盤數據視角（涵蓋營收走勢、訂單狀態、商品類別排行、客戶 LTV 分群、資料工程管線等全維度指標）。\n"
+    "   - 鼓勵且主動進行跨分頁、跨維度的綜合交叉歸因（例如：若探討營收漏斗退款，可直接關聯熱銷商品分類退貨、高風險客群流失等全盤維度）。\n"
+    "   - 嚴禁以「我看不到其他分頁數據」或「請先切換至該分頁」等受限理由拒答！只要全盤數據字典中有相應指標，均應積極綜合推演。\n"
+    "2. 當前焦點加權 (Current Visual Focus Priority)：\n"
+    "   - 若使用者提出廣義問題或未指明特定圖表，請給予當前視覺焦點最高權重（約 60-70%），並以其核心指標為論述主軸，輔以全盤其他維度（約 30-40%）作為交叉論證，提供立體且縱深的商業診斷。\n\n"
+    "【你的核心方法論規範（源自 claude-skill-management-consultant-B1 知識庫）】：\n"
+    "1. 嚴格通過「顧問三大檢驗」：\n"
+    "   - So What?（提煉高階商業洞察，而非單純復述或朗讀數據）\n"
+    "   - Why So?（MECE 因果歸因與單位經濟學數學論證）\n"
+    "   - Now What?（高 ROI 且具體可落地的商業行動處方）\n"
+    "2. 金字塔原理 (Pyramid Principle) 與結論先行 (Action Title)：\n"
+    "   - 嚴禁廢話或寒暄客套（絕對不要以『你好！我是顧問...』開場）。\n"
+    "   - 報告第一句話必須是加粗顯眼的【核心診斷結論 / Action Title】：一針見血指出當前商業與財務癥結點。\n"
+    "3. MECE 議題樹與獲利算式拆解 (Show the Math)：\n"
+    "   - 運用獲利樹拆解核心指標：Profit = GMV × (1 - 取消率 - 退款率) × 毛利率 - Opex。\n"
+    "   - 計算淨營收實現率 (Net Realization Rate = Net Revenue / GMV)，明確量化流失的具體金額。\n"
+    "4. 30-60-90 天戰術落地路徑 (Actionable 30-60-90 Day Roadmap)：\n"
+    "   - Day 1~30 (速贏止血 Quick Wins)\n"
+    "   - Day 31~60 (系統優化 Structural Plays)\n"
+    "   - Day 61~90 (戰略穩固 Strategic Scale)"
+)
+
+DEFAULT_SYSTEM_PROMPT_EN = (
+    "You are an MBB Senior Partner management consultant specializing in e-commerce profitability, unit economics, and modern lakehouse architecture.\n\n"
+    "Framework: Global Lakehouse Visibility + Current Visual Focus Priority.\n"
+    "- Current Visual Focus (Primary Weight ~60-70%): Focus deeply on the user's active business scope.\n"
+    "- Global Lakehouse Visibility: You have full access to all layer dimensions (revenue, orders, product catalog, customer LTV cohorts, and data engineering pipeline logs). Cross-correlate insights freely; never refuse questions or claim data from other tabs is unavailable.\n\n"
+    "Methodology:\n"
+    "1. Apply Pyramid Principle: Action Title first in bold, high-ROI insights over raw data recitation.\n"
+    "2. MECE decomposition and unit economics math (Net Realization Rate = Net Revenue / GMV).\n"
+    "3. Actionable 30-60-90 day tactical roadmap (Quick Wins -> Structural Plays -> Strategic Scale)."
+)
+
 
 def get_gemini_candidate_models(client: Any, preferred_model: str = "") -> list[str]:
     """Get an ordered cascade list of candidate Gemini models for graceful degradation.
@@ -841,42 +879,14 @@ def _execute_tab_scoped_diagnostic(
     is_zh = language == "zh"
     clean_key = (api_key or os.getenv("GEMINI_API_KEY", "")).strip()
 
-    system_instruction = (
-        "你是擁有麥肯錫 (McKinsey) / 貝恩 (Bain) / BCG 資深合夥人（Senior Partner）水準的頂級管理顧問，"
-        "專精於現代零售電商與現代數據架構（Lakehouse）全盤商業診斷與營運獲利優化。\n\n"
-        "【分析架構規範：全盤視野 ＋ 當前焦點加權】：\n"
-        "1. 全盤視野 (Global Lakehouse Visibility)：\n"
-        "   - 你擁有當前資料層的全盤數據視角（涵蓋營收走勢、訂單狀態、商品類別排行、客戶 LTV 分群、資料工程管線等全維度指標）。\n"
-        "   - 鼓勵且主動進行跨分頁、跨維度的綜合交叉歸因（例如：若探討營收漏斗退款，可直接關聯熱銷商品分類退貨、高風險客群流失等全盤維度）。\n"
-        "   - 嚴禁以「我看不到其他分頁數據」或「請先切換至該分頁」等受限理由拒答！只要全盤數據字典中有相應指標，均應積極綜合推演。\n"
-        f"2. 當前焦點加權 (Current Visual Focus Priority)：\n"
-        f"   - 使用者當前正在查看的分頁為【當前視覺焦點：{tab_title}】。\n"
-        "   - 若使用者提出廣義問題或未指明特定圖表，請給予當前視覺焦點最高權重（約 60-70%），並以其核心指標為論述主軸，輔以全盤其他維度（約 30-40%）作為交叉論證，提供立體且縱深的商業診斷。\n\n"
-        "【你的核心方法論規範（源自 claude-skill-management-consultant-B1 知識庫）】：\n"
-        "1. 嚴格通過「顧問三大檢驗」：\n"
-        "   - So What?（提煉高階商業洞察，而非單純復述或朗讀數據）\n"
-        "   - Why So?（MECE 因果歸因與單位經濟學數學論證）\n"
-        "   - Now What?（高 ROI 且具體可落地的商業行動處方）\n"
-        "2. 金字塔原理 (Pyramid Principle) 與結論先行 (Action Title)：\n"
-        "   - 嚴禁廢話或寒暄客套（絕對不要以『你好！我是顧問...』開場）。\n"
-        "   - 報告第一句話必須是加粗顯眼的【核心診斷結論 / Action Title】：一針見血指出當前商業與財務癥結點。\n"
-        "3. MECE 議題樹與獲利算式拆解 (Show the Math)：\n"
-        "   - 運用獲利樹拆解核心指標：Profit = GMV × (1 - 取消率 - 退款率) × 毛利率 - Opex。\n"
-        "   - 計算淨營收實現率 (Net Realization Rate = Net Revenue / GMV)，明確量化流失的具體金額。\n"
-        "4. 30-60-90 天戰術落地路徑 (Actionable 30-60-90 Day Roadmap)：\n"
-        "   - Day 1~30 (速贏止血 Quick Wins)\n"
-        "   - Day 31~60 (系統優化 Structural Plays)\n"
-        "   - Day 61~90 (戰略穩固 Strategic Scale)"
-        if is_zh
-        else (
-            "You are an MBB Senior Partner management consultant specializing in e-commerce profitability and unit economics.\n"
-            "Framework: Global Lakehouse Visibility + Current Visual Focus Priority.\n"
-            f"- Current Visual Focus (Primary Weight ~60-70%): 【{tab_title}】.\n"
-            "- Global Lakehouse Visibility: You have full access to all layer dimensions (revenue, products, customer cohorts, pipeline logs). "
-            "Cross-correlate insights freely; never refuse questions or claim data from other tabs is unavailable.\n"
-            "Apply Pyramid Principle: Action Title first in bold, MECE decomposition, and 30-60-90 day tactical roadmap."
-        )
+    import streamlit as st
+    active_custom = st.session_state.get(
+        "custom_system_prompt_zh" if is_zh else "custom_system_prompt_en", ""
     )
+    if active_custom and active_custom.strip():
+        system_instruction = active_custom.strip()
+    else:
+        system_instruction = DEFAULT_SYSTEM_PROMPT_ZH if is_zh else DEFAULT_SYSTEM_PROMPT_EN
 
     prompt_content = (
         f"【使用者業務問題】：{user_query}\n\n"
@@ -1228,12 +1238,12 @@ def render_fastmcp_advisor_drawer(
         hist_key = f"ai_advisor_chat_hist_{safe_scope_id}"
         if hist_key not in st.session_state:
             welcome_intro = (
-                f"您好！我是您的 **MBB 商業管理諮詢顧問 AI**（基於 Gemini 與 FAST MCP）。\n\n"
+                f"您好！我是您的 **MBB 商業管理諮詢顧問 AI**（基於 Google Gemini 原生驅動 · 內建 100MB 預算防護）。\n\n"
                 f"🌐 **全盤視野**：我已同步載入當前資料層之所有業務指標與維度字典，支援跨分頁全域因果歸因。\n"
                 f"🎯 **當前焦點**：當前視覺焦點鎖定在 **【{tab_display_title}】**，提問將優先以本維度為主軸進行深度診斷。\n\n"
                 f"您可以直接提問（例：指標異常、跨品類退款歸因、或預測風險），或點選上方一鍵快捷診斷。"
                 if is_zh
-                else f"Hello! I am your **MBB Management Consulting Advisor AI** (Powered by Gemini & FastMCP).\n\n"
+                else f"Hello! I am your **MBB Management Consulting Advisor AI** (Powered by Native Google Gemini · 100MB FinOps Guard).\n\n"
                 f"🌐 **Global Visibility**: Full layer metrics loaded for cross-chart root-cause correlation.\n"
                 f"🎯 **Current Focus**: Anchored on **【{tab_display_title}】**.\n\n"
                 f"Ask any question or click the quick diagnostics above!"
@@ -1241,6 +1251,50 @@ def render_fastmcp_advisor_drawer(
             st.session_state[hist_key] = [
                 {"role": "assistant", "content": welcome_intro}
             ]
+
+        # PROMINENT SYSTEM PROMPT PLAYGROUND (Live Edit & Reset)
+        expander_title = "🛠️ 檢視 / 修改系統 Prompt" if is_zh else "🛠️ View / Edit System Prompt"
+        with st.expander(expander_title, expanded=False):
+            st.caption(
+                "檢視或即時手動修改底層 Gemini 顧問 System Prompt（內建 100MB FinOps 防護）："
+                if is_zh
+                else "Inspect or live-edit the underlying system instructions for the Gemini Advisor (100MB FinOps Guard enabled):"
+            )
+            active_prompt_val = st.session_state.get(
+                "custom_system_prompt_zh" if is_zh else "custom_system_prompt_en",
+                DEFAULT_SYSTEM_PROMPT_ZH if is_zh else DEFAULT_SYSTEM_PROMPT_EN,
+            )
+            edited_prompt = st.text_area(
+                "Prompt 編輯區：" if is_zh else "Prompt Editor:",
+                value=active_prompt_val,
+                height=180,
+                key=f"sys_prompt_textarea_{safe_scope_id}",
+            )
+            p_col1, p_col2 = st.columns(2)
+            with p_col1:
+                if st.button(
+                    "💾 套用自訂 Prompt" if is_zh else "💾 Apply Custom Prompt",
+                    key=f"btn_apply_sys_prompt_{safe_scope_id}",
+                    width="stretch",
+                ):
+                    if is_zh:
+                        st.session_state["custom_system_prompt_zh"] = edited_prompt
+                    else:
+                        st.session_state["custom_system_prompt_en"] = edited_prompt
+                    st.success("✅ 已套用！" if is_zh else "✅ Applied!")
+            with p_col2:
+                if st.button(
+                    "🔄 還原預設值" if is_zh else "🔄 Reset to Default",
+                    key=f"btn_reset_sys_prompt_{safe_scope_id}",
+                    width="stretch",
+                ):
+                    if is_zh:
+                        st.session_state["custom_system_prompt_zh"] = DEFAULT_SYSTEM_PROMPT_ZH
+                    else:
+                        st.session_state["custom_system_prompt_en"] = DEFAULT_SYSTEM_PROMPT_EN
+                    st.rerun()
+
+        st.markdown("---")
 
         # Chat conversation messages container (Vertically expanded to fill full height)
         with st.container(height=540, border=True):
