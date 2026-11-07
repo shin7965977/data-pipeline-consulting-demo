@@ -18,3 +18,12 @@ When answering questions about business diagnostics, financial metrics, e-commer
 - **MECE Issue Trees**: Structured causal decomposition (GMV, AOV, cancellation and refund rate leakages).
 - **Actionable Commercial Interventions**: Unit economics and 30-60-90 day tactical recommendations.
 
+### Lakehouse Conversational Onboarding Skill
+
+The repository includes the [Lakehouse Onboarding Skill](.agents/skills/lakehouse-onboarding/SKILL.md) for conversational platform setup.
+When the user says "開始安裝", "/install", "setup", or asks to configure the lakehouse platform:
+- **Dynamic Codebase Introspection**: Run `python onboarding_wizard.py --introspect` before posing questions to detect available sources, gold marts, storage engines, and environment status.
+- **Zero Hardcoding**: Dynamically assemble menus and recommendations based on current repository capabilities.
+- **7-Stage Onboarding Flow**: Guide through Ingestion -> Storage & FinOps 100MB Guardrail -> AI Intelligence -> ELT Pipeline Run -> C-T-D-S-A Chart Ideation -> Streamlit Cockpit Launch.
+
+
