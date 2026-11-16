@@ -400,7 +400,7 @@ from fastmcp_diagnostic import (
 )
 from powerbi_builder import render_powerbi_studio
 from workflow_trigger import trigger_pipeline_workflow
-from cockpit_core.components.schema_designer import render_schema_designer_view
+from cockpit_loader import render_schema_designer_view
 
 
 # ==============================================================================

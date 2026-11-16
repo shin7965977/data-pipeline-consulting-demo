@@ -378,7 +378,7 @@ from chart_generator import generate_chart_from_nl
 from fastmcp_diagnostic import render_fastmcp_chat_widget, run_fastmcp_chart_diagnostic
 from powerbi_builder import render_powerbi_studio
 from workflow_trigger import trigger_pipeline_workflow
-from cockpit_core.components.schema_designer import render_schema_designer_view
+from cockpit_loader import render_schema_designer_view
 
 
 # ==============================================================================
