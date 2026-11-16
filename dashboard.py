@@ -400,6 +400,7 @@ from fastmcp_diagnostic import (
 )
 from powerbi_builder import render_powerbi_studio
 from workflow_trigger import trigger_pipeline_workflow
+from cockpit_core.components.schema_designer import render_schema_designer_view
 
 
 # ==============================================================================
@@ -1359,6 +1360,7 @@ with main_page_col:
             "🏆 熱銷商品與類別排行",
             "✨ 自然語言 AI 智能圖表",
             "🎛️ 視覺化自訂看板 (Power BI 畫布)",
+            "🏗️ Schema 設計與 dbt 引擎",
         ]
     elif selected_layer == "silver":
         base_tab_titles = [
@@ -1367,6 +1369,7 @@ with main_page_col:
             "👥 客戶維度表 (dim_customers)",
             "🏷️ 商品維度表 (dim_products)",
             "🎛️ 銀牌層視覺化畫布 (Power BI 畫布)",
+            "🏗️ Schema 設計與 dbt 引擎",
         ]
     else:  # bronze
         base_tab_titles = [
@@ -1854,6 +1857,25 @@ with main_page_col:
                 key_prefix="pbi_main",
             )
 
+        # --------------------------------------------------------------------------
+        # GOLD TAB 6: Autonomous Schema Designer & dbt Transformation Engine
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[5]:
+            df_orders_s, df_items_s, df_cust_s, df_prod_s, _ = load_silver_data()
+            render_schema_designer_view(
+                adapter=None,
+                data_dict={
+                    "fct_orders": df_orders_s,
+                    "fct_order_items": df_items_s,
+                    "dim_customers": df_cust_s,
+                    "dim_products": df_prod_s if not df_prod_s.empty else df_prod,
+                    "mart_daily_sales": df_kpi,
+                    "mart_customer_ltv": df_ltv,
+                    "mart_product_performance": df_prod,
+                },
+                is_en=False,
+            )
+
     elif selected_layer == "silver":
         # --------------------------------------------------------------------------
         # SILVER TAB 1: 訂單事實表 (fct_orders)
@@ -2033,6 +2055,21 @@ with main_page_col:
                 key_prefix="pbi_silver",
                 dataset_configs=silver_datasets,
                 default_dataset_key="orders",
+            )
+
+        # --------------------------------------------------------------------------
+        # SILVER TAB 6: Autonomous Schema Designer & dbt Transformation Engine
+        # --------------------------------------------------------------------------
+        elif active_tab == base_tab_titles[5]:
+            render_schema_designer_view(
+                adapter=None,
+                data_dict={
+                    "fct_orders": df_orders,
+                    "fct_order_items": df_items,
+                    "dim_customers": df_cust,
+                    "dim_products": df_prod_silver,
+                },
+                is_en=False,
             )
 
     else:  # bronze layer

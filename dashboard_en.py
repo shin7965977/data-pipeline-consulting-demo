@@ -378,6 +378,7 @@ from chart_generator import generate_chart_from_nl
 from fastmcp_diagnostic import render_fastmcp_chat_widget, run_fastmcp_chart_diagnostic
 from powerbi_builder import render_powerbi_studio
 from workflow_trigger import trigger_pipeline_workflow
+from cockpit_core.components.schema_designer import render_schema_designer_view
 
 
 # ==============================================================================
@@ -1179,6 +1180,7 @@ def main():
                 "🏆 Product & Category Performance",
                 "✨ Natural Language AI Charts",
                 "🎛️ Custom BI Studio (Power BI Canvas)",
+                "🏗️ Autonomous Schema & dbt Engine",
             ]
         elif selected_layer == "silver":
             base_tab_titles = [
@@ -1187,6 +1189,7 @@ def main():
                 "👥 Customers Dimension (dim_customers)",
                 "🏷️ Products Dimension (dim_products)",
                 "🎛️ Silver BI Studio (Power BI Canvas)",
+                "🏗️ Autonomous Schema & dbt Engine",
             ]
         else:  # bronze
             base_tab_titles = [
@@ -1699,6 +1702,23 @@ def main():
                     key_prefix="pbi_main_en",
                 )
 
+            # GOLD TAB 6: Autonomous Schema Designer & dbt Transformation Engine
+            elif active_tab == base_tab_titles[5]:
+                df_orders_s, df_items_s, df_cust_s, df_prod_s, _ = load_silver_data()
+                render_schema_designer_view(
+                    adapter=None,
+                    data_dict={
+                        "fct_orders": df_orders_s,
+                        "fct_order_items": df_items_s,
+                        "dim_customers": df_cust_s,
+                        "dim_products": df_prod_s if not df_prod_s.empty else df_prod,
+                        "mart_daily_sales": df_kpi,
+                        "mart_customer_ltv": df_ltv,
+                        "mart_product_performance": df_prod,
+                    },
+                    is_en=True,
+                )
+
         elif selected_layer == "silver":
             # SILVER TAB 1: Orders Fact
             if active_tab == base_tab_titles[0]:
@@ -1876,6 +1896,19 @@ def main():
                     key_prefix="pbi_silver_en",
                     dataset_configs=silver_datasets,
                     default_dataset_key="orders",
+                )
+
+            # SILVER TAB 6: Autonomous Schema Designer & dbt Transformation Engine
+            elif active_tab == base_tab_titles[5]:
+                render_schema_designer_view(
+                    adapter=None,
+                    data_dict={
+                        "fct_orders": df_orders,
+                        "fct_order_items": df_items,
+                        "dim_customers": df_cust,
+                        "dim_products": df_prod_silver,
+                    },
+                    is_en=True,
                 )
 
         else:  # bronze
