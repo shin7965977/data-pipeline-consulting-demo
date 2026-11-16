@@ -882,10 +882,17 @@ def _execute_tab_scoped_diagnostic(
     import streamlit as st
 
     active_custom = st.session_state.get(
-        "custom_system_prompt_zh" if is_zh else "custom_system_prompt_en", ""
+        "custom_system_prompt_zh" if is_zh else "custom_system_prompt_en", None
     )
-    if active_custom and active_custom.strip():
-        system_instruction = active_custom.strip()
+    if active_custom is not None:
+        if active_custom.strip():
+            system_instruction = active_custom.strip()
+        else:
+            system_instruction = (
+                "請用繁體中文簡明扼要、直接回答使用者的問題，無需套用顧問報告框架。"
+                if is_zh
+                else "Answer the user's question directly and concisely without consulting report formatting."
+            )
     else:
         system_instruction = (
             DEFAULT_SYSTEM_PROMPT_ZH if is_zh else DEFAULT_SYSTEM_PROMPT_EN
